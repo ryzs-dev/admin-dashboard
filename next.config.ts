@@ -23,7 +23,6 @@ const nextConfig: NextConfig = {
     ];
   },
   // Optimize for production
-  swcMinify: true,
   compress: true,
   poweredByHeader: false,
 };
