@@ -17,19 +17,21 @@ import {
 
 interface ProductChartProps {
   productCounts?: {
-    wash: number;
+    wash120ml: number;
     femlift30ml: number;
     femlift10ml: number;
-    bag: number;
+    spray: number;
+    wash30ml: number;
   };
 }
 
 export function ProductChart({ productCounts }: ProductChartProps) {
   const chartData = [
-    { name: "Wash", count: productCounts?.wash || 0 },
+    { name: "Wash 120ml", count: productCounts?.wash120ml || 0 },
     { name: "Femlift 30ml", count: productCounts?.femlift30ml || 0 },
     { name: "Femlift 10ml", count: productCounts?.femlift10ml || 0 },
-    { name: "Bag", count: productCounts?.bag || 0 },
+    { name: "Spray", count: productCounts?.spray || 0 },
+    { name: "Wash 30ml", count: productCounts?.wash30ml || 0 },
   ];
 
   return (
@@ -43,9 +45,9 @@ export function ProductChart({ productCounts }: ProductChartProps) {
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis />
+            <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Bar dataKey="count" fill="#6366f1" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

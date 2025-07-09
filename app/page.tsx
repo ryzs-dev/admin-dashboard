@@ -1,321 +1,178 @@
-// app/page.tsx - Main Dashboard Page
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Download,
-  RefreshCw,
-  TrendingUp,
-  Package,
-  Users,
-  DollarSign,
-  Clock,
-} from "lucide-react";
-
-import {
-  useDashboardStats,
-  useHealthCheck,
-  useDownloadOrders,
-} from "@/hooks/useApi";
-
-import { format } from "date-fns";
-import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
-import { OrdersTable } from "@/components/dashboard/OrdersTable";
-import { ProductChart } from "@/components/dashboard/ProductTable";
+import { useSubscribers } from "@/hooks/useSubscribers";
+import { useOrders } from "@/hooks/useOrders";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
+import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { StatsCards } from "@/components/dashboard/StatsCard";
+import { ProductChart } from "@/components/dashboard/ProductTable";
 
-export default function Dashboard() {
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Download, RefreshCw } from "lucide-react";
+import OrdersTable from "@/components/dashboard/OrdersTable";
+import { FunnelGraph } from "@/components/subscribers/FunnelGraph";
+
+export default function DashboardPage() {
   const {
-    stats,
-    isLoading: statsLoading,
-    isError: statsError,
-    refresh,
-  } = useDashboardStats();
-  const { health } = useHealthCheck();
-  const { downloadOrders } = useDownloadOrders();
+    subscribers,
+    loading: subsLoading,
+    error: subsError,
+  } = useSubscribers();
+  const {
+    orders,
+    isLoading: ordersLoading,
+    isError: ordersError,
+  } = useOrders();
+
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      await downloadOrders();
-    } catch (error) {
-      console.error("Download failed:", error);
-      // You could add a toast notification here
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/download-orders`
+      );
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `orders-${new Date().toISOString()}.xlsx`;
+      link.click();
+    } catch (err) {
+      console.error("❌ Download error:", err);
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const handleRefresh = () => {
-    refresh();
-  };
-
-  if (statsLoading) {
+  if (subsLoading || ordersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
   }
 
-  if (statsError) {
+  if (subsError || ordersError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle className="text-red-600">Connection Error</CardTitle>
-            <CardDescription>
-              Unable to connect to your backend server. Please ensure your
-              server is running.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleRefresh} className="w-full">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry Connection
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        <p>⚠️ Failed to fetch dashboard data. Please check your backend.</p>
       </div>
     );
   }
+
+  // 🧠 Funnel logic
+  const funnelStageCounts = subscribers.reduce((acc, s) => {
+    const stage = s.funnel_stage ?? 0;
+    acc[stage] = (acc[stage] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
+  const totalRevenue = orders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const avgOrderValue = totalRevenue / Math.max(orders.length, 1);
+  const conversionRate =
+    (orders.length / Math.max(subscribers.length, 1)) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                E-commerce Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Monitor your automated order processing system
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Server Status */}
-              <div className="flex items-center space-x-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    health?.status === "OK" ? "bg-green-500" : "bg-red-500"
-                  }`}
-                />
-                <span className="text-sm text-gray-600">
-                  {health?.status === "OK" ? "Server Online" : "Server Offline"}
-                </span>
-              </div>
-
-              <Button variant="outline" onClick={handleRefresh}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-
-              <Button onClick={handleDownload} disabled={isDownloading}>
-                {isDownloading ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                Export Excel
-              </Button>
-            </div>
+        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Lunaa Dashboard
+            </h1>
+            <p className="text-sm text-gray-500">
+              Monitor customer journey and order performance
+            </p>
           </div>
+
+          <Button onClick={handleDownload} disabled={isDownloading}>
+            {isDownloading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Export Orders
+              </>
+            )}
+          </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <StatsCards stats={stats} />
+      {/* Main */}
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        <StatsCards
+          stats={{
+            totalOrders: orders.length,
+            totalRevenue,
+            avgOrderValue,
+            funnelStages: funnelStageCounts,
+            totalSubscribers: subscribers.length,
+            conversionRate,
+          }}
+        />
 
         <Separator className="my-8" />
 
-        {/* Tabs for different views */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="overview">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="funnels">Funnels</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RevenueChart orders={stats?.recentOrders || []} />
-              <ProductChart productCounts={stats?.productCounts} />
-            </div>
-
-            {/* Recent Orders Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>
-                  Latest {stats?.recentOrders?.length || 0} orders from all
-                  channels
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats?.recentOrders?.slice(0, 5).map((order, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Package className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{order.customerName}</p>
-                          <p className="text-sm text-gray-600">
-                            Order #{order.orderNumber}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">RM {order.total}</p>
-                        <p className="text-sm text-gray-600">
-                          {format(new Date(order.orderDate), "MMM dd, yyyy")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders">
-            <OrdersTable orders={stats?.recentOrders || []} />
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Avg. Order Value
-                  </CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    RM{" "}
-                    {(
-                      parseFloat(stats?.totalRevenue || "0") /
-                      Math.max(stats?.totalOrders || 1, 1)
-                    ).toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Per order average
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Conversion Rate
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">85.2%</div>
-                  <p className="text-xs text-muted-foreground">
-                    Messages to orders
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Response Time
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">32s</div>
-                  <p className="text-xs text-muted-foreground">
-                    Average response time
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Customer Satisfaction
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">96%</div>
-                  <p className="text-xs text-muted-foreground">
-                    Positive feedback
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RevenueChart orders={stats?.recentOrders || []} />
-              <ProductChart productCounts={stats?.productCounts} />
+              <RevenueChart orders={orders} />
+              <ProductChart productCounts={aggregateProducts(orders)} />
             </div>
           </TabsContent>
 
-          {/* Products Tab */}
-          <TabsContent value="products">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Object.entries(stats?.productCounts || {}).map(
-                ([product, count]) => (
-                  <Card key={product}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium capitalize">
-                        {product.replace(/([A-Z])/g, " $1").trim()}
-                      </CardTitle>
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{count}</div>
-                      <p className="text-xs text-muted-foreground">
-                        Total sold
-                      </p>
-                    </CardContent>
-                  </Card>
-                )
-              )}
-            </div>
+          <TabsContent value="orders" className="mt-6">
+            <OrdersTable orders={orders} />
+          </TabsContent>
 
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Product Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProductChart productCounts={stats?.productCounts} />
-              </CardContent>
-            </Card>
+          <TabsContent value="funnels" className="mt-6">
+            <FunnelGraph />
           </TabsContent>
         </Tabs>
       </main>
     </div>
+  );
+}
+
+// 🔄 Aggregate product totals for chart
+function aggregateProducts(orders: any[]): {
+  wash120ml: number;
+  femlift30ml: number;
+  femlift10ml: number;
+  spray: number;
+  wash30ml: number;
+} {
+  const keys = ["wash120ml", "femlift30ml", "femlift10ml", "spray", "wash30ml"];
+
+  return keys.reduce(
+    (acc, key) => {
+      acc[key as keyof typeof acc] = orders.reduce(
+        (sum, o) => sum + (o[key] || 0),
+        0
+      );
+      return acc;
+    },
+    {
+      wash120ml: 0,
+      femlift30ml: 0,
+      femlift10ml: 0,
+      spray: 0,
+      wash30ml: 0,
+    }
   );
 }

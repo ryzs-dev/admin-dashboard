@@ -31,7 +31,7 @@ export function RevenueChart({ orders }: RevenueChartProps) {
 
   const chartData = last7Days.map((date) => {
     const dayOrders = orders.filter((order) => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date);
       return orderDate.toDateString() === date.toDateString();
     });
 
