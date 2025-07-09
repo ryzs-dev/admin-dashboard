@@ -11,9 +11,7 @@ export function useOrders() {
     async function fetchOrders() {
       try {
         setIsLoading(true);
-        const res = await fetch(
-          "https://messenger-order-automation-production.up.railway.app/api/orders"
-        );
+        const res = await fetch("https://bot.lunaawomencare.com/api/orders");
         const json = await res.json();
 
         console.log(json);

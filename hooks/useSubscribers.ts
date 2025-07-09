@@ -38,9 +38,7 @@ export function useFunnelStats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(
-      "https://messenger-order-automation-production.up.railway.app/api/subscribers/stats"
-    )
+    fetch("https://bot.lunaawomencare.com/api/subscribers/stats")
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setData(json.data);
