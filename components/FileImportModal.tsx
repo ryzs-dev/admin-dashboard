@@ -50,7 +50,7 @@ export default function FileImportModal({ isOpen, onClose, onImportComplete }: F
   const [showPreview, setShowPreview] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
