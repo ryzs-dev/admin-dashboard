@@ -1,28 +1,68 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// app/orders/page.tsx - Updated to use normalized Supabase schema
+// app/orders/page.tsx - Complete Orders Page with Product Selection
 "use client";
 
-import { useState } from "react";
-import {
-  useSupabaseOrders,
-  useSupabaseOrderSearch,
-  Order,
-} from "@/hooks/useSupabase"; // ✅ FIXED: Import Order type
+import { useState, useEffect, Key, JSXElementConstructor, ReactElement, ReactNode, ReactPortal } from "react";
+import { 
+  useSupabaseOrders, 
+  useSupabaseOrderSearch, 
+  useCreateOrder,
+  CreateOrderData,
+  OrderItem 
+} from "@/hooks/useSupabase";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useActiveProducts, useActivePackages } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Download, RefreshCw, Calendar } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  Search, 
+  Download, 
+  RefreshCw, 
+  Plus,
+  Minus,
+  Package,
+  ShoppingCart,
+  Calculator,
+  User,
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  Trash2
+} from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import SupabaseOrdersTable from "@/components/dashboard/SupabaseOrdersTable";
-import { ImportButton } from "@/components/ImportButton";
+import { toast } from "sonner";
+import CreateOrderDialog from "@/components/order/CreateOrderDialog";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState<
-    "all" | "today" | "week" | "month" | "august"
-  >("all");
-  const [currencyFilter, setCurrencyFilter] = useState<"all" | "MYR" | "SGD">(
-    "all"
-  );
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month" | "august">("all");
+  const [currencyFilter, setCurrencyFilter] = useState<"all" | "MYR" | "SGD">("all");
   const [statusFilter, setStatusFilter] = useState<
     | "all"
     | "pending"
@@ -32,11 +72,49 @@ export default function OrdersPage() {
     | "delivered"
     | "cancelled"
     | "refunded"
-  >("all"); // ✅ FIXED: Updated status options
+  >("all");
   const [currentPage, setCurrentPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
 
   const pageSize = 50;
+
+  // Create Order Form State
+  const [orderForm, setOrderForm] = useState<CreateOrderData>({
+    customer_name: '',
+    phone_number: '',
+    fb_name: '',
+    email: '',
+    customer_type: 'new',
+    total_amount: 0,
+    subtotal: 0,
+    postage: 0,
+    website_charges: 0,
+    payment_method: 'cash',
+    payment_status: 'pending',
+    currency: 'MYR',
+    source: 'manual',
+    agent_name: 'Admin',
+    notes: '',
+    address: '',
+    city: '',
+    postcode: '',
+    state: '',
+    country: 'Malaysia',
+    items: []
+  });
+
+  // Product Selection States
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [selectedProductType, setSelectedProductType] = useState<'product' | 'package'>('product');
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [itemQuantity, setItemQuantity] = useState(1);
+
+  // Hooks
+  const { createOrder, isCreating, error: createError, setError } = useCreateOrder();
+  const { products, isLoading: productsLoading } = useActiveProducts();
+  const { packages, isLoading: packagesLoading } = useActivePackages();
 
   // Calculate date range based on filter
   const getDateRange = () => {
@@ -67,465 +145,318 @@ export default function OrdersPage() {
   const dateRange = getDateRange();
 
   // Fetch orders with filters
-  const { orders, pagination, isLoading, isError, refresh } = useSupabaseOrders(
-    {
-      ...dateRange,
-      currency: currencyFilter === "all" ? undefined : currencyFilter,
-      status: statusFilter === "all" ? undefined : statusFilter,
-      limit: pageSize,
-      offset: currentPage * pageSize,
-    }
-  );
-
-  // ✅ FIXED: Log orders to check structure with normalized schema
-  console.log("📊 Orders from normalized schema:", orders);
-  console.log("📄 Sample order structure:", orders?.[0]);
+  const { orders, pagination, isLoading, isError, refresh } = useSupabaseOrders({
+    ...dateRange,
+    currency: currencyFilter === "all" ? undefined : currencyFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    limit: pageSize,
+    offset: currentPage * pageSize,
+  });
 
   // Search functionality
-  const {
-    results: searchResults,
-    isLoading: isSearching,
-    search,
-  } = useSupabaseOrderSearch({
+  const { results: searchResults, isLoading: isSearching, search } = useSupabaseOrderSearch({
     q: searchQuery.length >= 3 ? searchQuery : undefined,
     limit: 50,
+  });
+
+  // Customer search for order creation
+  const { customers: searchedCustomers, isLoading: isCustomerSearchLoading } = useCustomers({
+    search: customerSearchQuery.length >= 2 ? customerSearchQuery : undefined,
+    limit: 10
   });
 
   // Use search results if searching, otherwise use filtered orders
   const displayOrders = searchQuery.length >= 3 ? searchResults : orders;
   const displayLoading = searchQuery.length >= 3 ? isSearching : isLoading;
 
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    if (value.length >= 3) {
-      search();
-    }
+  // Get available items based on selected type
+  const availableItems = selectedProductType === 'product' ? products : packages;
+
+  // Handle page navigation
+  const handlePageChange = (newPage: number) => {
+    if (searchQuery.length >= 3) return;
+    setCurrentPage(newPage);
   };
 
+  // Handle export
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const queryParams = new URLSearchParams();
-
-      // Add current filters to export
-      if (dateRange.startDate)
-        queryParams.append("startDate", dateRange.startDate);
-      if (dateRange.endDate) queryParams.append("endDate", dateRange.endDate);
-      if (dateRange.month)
-        queryParams.append("month", dateRange.month.toString());
-      if (currencyFilter !== "all")
-        queryParams.append("currency", currencyFilter);
-      if (statusFilter !== "all") queryParams.append("status", statusFilter);
-
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/api/supabase/export/excel?${queryParams.toString()}`
-      );
-
-      if (!response.ok) throw new Error("Export failed");
-
-      const data = await response.json();
-
-      // ✅ FIXED: Create CSV with normalized schema fields
-      const csvContent = convertToCSV(data.data);
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `orders-${dateFilter}-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supabase/export/excel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dateRange),
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orders-export-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Orders exported successfully!');
+      } else {
+        throw new Error('Export failed');
+      }
     } catch (error) {
-      console.error("Export failed:", error);
-      alert("Export failed. Please try again.");
+      toast.error('Failed to export orders');
+      console.error('Export error:', error);
     } finally {
       setIsExporting(false);
     }
   };
 
-  // ✅ FIXED: Updated CSV conversion for normalized schema
-  const convertToCSV = (data: Order[]) => {
-    if (!data.length) return "";
-
-    // Define headers for normalized schema
-    const headers = [
-      "Order ID",
-      "Order Number",
-      "Date",
-      "Customer Name",
-      "Phone Number",
-      "FB Name",
-      "Email",
-      "Total Amount", // ✅ FIXED: total_amount not total_paid
-      "Currency",
-      "Status",
-      "Payment Status",
-      "Payment Method",
-      "Tracking Number",
-      "Courier Company",
-      "Agent",
-      "Address",
-      "City",
-      "State",
-      "Postcode",
-      "Notes",
-    ];
-
-    const csvHeaders = headers.join(",");
-    const csvRows = data.map((order: Order) => {
-      const values = [
-        order.id || "",
-        order.order_number || "",
-        order.order_date
-          ? format(new Date(order.order_date), "yyyy-MM-dd")
-          : "",
-        order.customers?.customer_name || "", // ✅ FIXED: Access through customers object
-        order.customers?.phone_number || "",
-        order.customers?.fb_name || "",
-        order.customers?.email || "",
-        order.total_amount || 0, // ✅ FIXED: total_amount
-        order.currency || "",
-        order.status || "",
-        order.payment_status || "",
-        order.payment_method || "",
-        order.tracking_number || "",
-        order.courier_company || "",
-        order.agent_name || "",
-        order.addresses?.address_line_1 || "", // ✅ FIXED: Access through addresses object
-        order.addresses?.city || "",
-        order.addresses?.state || "",
-        order.addresses?.postcode || "",
-        order.notes || order.remark || "",
-      ];
-
-      return values
-        .map((value) => {
-          // Escape commas and quotes in CSV values
-          if (
-            typeof value === "string" &&
-            (value.includes(",") || value.includes('"'))
-          ) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        })
-        .join(",");
-    });
-
-    return [csvHeaders, ...csvRows].join("\n");
+  // Handle customer selection
+  const handleCustomerSelect = (customer: any) => {
+    setSelectedCustomer(customer);
+    setOrderForm(prev => ({
+      ...prev,
+      customer_name: customer.customer_name,
+      phone_number: customer.phone_number,
+      fb_name: customer.fb_name || '',
+      email: customer.email || '',
+      customer_type: customer.customer_type || 'repeat'
+    }));
+    setCustomerSearchQuery('');
   };
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
+  // Add item to order
+  const handleAddItem = () => {
+    if (!selectedItemId) {
+      toast.error('Please select a product or package');
+      return;
+    }
+
+    const item = availableItems.find((p: { id: { toString: () => string; }; }) => p.id?.toString() === selectedItemId);
+    if (!item) return;
+
+    const unitPrice = item.base_price || 0;
+    const totalPrice = unitPrice * itemQuantity;
+
+    const orderItem: OrderItem = {
+      id: `${selectedProductType}-${item.id}-${Date.now()}`,
+      type: selectedProductType,
+      item_id: item.id!,
+      item_name: selectedProductType === 'product' ? (item as any).product_name : (item as any).package_name,
+      item_code: selectedProductType === 'product' ? (item as any).product_code : (item as any).package_code,
+      quantity: itemQuantity,
+      unit_price: unitPrice,
+      total_price: totalPrice,
+    };
+
+    setOrderForm(prev => ({
+      ...prev,
+      items: [...(prev.items || []), orderItem]
+    }));
+
+    // Reset selection
+    setSelectedItemId('');
+    setItemQuantity(1);
   };
 
-  const clearSearch = () => {
-    setSearchQuery("");
+  // Remove item from order
+  const handleRemoveItem = (itemId: string) => {
+    setOrderForm(prev => ({
+      ...prev,
+      items: prev.items?.filter(item => item.id !== itemId) || []
+    }));
   };
 
-  if (isError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-lg mb-4">
-            ⚠️ Failed to load orders
-          </div>
-          <p className="text-gray-600 mb-4">
-            Make sure your backend is running and Supabase is configured
-            correctly.
-          </p>
-          <Button onClick={refresh}>Try Again</Button>
-        </div>
-      </div>
-    );
-  }
+  // Update item quantity
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    setOrderForm(prev => ({
+      ...prev,
+      items: prev.items?.map(item => 
+        item.id === itemId 
+          ? { ...item, quantity: newQuantity, total_price: item.unit_price * newQuantity }
+          : item
+      ) || []
+    }));
+  };
+
+  // Calculate totals automatically
+  const calculateTotals = () => {
+    const items = orderForm.items || [];
+    const itemsSubtotal = items.reduce((sum, item) => sum + item.total_price, 0);
+    const postage = orderForm.postage || 0;
+    const websiteCharges = orderForm.website_charges || 0;
+    const total = itemsSubtotal + postage + websiteCharges;
+    
+    setOrderForm(prev => ({
+      ...prev,
+      subtotal: itemsSubtotal,
+      total_amount: total
+    }));
+  };
+
+  // Recalculate totals when items, postage, or website charges change
+  useEffect(() => {
+    calculateTotals();
+  }, [orderForm.items, orderForm.postage, orderForm.website_charges]);
+
+  // Handle form submission
+  const handleCreateOrder = async () => {
+    try {
+      // Validation
+      if (!orderForm.customer_name.trim()) {
+        toast.error('Customer name is required');
+        return;
+      }
+      if (!orderForm.phone_number.trim()) {
+        toast.error('Phone number is required');
+        return;
+      }
+      if (!orderForm.items?.length) {
+        toast.error('Please add at least one product or package');
+        return;
+      }
+      if (orderForm.total_amount <= 0) {
+        toast.error('Order total must be greater than 0');
+        return;
+      }
+
+      await createOrder(orderForm);
+      toast.success('Order created successfully!');
+      setIsCreateOrderOpen(false);
+      
+      // Reset form
+      setOrderForm({
+        customer_name: '',
+        phone_number: '',
+        fb_name: '',
+        email: '',
+        customer_type: 'new',
+        total_amount: 0,
+        subtotal: 0,
+        postage: 0,
+        website_charges: 0,
+        payment_method: 'cash',
+        payment_status: 'pending',
+        currency: 'MYR',
+        source: 'manual',
+        agent_name: 'Admin',
+        notes: '',
+        address: '',
+        city: '',
+        postcode: '',
+        state: '',
+        country: 'Malaysia',
+        items: []
+      });
+      setSelectedCustomer(null);
+      setCustomerSearchQuery('');
+      setSelectedItemId('');
+      setItemQuantity(1);
+      
+      // Refresh orders list
+      refresh();
+    } catch (error) {
+      console.error('Create order error:', error);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Manage and track all orders from Supabase (Normalized Schema)
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={refresh}
-                variant="outline"
-                size="sm"
-                disabled={displayLoading}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 mr-2 ${
-                    displayLoading ? "animate-spin" : ""
-                  }`}
-                />
-                Refresh
-              </Button>
-
-              <ImportButton />
-              <Button onClick={handleExport} disabled={isExporting} size="sm">
-                {isExporting ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                Export
-              </Button>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Orders Management</h1>
+          <p className="text-gray-600 mt-1">Manage and track customer orders</p>
         </div>
-
-        {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search customers, phone, tracking, order number..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              {searchQuery.length > 0 && searchQuery.length < 3 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Type at least 3 characters to search
-                </p>
-              )}
-            </div>
-
-            {/* Date Filter */}
-            <div>
-              <select
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value as any);
-                  setCurrentPage(0);
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="august">August 2024</option>
-              </select>
-            </div>
-
-            {/* Currency Filter */}
-            <div>
-              <select
-                value={currencyFilter}
-                onChange={(e) => {
-                  setCurrencyFilter(e.target.value as any);
-                  setCurrentPage(0);
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="all">All Currencies</option>
-                <option value="MYR">MYR</option>
-                <option value="SGD">SGD</option>
-              </select>
-            </div>
-
-            {/* ✅ FIXED: Status Filter with normalized schema statuses */}
-            <div>
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value as any);
-                  setCurrentPage(0);
-                }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Active Filters Display */}
-          {(dateFilter !== "all" ||
-            currencyFilter !== "all" ||
-            statusFilter !== "all" ||
-            searchQuery) && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {dateFilter !== "all" && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <Calendar className="h-3 w-3" />
-                  {dateFilter}
-                  <button
-                    onClick={() => setDateFilter("all")}
-                    className="ml-1 hover:text-blue-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {currencyFilter !== "all" && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {currencyFilter}
-                  <button
-                    onClick={() => setCurrencyFilter("all")}
-                    className="ml-1 hover:text-green-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {statusFilter !== "all" && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  {statusFilter}
-                  <button
-                    onClick={() => setStatusFilter("all")}
-                    className="ml-1 hover:text-yellow-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {searchQuery && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                  <Search className="h-3 w-3" />
-                  &quot;{searchQuery}&quot;
-                  <button
-                    onClick={clearSearch}
-                    className="ml-1 hover:text-purple-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2"
+          >
+            {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Export
+          </Button>
+          <Button
+            onClick={() => setIsCreateOrderOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Create Order
+          </Button>
         </div>
+      </div>
 
-        {/* Results Summary */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex justify-between items-center text-sm text-gray-600">
-            <div>
-              {searchQuery.length >= 3 ? (
-                <span>Search results: {searchResults.length} orders found</span>
-              ) : (
-                <span>
-                  Showing {displayOrders.length} orders
-                  {pagination &&
-                    ` (${pagination.offset + 1}-${Math.min(
-                      pagination.offset + pagination.limit,
-                      pagination.total
-                    )} of ${pagination.total})`}
-                </span>
-              )}
-            </div>
-            {!searchQuery && pagination && pagination.total > pageSize && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0}
-                >
-                  Previous
-                </Button>
-                <span className="text-xs">
-                  Page {currentPage + 1} of{" "}
-                  {Math.ceil(pagination.total / pageSize)}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={
-                    pagination.offset + pagination.limit >= pagination.total
-                  }
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search orders, customers, tracking..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </div>
+          
+          <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Date Range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">Last 7 Days</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="august">August 2024</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Orders Table */}
-        <div className="bg-white rounded-lg shadow">
-          <SupabaseOrdersTable
-            orders={displayOrders}
-            isLoading={displayLoading}
-            showPagination={false} // We handle pagination above
-          />
-        </div>
+          <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Order Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* ✅ NEW: Debug Information (Remove in production) */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mt-6 bg-gray-100 rounded-lg p-4">
-            <details>
-              <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
-                🔍 Debug Information (Development Only)
-              </summary>
-              <div className="text-xs text-gray-600 space-y-2">
-                <div>
-                  <strong>Orders Count:</strong> {displayOrders.length}
-                </div>
-                <div>
-                  <strong>Is Loading:</strong> {displayLoading ? "Yes" : "No"}
-                </div>
-                <div>
-                  <strong>Is Error:</strong> {isError ? "Yes" : "No"}
-                </div>
-                <div>
-                  <strong>Search Query:</strong> {searchQuery || "None"}
-                </div>
-                <div>
-                  <strong>Active Filters:</strong> Date: {dateFilter}, Currency:{" "}
-                  {currencyFilter}, Status: {statusFilter}
-                </div>
-                {pagination && (
-                  <div>
-                    <strong>Pagination:</strong> {pagination.offset + 1}-
-                    {Math.min(
-                      pagination.offset + pagination.limit,
-                      pagination.total
-                    )}{" "}
-                    of {pagination.total}
-                  </div>
-                )}
-                {displayOrders[0] && (
-                  <div>
-                    <strong>Sample Order Structure:</strong>
-                    <pre className="mt-1 text-xs bg-white p-2 rounded border overflow-auto max-h-40">
-                      {JSON.stringify(displayOrders[0], null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            </details>
-          </div>
-        )}
+          <Select value={currencyFilter} onValueChange={(value: any) => setCurrencyFilter(value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Currency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Currencies</SelectItem>
+              <SelectItem value="MYR">MYR</SelectItem>
+              <SelectItem value="SGD">SGD</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <SupabaseOrdersTable
+        orders={displayOrders}
+        isLoading={displayLoading}
+        showPagination={searchQuery.length < 3}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+      />
+
+      {/* Create Order Dialog with Product Selection */}
+      <div className="w-full mx-auto">
+        <CreateOrderDialog isOpen={isCreateOrderOpen} onClose={() => setIsCreateOrderOpen(false)} onSuccess={handleCreateOrder} />
       </div>
     </div>
   );

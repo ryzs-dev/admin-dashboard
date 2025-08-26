@@ -85,6 +85,8 @@ interface Props {
   orders: SupabaseOrder[];
   isLoading?: boolean;
   showPagination?: boolean;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export default function SupabaseOrdersTable({
