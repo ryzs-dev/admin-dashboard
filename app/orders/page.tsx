@@ -1,28 +1,15 @@
-// app/orders/page.tsx - Complete Orders Page with Product Selection
+// app/orders/page.tsx - Complete Integrated Orders Page
 "use client";
 
-import { useState, useEffect, Key, JSXElementConstructor, ReactElement, ReactNode, ReactPortal } from "react";
+import { useState, useEffect } from "react";
 import { 
   useSupabaseOrders, 
-  useSupabaseOrderSearch, 
-  useCreateOrder,
-  CreateOrderData,
-  OrderItem 
+  useSupabaseOrderSearch
 } from "@/hooks/useSupabase";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useActiveProducts, useActivePackages } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -30,36 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { 
   Search, 
   Download, 
   RefreshCw, 
-  Plus,
-  Minus,
-  Package,
   ShoppingCart,
-  Calculator,
-  User,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  Trash2
+  Upload
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import SupabaseOrdersTable from "@/components/dashboard/SupabaseOrdersTable";
 import { toast } from "sonner";
+import { ImportButton } from "@/components/ImportButton";
 import CreateOrderDialog from "@/components/order/CreateOrderDialog";
 
 export default function OrdersPage() {
+  // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month" | "august">("all");
   const [currencyFilter, setCurrencyFilter] = useState<"all" | "MYR" | "SGD">("all");
@@ -74,47 +46,14 @@ export default function OrdersPage() {
     | "refunded"
   >("all");
   const [currentPage, setCurrentPage] = useState(0);
-  const [isExporting, setIsExporting] = useState(false);
+  
+  // Modal states
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+  
+  // Action states
+  const [isExporting, setIsExporting] = useState(false);
 
   const pageSize = 50;
-
-  // Create Order Form State
-  const [orderForm, setOrderForm] = useState<CreateOrderData>({
-    customer_name: '',
-    phone_number: '',
-    fb_name: '',
-    email: '',
-    customer_type: 'new',
-    total_amount: 0,
-    subtotal: 0,
-    postage: 0,
-    website_charges: 0,
-    payment_method: 'cash',
-    payment_status: 'pending',
-    currency: 'MYR',
-    source: 'manual',
-    agent_name: 'Admin',
-    notes: '',
-    address: '',
-    city: '',
-    postcode: '',
-    state: '',
-    country: 'Malaysia',
-    items: []
-  });
-
-  // Product Selection States
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-  const [selectedProductType, setSelectedProductType] = useState<'product' | 'package'>('product');
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
-  const [itemQuantity, setItemQuantity] = useState(1);
-
-  // Hooks
-  const { createOrder, isCreating, error: createError, setError } = useCreateOrder();
-  const { products, isLoading: productsLoading } = useActiveProducts();
-  const { packages, isLoading: packagesLoading } = useActivePackages();
 
   // Calculate date range based on filter
   const getDateRange = () => {
@@ -154,23 +93,14 @@ export default function OrdersPage() {
   });
 
   // Search functionality
-  const { results: searchResults, isLoading: isSearching, search } = useSupabaseOrderSearch({
+  const { results: searchResults, isLoading: isSearching } = useSupabaseOrderSearch({
     q: searchQuery.length >= 3 ? searchQuery : undefined,
     limit: 50,
-  });
-
-  // Customer search for order creation
-  const { customers: searchedCustomers, isLoading: isCustomerSearchLoading } = useCustomers({
-    search: customerSearchQuery.length >= 2 ? customerSearchQuery : undefined,
-    limit: 10
   });
 
   // Use search results if searching, otherwise use filtered orders
   const displayOrders = searchQuery.length >= 3 ? searchResults : orders;
   const displayLoading = searchQuery.length >= 3 ? isSearching : isLoading;
-
-  // Get available items based on selected type
-  const availableItems = selectedProductType === 'product' ? products : packages;
 
   // Handle page navigation
   const handlePageChange = (newPage: number) => {
@@ -212,155 +142,17 @@ export default function OrdersPage() {
     }
   };
 
-  // Handle customer selection
-  const handleCustomerSelect = (customer: any) => {
-    setSelectedCustomer(customer);
-    setOrderForm(prev => ({
-      ...prev,
-      customer_name: customer.customer_name,
-      phone_number: customer.phone_number,
-      fb_name: customer.fb_name || '',
-      email: customer.email || '',
-      customer_type: customer.customer_type || 'repeat'
-    }));
-    setCustomerSearchQuery('');
+  // Handle import completion
+  const handleImportComplete = () => {
+    toast.success('Orders imported successfully!');
+    refresh(); // Refresh the orders list
   };
 
-  // Add item to order
-  const handleAddItem = () => {
-    if (!selectedItemId) {
-      toast.error('Please select a product or package');
-      return;
-    }
-
-    const item = availableItems.find((p: { id: { toString: () => string; }; }) => p.id?.toString() === selectedItemId);
-    if (!item) return;
-
-    const unitPrice = item.base_price || 0;
-    const totalPrice = unitPrice * itemQuantity;
-
-    const orderItem: OrderItem = {
-      id: `${selectedProductType}-${item.id}-${Date.now()}`,
-      type: selectedProductType,
-      item_id: item.id!,
-      item_name: selectedProductType === 'product' ? (item as any).product_name : (item as any).package_name,
-      item_code: selectedProductType === 'product' ? (item as any).product_code : (item as any).package_code,
-      quantity: itemQuantity,
-      unit_price: unitPrice,
-      total_price: totalPrice,
-    };
-
-    setOrderForm(prev => ({
-      ...prev,
-      items: [...(prev.items || []), orderItem]
-    }));
-
-    // Reset selection
-    setSelectedItemId('');
-    setItemQuantity(1);
-  };
-
-  // Remove item from order
-  const handleRemoveItem = (itemId: string) => {
-    setOrderForm(prev => ({
-      ...prev,
-      items: prev.items?.filter(item => item.id !== itemId) || []
-    }));
-  };
-
-  // Update item quantity
-  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    
-    setOrderForm(prev => ({
-      ...prev,
-      items: prev.items?.map(item => 
-        item.id === itemId 
-          ? { ...item, quantity: newQuantity, total_price: item.unit_price * newQuantity }
-          : item
-      ) || []
-    }));
-  };
-
-  // Calculate totals automatically
-  const calculateTotals = () => {
-    const items = orderForm.items || [];
-    const itemsSubtotal = items.reduce((sum, item) => sum + item.total_price, 0);
-    const postage = orderForm.postage || 0;
-    const websiteCharges = orderForm.website_charges || 0;
-    const total = itemsSubtotal + postage + websiteCharges;
-    
-    setOrderForm(prev => ({
-      ...prev,
-      subtotal: itemsSubtotal,
-      total_amount: total
-    }));
-  };
-
-  // Recalculate totals when items, postage, or website charges change
-  useEffect(() => {
-    calculateTotals();
-  }, [orderForm.items, orderForm.postage, orderForm.website_charges]);
-
-  // Handle form submission
-  const handleCreateOrder = async () => {
-    try {
-      // Validation
-      if (!orderForm.customer_name.trim()) {
-        toast.error('Customer name is required');
-        return;
-      }
-      if (!orderForm.phone_number.trim()) {
-        toast.error('Phone number is required');
-        return;
-      }
-      if (!orderForm.items?.length) {
-        toast.error('Please add at least one product or package');
-        return;
-      }
-      if (orderForm.total_amount <= 0) {
-        toast.error('Order total must be greater than 0');
-        return;
-      }
-
-      await createOrder(orderForm);
-      toast.success('Order created successfully!');
-      setIsCreateOrderOpen(false);
-      
-      // Reset form
-      setOrderForm({
-        customer_name: '',
-        phone_number: '',
-        fb_name: '',
-        email: '',
-        customer_type: 'new',
-        total_amount: 0,
-        subtotal: 0,
-        postage: 0,
-        website_charges: 0,
-        payment_method: 'cash',
-        payment_status: 'pending',
-        currency: 'MYR',
-        source: 'manual',
-        agent_name: 'Admin',
-        notes: '',
-        address: '',
-        city: '',
-        postcode: '',
-        state: '',
-        country: 'Malaysia',
-        items: []
-      });
-      setSelectedCustomer(null);
-      setCustomerSearchQuery('');
-      setSelectedItemId('');
-      setItemQuantity(1);
-      
-      // Refresh orders list
-      refresh();
-    } catch (error) {
-      console.error('Create order error:', error);
-    }
+  // Handle order creation success
+  const handleOrderCreated = () => {
+    toast.success('Order created successfully!');
+    refresh(); // Refresh the orders list
+    setIsCreateOrderOpen(false);
   };
 
   return (
@@ -372,6 +164,7 @@ export default function OrdersPage() {
           <p className="text-gray-600 mt-1">Manage and track customer orders</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Export Button */}
           <Button
             variant="outline"
             onClick={handleExport}
@@ -381,6 +174,15 @@ export default function OrdersPage() {
             {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             Export
           </Button>
+          
+          {/* Import Button */}
+          <ImportButton
+            onImportComplete={handleImportComplete}
+            variant="outline"
+            className="flex items-center gap-2"
+          />
+          
+          {/* Create Order Button */}
           <Button
             onClick={() => setIsCreateOrderOpen(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
@@ -454,10 +256,12 @@ export default function OrdersPage() {
         onPageChange={handlePageChange}
       />
 
-      {/* Create Order Dialog with Product Selection */}
-      <div className="w-full mx-auto">
-        <CreateOrderDialog isOpen={isCreateOrderOpen} onClose={() => setIsCreateOrderOpen(false)} onSuccess={handleCreateOrder} />
-      </div>
+      {/* Create Order Dialog */}
+      <CreateOrderDialog 
+        isOpen={isCreateOrderOpen} 
+        onClose={() => setIsCreateOrderOpen(false)} 
+        onSuccess={handleOrderCreated} 
+      />
     </div>
   );
 }

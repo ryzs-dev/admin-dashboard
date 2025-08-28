@@ -70,27 +70,58 @@ export default function FileImportModal({ isOpen, onClose, onImportComplete }: F
       const formData = new FormData();
       formData.append('file', fileToValidate);
 
+      console.log('Starting validation request...');
       const response = await fetch(`${API_BASE_URL}/api/import/validate`, {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Validation failed');
+        const text = await response.text();
+        console.log('Response text:', text);
+        
+        // Check if response is HTML (error page)
+        if (text.includes('<!DOCTYPE')) {
+          throw new Error(`API endpoint not found (${response.status}). Check if backend is running and import routes are configured.`);
+        }
+        
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.details || 'Validation failed');
+        } catch {
+          throw new Error(`Server error: ${response.status} - ${text.slice(0, 100)}`);
+        }
       }
 
+      console.log('Parsing JSON response...');
       const result = await response.json();
+      console.log('Validation result:', result);
+      
+      // Check if the response has the expected structure
+      if (!result.success || !result.data) {
+        throw new Error('Invalid response format from server');
+      }
+
       setValidationResult(result.data);
       
       if (result.data.validation.isValid) {
+        console.log('Validation successful, moving to preview step');
         setStep('preview');
       } else {
-        setError(`Validation failed: ${result.data.validation.errors.join(', ')}`);
+        const errorMessage = result.data.validation.errors.length > 0 
+          ? result.data.validation.errors.join(', ')
+          : 'No valid data found';
+        setError(`Validation failed: ${errorMessage}`);
         setStep('upload');
       }
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Validation failed');
+      console.error('Validation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+      setError(errorMessage);
       setStep('upload');
     } finally {
       setIsLoading(false);
@@ -349,18 +380,18 @@ export default function FileImportModal({ isOpen, onClose, onImportComplete }: F
 
               {/* Field Mapping */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-3">Field Mapping</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  {Object.entries(validationResult.fieldMapping).map(([dbField, columnIndex]) => (
-                    <div key={dbField} className="flex justify-between py-1">
-                      <span className="text-gray-600">{dbField}:</span>
-                      <span className="font-mono">
-                        {validationResult.detectedHeaders[columnIndex as number]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <h4 className="font-medium mb-3">Field Mapping</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                {Object.entries(validationResult.fieldMapping).map(([dbField, csvHeader]) => (
+                  <div key={dbField} className="flex justify-between py-1">
+                    <span className="text-gray-600">{dbField}:</span>
+                    <span className="font-mono text-green-600">
+                      {csvHeader as string}
+                    </span>
+                  </div>
+                ))}
               </div>
+            </div>
 
               {/* Warnings */}
               {validationResult.validation.warnings.length > 0 && (
@@ -378,43 +409,21 @@ export default function FileImportModal({ isOpen, onClose, onImportComplete }: F
               )}
 
               {/* Data Preview */}
-              {showPreview && validationResult.validation.preview.length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b">
-                    <h4 className="font-medium">Data Preview (First 5 rows)</h4>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-4 py-2 text-left">Row</th>
-                          <th className="px-4 py-2 text-left">Customer</th>
-                          <th className="px-4 py-2 text-left">Phone</th>
-                          <th className="px-4 py-2 text-left">Amount</th>
-                          <th className="px-4 py-2 text-left">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {validationResult.validation.preview.map((item: any, index: number) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-2">{item.rowNumber}</td>
-                            <td className="px-4 py-2">{item.transformed.customer_name || 'N/A'}</td>
-                            <td className="px-4 py-2">{item.transformed.phone_number || 'N/A'}</td>
-                            <td className="px-4 py-2">
-                              {item.transformed.currency || 'MYR'} {item.transformed.total_paid || '0.00'}
-                            </td>
-                            <td className="px-4 py-2">
-                              <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                {item.transformed.status || 'completed'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+              {validationResult.validation.preview.map((item: any, index: number) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-4 py-2">{item.rowNumber}</td>
+                  <td className="px-4 py-2">{item.transformed.customer_name || 'N/A'}</td>
+                  <td className="px-4 py-2">{item.transformed.phone_number || 'N/A'}</td>
+                  <td className="px-4 py-2">
+                    {item.transformed.currency || 'MYR'} {item.transformed.total_amount || '0.00'}
+                  </td>
+                  <td className="px-4 py-2">
+                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                      {item.transformed.status || 'completed'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
 
               {/* Import Options */}
               <div className="bg-white border rounded-lg p-4">
