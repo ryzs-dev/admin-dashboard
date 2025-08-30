@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/useSupabase.ts - Updated hooks for Supabase integration
 import useSWR from "swr";
-import { useState } from "react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -62,56 +61,6 @@ export interface Order {
   };
 }
 
-export interface OrderItem {
-  id?: string; // Temporary ID for form management
-  type: 'product' | 'package';
-  item_id: number; // Product or Package ID
-  item_name: string;
-  item_code?: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-}
-
-// ✅ NEW: Create Order Data Interface
-export interface CreateOrderData {
-  // Customer Information
-  customer_name: string;
-  phone_number: string;
-  fb_name?: string;
-  email?: string;
-  customer_type?: 'new' | 'repeat';
-  
-  // Order Information
-  total_amount: number;
-  subtotal?: number;
-  postage?: number;
-  website_charges?: number;
-  payment_method: string;
-  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
-  currency?: string;
-  source?: string;
-  agent_name?: string;
-  notes?: string;
-  remark?: string;
-  
-  // Shipping Information
-  address_line_1: string;
-  address_line_2?: string;
-  city?: string;
-  postcode?: string;
-  state?: string;
-  country?: string;
-  
-  // Tracking Information
-  tracking_number?: string;
-  courier_company?: string;
-  shipment_description?: string;
-  
-  // ✅ NEW: Order Items
-  items?: OrderItem[];
-}
-
 // Interface for order filters
 interface OrderFilters {
   startDate?: string;
@@ -159,60 +108,6 @@ export function useSupabaseOrders(filters?: OrderFilters) {
     isLoading,
     isError: error,
     refresh: mutate,
-  };
-}
-
-// ✅ NEW: Hook for creating orders
-export function useCreateOrder() {
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const createOrder = async (orderData: CreateOrderData) => {
-    setIsCreating(true);
-    setError(null);
-
-    try {
-      // Transform order items for the API
-      const transformedData = {
-        ...orderData,
-        order_items: orderData.items?.map(item => ({
-          type: item.type,
-          item_id: item.item_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }))
-      };
-
-      const response = await fetch(`${API_BASE_URL}/api/supabase/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transformedData),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.details || result.error || 'Failed to create order');
-      }
-
-      return result.data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  return {
-    createOrder,
-    isCreating,
-    error,
-    setError,
   };
 }
 
@@ -339,24 +234,6 @@ export async function insertOrderToSupabase(order: Partial<Order>) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.details || "Failed to insert order");
-  }
-
-  return response.json();
-}
-
-// ✅ NEW: Simplified create order function that matches your API structure
-export async function createOrderInSupabase(orderData: CreateOrderData) {
-  const response = await fetch(`${API_BASE_URL}/api/supabase/orders`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(orderData),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.details || errorData.error || "Failed to create order");
   }
 
   return response.json();
