@@ -63,3 +63,19 @@ export function useWhatsapp() {
     loading: isMutating,
   };
 }
+
+export function useWhatsappMessages() {
+  const { data, error, isLoading } = useSWR(
+    `${BASE_URL}/api/whatsapp/messages`,
+    fetcher,
+    {
+      refreshInterval: 3000, // auto-refresh every 3s
+    }
+  );
+
+  return {
+    data,
+    error,
+    loading: isLoading,
+  };
+}
