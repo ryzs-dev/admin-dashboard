@@ -11,13 +11,9 @@ import {
   MessageCircle,
   BarChart3,
   Settings,
-  Search,
-  Bell,
-  User,
   Menu,
   Package,
   Zap,
-  ChevronDown,
   ChevronLeft,
 } from "lucide-react";
 
@@ -35,7 +31,6 @@ interface MenuItem {
 
 export default function CRMLayout({ children }: CRMLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [notifications] = useState(3);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -44,10 +39,10 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
     { id: "customers", label: "Customers", icon: Users, href: "/customers" },
     { id: "orders", label: "Orders", icon: ShoppingBag, href: "/orders" },
     {
-      id: "conversations",
+      id: "Inbox",
       label: "Inbox",
       icon: MessageCircle,
-      href: "/conversations",
+      href: "/inbox",
     },
     { id: "campaigns", label: "Campaigns", icon: Zap, href: "/campaigns" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
@@ -154,7 +149,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
         }`}
       >
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        {/* <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-gray-800">
@@ -194,12 +189,11 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Page Content */}
         <main
-          className="p-6 overflow-auto"
-          style={{ height: "calc(100vh - 80px)" }}
+          className="h-screen"
         >
           {children}
         </main>

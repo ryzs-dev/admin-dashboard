@@ -18,10 +18,11 @@ export type TemplatePayload = {
 };
 
 export type MessageInput = {
-  to: string;
+  to?: string;
   type: "text" | "template";
   message?: string; // used only when type = "text"
   template?: TemplatePayload; // used only when type = "template"
+  conversationId?: string; // used to link message to conversation  
 };
 
 // Mutation fetcher
@@ -79,3 +80,56 @@ export function useWhatsappMessages() {
     loading: isLoading,
   };
 }
+
+export function useWhatsappConversation() {
+  const { data, error, isLoading } = useSWR(
+    `${BASE_URL}/api/whatsapp/conversations`,
+    fetcher,
+    {
+      refreshInterval: 10000, 
+    }
+  );
+
+  return {
+    data,
+    error,
+    loading: isLoading,
+  };
+}
+
+export function useWhatsappConversationMessages(conversationId: string | null) {
+  const { data, error, isLoading } = useSWR(
+    conversationId
+      ? `${BASE_URL}/api/whatsapp/conversations/${conversationId}`
+      : null, // don't fetch if no conversation selected
+    fetcher,
+    { refreshInterval: 5000 } // refresh messages more frequently
+  );
+
+  return {
+    data,
+    error,
+    loading: isLoading,
+  };
+}
+
+// Mutation fetcher for mark read
+async function markReadFetcher(url: string) {
+  const response = await axios.post(url);
+  return response.data;
+}
+
+export function useWhatsappMarkRead(conversationId: string | null) {
+  const { trigger, data, error, isMutating } = useSWRMutation(
+    conversationId ? `${BASE_URL}/api/whatsapp/conversations/${conversationId}/read` : null,
+    markReadFetcher
+  );
+
+  return {
+    markRead: trigger,
+    data,
+    error,
+    loading: isMutating,
+  };
+}
+

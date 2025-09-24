@@ -2,7 +2,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useWhatsapp, useWhatsappMessages } from "@/hooks/useWhatsapp";
+import { useWhatsapp, useWhatsappConversation, useWhatsappMessages } from "@/hooks/useWhatsapp";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -24,6 +24,7 @@ import {
 
 export default function SharedInbox() {
   const { data, error } = useWhatsappMessages();
+  const { data: convoData, error: convoError, loading } = useWhatsappConversation();
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
   >(null);
