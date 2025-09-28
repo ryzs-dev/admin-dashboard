@@ -44,15 +44,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
       icon: MessageCircle,
       href: "/inbox",
     },
-    { id: "campaigns", label: "Campaigns", icon: Zap, href: "/campaigns" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
-    { id: "packages", label: "Packages", icon: Package, href: "/packages" },
-    {
-      id: "analytics",
-      label: "Analytics",
-      icon: BarChart3,
-      href: "/analytics",
-    },
     { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
   ];
 

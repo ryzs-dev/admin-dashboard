@@ -1,35 +1,18 @@
-// hooks/useOrders.ts
-import { useEffect, useState } from "react";
-import { Order } from "@/types";
+import { createOrder, createOrderTrackingByOrderId, deleteOrder, getAllOrders, getOrderById, updateOrder } from "@/lib/api/order";
+import useSWR from "swr";
 
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const { data, error, isLoading, mutate } = useSWR("orders", () => getAllOrders());
 
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        setIsLoading(true);
-        const res = await fetch("https://bot.lunaawomencare.com/api/orders");
-        const json = await res.json();
-
-        console.log(json);
-        if (json.success) {
-          setOrders(json.data);
-        } else {
-          setIsError(true);
-        }
-      } catch (err) {
-        console.error("❌ Failed to fetch orders:", err);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchOrders();
-  }, []);
-
-  return { orders, isLoading, isError };
+  return {
+    orders: data?.orders,
+    isLoading,
+    isError: error,
+    refresh: mutate,
+    createOrder,
+    deleteOrder,
+    updateOrder,
+    getOrderById,
+    createOrderTrackingByOrderId
+  };
 }

@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
   // Optimize for production
   compress: true,
   poweredByHeader: false,
+  images: {
+    remotePatterns: [new URL('https://9728d838d473.ngrok-free.app/**'), new URL('http://localhost:3001/**')],
+  }
 };
 
 export default nextConfig;
