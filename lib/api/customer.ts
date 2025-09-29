@@ -1,3 +1,4 @@
+import { Customer, CustomerQuery } from "@/components/modules/customer/types";
 import { CustomerInput } from "@/types/customer";
 import axios from "axios";
 import { UUID } from "crypto";
@@ -12,9 +13,12 @@ const api = axios.create({
   },
 });
 
-export async function getCustomers(params?: Record<string, string | number | boolean>) {
-  const {data} = await api.get("/", { params });
-  return data;
+export async function getCustomers(params?: CustomerQuery) {
+  const res = await api.get("/", { params });
+  return res.data as {
+    data: Customer[];
+    pagination: { limit: number; offset: number; total: number };
+  };
 }
 
 export async function getCustomer(phone_number: string) {

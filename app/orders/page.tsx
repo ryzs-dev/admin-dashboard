@@ -1,53 +1,40 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Plus, RefreshCw, Package, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useOrders } from '@/hooks/useOrders';
-import { useCustomer } from '@/hooks/useCustomer';
-import OrderFormDialog from '@/components/modules/order/OrderFormDialog';
-import { Order } from '@/components/modules/order/types';
-import { UUID } from 'crypto';
-import { OrderInput } from '@/types/order';
-import OrderTable from '@/components/modules/order/OrderTable';
-import { useProducts } from '@/hooks/useProducts';
+import React, { useState } from "react";
+import { Plus, RefreshCw, Package, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useOrders } from "@/hooks/useOrders";
+import { useCustomer } from "@/hooks/useCustomer";
+import OrderFormDialog from "@/components/modules/order/OrderFormDialog";
+import { Order } from "@/components/modules/order/types";
+import { OrderInput } from "@/types/order";
+import OrderTable from "@/components/modules/order/OrderTable";
+import { useProducts } from "@/hooks/useProducts";
 
 export default function OrdersPage() {
-  const { orders, isLoading, isError, refresh, createOrder, deleteOrder, updateOrder } = useOrders();
-  const { products } = useProducts()
-  const { customers } = useCustomer();
+  const { orders, isLoading, isError, refresh, createOrder } = useOrders();
+  const { products } = useProducts();
+  const { customers } = useCustomer({ limit: 100 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const handleSubmit = async (data: OrderInput) => {
     try {
-      if (editingOrder) {
-        await updateOrder(editingOrder.id as UUID, data);
-      } else {
-        await createOrder(data);
-      }
+      await createOrder(data);
       refresh();
       setIsDialogOpen(false);
       setEditingOrder(null);
     } catch (error) {
-      console.error('Error saving order:', error);
+      console.error("Error saving order:", error);
     }
-  };
-
-  const handleEdit = (order: Order) => {
-    setEditingOrder(order);
-    setIsDialogOpen(false);
-  };
-
-  const handleDelete = async (orderId: UUID) => {
-      try {
-        await deleteOrder(orderId as UUID);
-        refresh();
-      } catch (error) {
-        console.error('Error deleting order:', error);
-      }
   };
 
   const handleNewOrder = () => {
@@ -127,8 +114,8 @@ export default function OrdersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='overflow-x-auto'>
-              <OrderTable orders={orders} onEdit={handleEdit} onDelete={handleDelete} />
+            <div className="overflow-x-auto">
+              <OrderTable orders={orders} />
             </div>
           </CardContent>
         </Card>

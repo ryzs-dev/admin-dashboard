@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import CustomerForm from "@/components/modules/customer/CustomerForm";
 import CustomerTable from "@/components/modules/customer/CustomerTable";
@@ -9,37 +9,44 @@ import { useCustomer } from "@/hooks/useCustomer";
 import { CustomerInput } from "@/types/customer";
 import { UUID } from "crypto";
 import { Plus } from "lucide-react";
-import {  useState } from "react";
-
-interface Pagination {
-  limit: number;
-  offset: number;
-  total: number;
-}
+import { useState } from "react";
 
 export default function CustomersPage() {
-  const { customers, isLoading: loading, isError, createCustomer, refresh, deleteCustomer, updateCustomer } = useCustomer();
-  const [modalState, setModalState] = useState<null | { mode: "add" | "edit" | "delete", customer?: Customer }>(null);
-  const [pagination, setPagination] = useState<Pagination>({
-    limit: 20,
-    offset: 0,
-    total: 0,
-  });
+  const limit = 25; // items per page
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  const {
+    customers,
+    pagination,
+    isLoading: loading,
+    isError,
+    createCustomer,
+    refresh,
+    deleteCustomer,
+    updateCustomer,
+  } = useCustomer({
+    limit,
+    offset: (page - 1) * limit,
+  });
+  const [modalState, setModalState] = useState<null | {
+    mode: "add" | "edit" | "delete";
+    customer?: Customer;
+  }>(null);
+
   const handleAddCustomer = async (customerData: CustomerInput) => {
     try {
       await createCustomer(customerData);
-      await refresh()
-    } catch{
+      await refresh();
+    } catch {
       // Handle error (e.g., show notification)
       // TODO: Implement toast notifications}
     } finally {
       setModalState(null);
     }
-  }
+  };
 
   const handleEditCustomer = async (customerData: CustomerInput) => {
     try {
@@ -50,8 +57,8 @@ export default function CustomersPage() {
       // TODO: Implement toast notifications
     } finally {
       setModalState(null);
-    } 
-  }
+    }
+  };
 
   const handleDeleteCustomer = async (customerId: UUID) => {
     if (!customerId) return;
@@ -64,25 +71,26 @@ export default function CustomersPage() {
     } finally {
       setModalState(null);
     }
-  }
+  };
 
   // Filter customers based on search
-  const filteredCustomers = customers?.filter((customer: Customer) => {
-    if (!search.trim()) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      customer.name?.toLowerCase().includes(searchLower) ||
-      customer.phone_number?.toLowerCase().includes(searchLower) ||
-      customer.email?.toLowerCase().includes(searchLower)
-    );
-  }) || [];
+  const filteredCustomers =
+    customers?.filter((customer: Customer) => {
+      if (!search.trim()) return true;
+      const searchLower = search.toLowerCase();
+      return (
+        customer.name?.toLowerCase().includes(searchLower) ||
+        customer.phone_number?.toLowerCase().includes(searchLower) ||
+        customer.email?.toLowerCase().includes(searchLower)
+      );
+    }) || [];
 
   // Sort filtered customers
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
     if (sortBy === "name") {
       const aName = a.name || "";
       const bName = b.name || "";
-      return sortOrder === "asc" 
+      return sortOrder === "asc"
         ? aName.localeCompare(bName)
         : bName.localeCompare(aName);
     } else {
@@ -109,11 +117,20 @@ export default function CustomersPage() {
         <div className="text-center">
           <div className="w-12 h-12 mx-auto mb-4 text-red-400">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
-          <h3 className="text-gray-900 font-medium mb-1">Error loading customers</h3>
-          <p className="text-gray-500 text-sm">Please try refreshing the page</p>
+          <h3 className="text-gray-900 font-medium mb-1">
+            Error loading customers
+          </h3>
+          <p className="text-gray-500 text-sm">
+            Please try refreshing the page
+          </p>
         </div>
       </div>
     );
@@ -127,11 +144,20 @@ export default function CustomersPage() {
             <div className="px-6 py-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 text-gray-300">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No customers found</h3>
-              <p className="text-gray-500">Start by adding your first customer to see them here</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No customers found
+              </h3>
+              <p className="text-gray-500">
+                Start by adding your first customer to see them here
+              </p>
             </div>
           </div>
         </div>
@@ -139,8 +165,8 @@ export default function CustomersPage() {
     );
   }
 
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
-  const currentPage = Math.floor(pagination.offset / pagination.limit) + 1;
+  const totalPages = pagination ? Math.ceil(pagination.total / limit) : 1;
+  const currentPage = page;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,7 +178,9 @@ export default function CustomersPage() {
             {search.trim() ? (
               <>
                 {sortedCustomers.length} of {customers.length} customers
-                {search.trim() && <span className="ml-1">matching &quot;{search}&quot;</span>}
+                {search.trim() && (
+                  <span className="ml-1">matching &quot;{search}&quot;</span>
+                )}
               </>
             ) : (
               `${customers.length} total customers`
@@ -168,45 +196,60 @@ export default function CustomersPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-md h-10 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
           />
-          <Button className="ml-4 h-10 hover:bg-gray-700" onClick={() => setModalState({ mode: "add" })}>
+          <Button
+            className="ml-4 h-10 hover:bg-gray-700"
+            onClick={() => setModalState({ mode: "add" })}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Customer
           </Button>
         </div>
 
         {/* Table */}
-        <CustomerTable 
-          sortedCustomers={sortedCustomers} 
-          search={search} 
-          sortBy={sortBy} 
-          sortOrder={sortOrder} 
+        <CustomerTable
+          sortedCustomers={sortedCustomers}
+          search={search}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
           onSortChange={(field: keyof Customer) => {
-              if (sortBy === field) {
-                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-              } else {
-                setSortBy(field as "name" | "created_at");
-                setSortOrder("asc");
-              }
-            }}
-          onEdit={(customerId) => {
-            setModalState({mode: "edit", customer: customers.find((c: { id: UUID; }) => c.id === customerId)});
+            if (sortBy === field) {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            } else {
+              setSortBy(field as "name" | "created_at");
+              setSortOrder("asc");
+            }
           }}
-          onDelete={(customerId) => setModalState({ mode: "delete", customer: customers.find((c: { id: UUID; }) => c.id === customerId)})}
+          onEdit={(customerId) => {
+            setModalState({
+              mode: "edit",
+              customer: customers.find(
+                (c: { id: UUID }) => c.id === customerId
+              ),
+            });
+          }}
+          onDelete={(customerId) =>
+            setModalState({
+              mode: "delete",
+              customer: customers.find(
+                (c: { id: UUID }) => c.id === customerId
+              ),
+            })
+          }
         />
 
         {/* Modal */}
         {modalState && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
               onClick={() => setModalState(null)}
               aria-hidden="true"
             />
-            
+
             {/* Modal Container */}
             <div className="flex min-h-full items-center justify-center p-4">
-              <div 
+              <div
                 className="relative transform overflow-hidden rounded-xl bg-white shadow-2xl transition-all w-full max-w-md"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -216,11 +259,21 @@ export default function CustomersPage() {
                   className="absolute right-4 top-4 z-10 rounded-full p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                   aria-label="Close modal"
                 >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
-                
+
                 {/* Modal Content */}
                 <div className="px-6 py-6">
                   {modalState.mode === "add" && (
@@ -241,14 +294,16 @@ export default function CustomersPage() {
                   {modalState.mode === "delete" && (
                     <CustomerForm
                       mode="delete"
-                      onSubmit={() => handleDeleteCustomer(modalState.customer?.id as UUID)}
+                      onSubmit={() =>
+                        handleDeleteCustomer(modalState.customer?.id as UUID)
+                      }
                       onCancel={() => setModalState(null)}
                     />
                   )}
                 </div>
               </div>
             </div>
-          </div> 
+          </div>
         )}
 
         {/* Pagination */}
@@ -261,17 +316,17 @@ export default function CustomersPage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setPagination(p => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))}
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Previous
               </Button>
               <Button
-                variant="outline" 
+                variant="outline"
                 size="sm"
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setPagination(p => ({ ...p, offset: Math.min(p.total - p.limit, p.offset + p.limit) }))}
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Next

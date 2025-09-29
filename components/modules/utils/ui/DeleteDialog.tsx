@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,38 +8,38 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type DeleteDialogProps = {
-  title?: string
-  description?: string
-  onConfirm: () => void | Promise<void>
-  trigger: React.ReactNode
-}
+  title?: string;
+  description?: string;
+  onConfirm: () => void | Promise<void>;
+  children: (props: { open: () => void }) => React.ReactNode;
+};
 
 export function DeleteDialog({
   title = "Are you sure?",
   description = "This action cannot be undone.",
   onConfirm,
-  trigger,
+  children,
 }: DeleteDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await onConfirm()
-      setOpen(false)
+      await onConfirm();
+      setOpen(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
-      <div onClick={() => setOpen(true)}>{trigger}</div>
+      {children({ open: () => setOpen(true) })}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
@@ -61,5 +61,5 @@ export function DeleteDialog({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
