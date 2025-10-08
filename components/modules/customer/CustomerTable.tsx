@@ -1,116 +1,249 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Customer } from "./types";
-import { ArrowDown, ArrowUp, PencilLine, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { UUID } from "crypto";
+import { Customer } from './types';
+import { ArrowUpDown, PencilLine, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UUID } from 'crypto';
+import { useRouter } from 'next/navigation';
+import { formatCurrency } from '@/lib/utils/currency';
 
 type CustomerTableProps = {
-    sortedCustomers: Customer[];
-    search: string;
-    sortBy: keyof Customer;
-    sortOrder: "asc" | "desc";
-    onSortChange: (field: keyof Customer) => void;
-    onEdit: (customerId: UUID) => void;
-    onDelete: (customerId: UUID) => void;  
-}
+  sortedCustomers: Customer[];
+  search: string;
+  sortBy: keyof Customer;
+  sortOrder: 'asc' | 'desc';
+  onSortChange: (field: keyof Customer) => void;
+  onEdit: (customerId: UUID) => void;
+  onDelete: (customerId: UUID) => void;
+};
 
-export default function CustomerTable({ sortedCustomers, search, sortBy, sortOrder, onSortChange, onEdit, onDelete }: CustomerTableProps)
-{
-    return(
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <Table >
-            <TableHeader className="bg-gray-50 ">
-              <TableRow className="border-b border-gray-200">
-                <TableHead 
-                  className="cursor-pointer text-gray-700 font-medium hover:text-gray-900 transition-colors py-4" 
-                  onClick={() => onSortChange("name")}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Name</span>
-                    {sortBy === "name" && (
-                      <span className="text-xs">{sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4"/>}</span>
+export default function CustomerTable({
+  sortedCustomers,
+  search,
+  sortBy,
+  onSortChange,
+  onEdit,
+  onDelete,
+}: CustomerTableProps) {
+  const router = useRouter();
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="overflow-auto max-h-[75vh]">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-[200px]" />
+            <col className="w-[150px]" />
+            <col className="w-[200px]" />
+            <col className="w-[80px]" />
+            <col className="w-[150px]" />
+            <col className="w-[150px]" />
+            <col className="w-[150px]" />
+            <col className="w-[120px]" />
+          </colgroup>
+          <thead className="bg-gray-50 border-b sticky top-0">
+            <tr>
+              <th
+                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
+                onClick={() => onSortChange('name')}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Name</span>
+                  {sortBy === 'name' && <ArrowUpDown className="w-3 h-3" />}
+                </div>
+              </th>
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
+                Phone
+              </th>
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
+                Email
+              </th>
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
+                Type
+              </th>
+              <th
+                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
+                onClick={() => onSortChange('total_amount_spent')}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Total Amount Spent</span>
+                  {sortBy === 'total_amount_spent' && (
+                    <ArrowUpDown className="w-3 h-3" />
+                  )}
+                </div>
+              </th>
+              <th
+                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
+                onClick={() => onSortChange('total_purchase_count')}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Purchases Count</span>
+                  {sortBy === 'total_purchase_count' && (
+                    <ArrowUpDown className="w-3 h-3" />
+                  )}
+                </div>
+              </th>
+              <th
+                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
+                onClick={() => onSortChange('last_order_date')}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Last Ordered</span>
+                  {sortBy === 'last_order_date' && (
+                    <ArrowUpDown className="w-3 h-3" />
+                  )}
+                </div>
+              </th>
+              {/* <th
+                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
+                onClick={() => onSortChange('created_at')}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Created</span>
+                  {sortBy === 'created_at' && (
+                    <ArrowUpDown className="w-3 h-3" />
+                  )}
+                </div>
+              </th> */}
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y overflow-y-auto">
+            {sortedCustomers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-12 text-center">
+                  <div className="text-gray-400">
+                    {search.trim() ? (
+                      <>
+                        <div className="w-12 h-12 mx-auto mb-3">
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium">
+                          No customers found
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Try adjusting your search terms
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 mx-auto mb-3">
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium">
+                          No customers found
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Add your first customer to get started
+                        </p>
+                      </>
                     )}
                   </div>
-                </TableHead>
-                <TableHead className="text-gray-700 font-medium py-4">Phone</TableHead>
-                <TableHead className="text-gray-700 font-medium py-4">Email</TableHead>
-                <TableHead className="text-gray-700 font-medium py-4">Type</TableHead>
-                <TableHead 
-                  className="cursor-pointer text-gray-700 font-medium hover:text-gray-900 transition-colors py-4" 
-                  onClick={() => onSortChange("created_at")}
+                </td>
+              </tr>
+            ) : (
+              sortedCustomers.map((c: Customer) => (
+                <tr
+                  key={c.id}
+                  className="hover:bg-gray-50 transition-colors"
+                  onClick={(e) => {
+                    if ((e.target as HTMLInputElement).type !== 'checkbox') {
+                      router.push(`/customers/${c.id}`);
+                    }
+                  }}
                 >
-                  <div className="flex items-center space-x-1">
-                    <span>Created</span>
-                    {sortBy === "created_at" && (
-                      <span className="text-xs">{sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4"/>}</span>
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="text-gray-700 font-medium py-4">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedCustomers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
-                    <div className="text-gray-400">
-                      {search.trim() ? (
-                        <>
-                          <div className="w-12 h-12 mx-auto mb-3">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                          </div>
-                          <p className="text-gray-600 font-medium">No customers match your search</p>
-                          <p className="text-sm mt-1">Try adjusting your search terms</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-12 h-12 mx-auto mb-3">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                          </div>
-                          <p className="text-gray-600 font-medium">No customers found</p>
-                          <p className="text-sm mt-1">Add your first customer to get started</p>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedCustomers.map((c: Customer) => (
-                <TableRow key={c.id} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0">
-                  <TableCell className="py-4">
-                    <div className="font-medium text-gray-900">{c.name}</div>
-                  </TableCell>
-                  <TableCell className="py-4 text-gray-600">{c.phone_number}</TableCell>
-                  <TableCell className="py-4 text-gray-600">{c.email || "—"}</TableCell>
-                  <TableCell className="py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full`}>
+                  <td className="p-4">
+                    <span className="text-sm font-medium text-gray-900 truncate block">
+                      {c.name}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-600 truncate block">
+                      {c.phone_number}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-600 truncate block">
+                      {c.email || '—'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       {c.repeat_customer}
                     </span>
-                  </TableCell>
-                  <TableCell className="py-4 text-gray-600">
-                    {new Date(c.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </TableCell>
-                  <TableCell className="py-4 gap-2 flex">
-                    <Button variant="outline" className="text-blue-600 hover:underline" onClick={() => onEdit(c.id)}>
-                      <PencilLine className="w-4 h-4 inline" />
-                    </Button>
-                    <Button variant="outline" className="text-red-600 hover:underline" onClick={() => onDelete(c.id)}>
-                      <Trash2 className="w-4 h-4 inline" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-    )
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-600 truncate block">
+                      {formatCurrency(c.total_amount_spent)}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-600 truncate block">
+                      {c.total_purchase_count}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-600 truncate block">
+                      {c.last_order_date}
+                    </span>
+                  </td>
+                  {/* <td className="p-4">
+                    <span className="text-sm text-gray-600">
+                      {new Date(c.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </td> */}
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => onEdit(c.id)}
+                      >
+                        <PencilLine className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => onDelete(c.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }

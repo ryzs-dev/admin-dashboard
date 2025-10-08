@@ -1,21 +1,26 @@
-import { OrderTrackingInput } from "@/components/modules/tracking/types";
-import { OrderInput } from "@/types/order";
-import axios from "axios";
-import { UUID } from "crypto";
+import { Query } from '@/components/modules/customer/types';
+import { OrderTrackingInput } from '@/components/modules/tracking/types';
+import { OrderInput } from '@/types/order';
+import { Order } from '@/components/modules/order/types';
+import axios from 'axios';
+import { UUID } from 'crypto';
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/orders`,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
-export async function getAllOrders() {
-  const { data } = await api.get("/");
-  return data;
+export async function getAllOrders(params?: Query) {
+  const res = await api.get('/', { params });
+  return res.data as {
+    orders: Order[];
+    pagination: { limit: number; offset: number; total: number };
+  };
 }
 
 export async function getOrderById(id: UUID) {
@@ -29,7 +34,7 @@ export async function getOrderByCustomerId(customer_id: UUID) {
 }
 
 export async function createOrder(order: OrderInput) {
-  const { data } = await api.post("/", order);
+  const { data } = await api.post('/', order);
   return data;
 }
 
@@ -40,6 +45,11 @@ export async function updateOrder(id: UUID, order: Partial<OrderInput>) {
 
 export async function deleteOrder(id: UUID) {
   const { data } = await api.delete(`/${id}`);
+  return data;
+}
+
+export async function bulkDeleteOrders(ids: UUID[]) {
+  const { data } = await api.delete('/bulk', { data: { ids } });
   return data;
 }
 

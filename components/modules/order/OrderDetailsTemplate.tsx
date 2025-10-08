@@ -1,41 +1,26 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  Package,
-  User,
-  MapPin,
-  Phone,
-  Mail,
-  Truck,
-  Plus,
-  Copy,
-  CopyCheck,
-  MoreHorizontalIcon,
-  PencilIcon,
-  Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useOrders, useOrderTracking } from "@/hooks/useOrders";
-import { Order } from "./types";
-import { UUID } from "crypto";
-import AddTrackingModal from "../tracking/AddTrackingDialog";
-import { OrderTracking, OrderTrackingInput } from "../tracking/types";
-import { TrackingList } from "../tracking/TrackingList";
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, MoreHorizontalIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { useOrders } from '@/hooks/useOrders';
+import { Order } from './types';
+import { UUID } from 'crypto';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import OrderFormDialog from "./OrderFormDialog";
-import { useCustomer } from "@/hooks/useCustomer";
-import { useProducts } from "@/hooks/useProducts";
-import { OrderInput } from "@/types/order";
-import { DeleteDialog } from "../utils/ui/DeleteDialog";
+} from '@/components/ui/dropdown-menu';
+import OrderFormDialog from './OrderFormDialog';
+import { useCustomer } from '@/hooks/useCustomer';
+import { useProducts } from '@/hooks/useProducts';
+import { OrderInput } from '@/types/order';
+import { DeleteDialog } from '../utils/ui/DeleteDialog';
+import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
+import CustomerCardTemplate from './customer/CustomerCardTemplate';
 
 interface OrderDetailsPageProps {
   orderId: UUID;
@@ -48,22 +33,15 @@ export default function OrderDetailsPage({
 }: OrderDetailsPageProps) {
   const { getOrderById, updateOrder, deleteOrder, refresh } = useOrders();
 
-  const { createTracking, getTracking, refreshOrderTracking } =
-    useOrderTracking(orderId);
-
   const { customers } = useCustomer({ limit: 100 });
   const { products } = useProducts();
 
   const [fetchedOrder, setFetchedOrder] = useState<Order | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [trackings, setTrackings] = useState<OrderTracking[]>([]);
+
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
-  const handleAddTracking = () => {
-    setIsDialogOpen(true);
-  };
+  console.log('Fetched Order:', fetchedOrder?.order_date);
 
   const handleSubmitOrder = async (data: OrderInput) => {
     try {
@@ -74,16 +52,7 @@ export default function OrderDetailsPage({
       setIsOrderDialogOpen(false);
       setEditingOrder(null);
     } catch (error) {
-      console.error("Error saving order:", error);
-    }
-  };
-
-  const handleSubmitTracking = async (trackingData: OrderTrackingInput) => {
-    try {
-      await createTracking(trackingData);
-      await refreshOrderTracking();
-    } catch (error) {
-      console.error("Error creating tracking:", error);
+      console.error('Error saving order:', error);
     }
   };
 
@@ -96,28 +65,11 @@ export default function OrderDetailsPage({
     fetchOrderDetails();
   }, [orderId, getOrderById]);
 
-  useEffect(() => {
-    async function fetchTrackingInfo() {
-      const { tracking_entries } = await getTracking(orderId);
-      setTrackings(tracking_entries || []);
-    }
-
-    fetchTrackingInfo();
-  }, [getTracking, orderId]);
-
   if (!fetchedOrder) {
     return <div>Loading...</div>;
   }
 
   const order = fetchedOrder;
-
-  const handleCopy = (key: string, text?: string) => () => {
-    if (text) {
-      navigator.clipboard.writeText(text);
-      setCopied(key);
-      setTimeout(() => setCopied(null), 2000); // reset after 2s
-    }
-  };
 
   const handleEdit = (order: Order) => {
     setEditingOrder(order);
@@ -130,7 +82,7 @@ export default function OrderDetailsPage({
       refresh();
       onBack();
     } catch {
-      console.error("Error deleting order");
+      console.error('Error deleting order');
     }
   };
 
@@ -154,13 +106,6 @@ export default function OrderDetailsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AddTrackingModal
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        order={order}
-        onSubmit={handleSubmitTracking}
-      />
-
       {isOrderDialogOpen && (
         <OrderFormDialog
           isOpen={isOrderDialogOpen}
@@ -190,14 +135,7 @@ export default function OrderDetailsPage({
                   Order {order.id}
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">
-                  Placed on{" "}
-                  {new Date(order.order_date).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  Placed on {order.order_date}
                 </p>
               </div>
             </div>
@@ -362,145 +300,10 @@ export default function OrderDetailsPage({
             </Card> */}
 
             {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="font-medium">{order?.customers?.name}</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <span>{order?.customers?.email}</span>
-                    </div>
-                    {copied === "email" ? (
-                      <CopyCheck className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy
-                        className="h-4 w-4 text-gray-400 hover:cursor-pointer hover:text-gray-600 transition-colors"
-                        onClick={handleCopy("email", order?.customers?.email)}
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-sm text-gray-600 w-full">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{order?.customers?.phone_number}</span>
-                    </div>
-                    {copied === "phone" ? (
-                      <CopyCheck className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy
-                        className="h-4 w-4 text-gray-400 hover:cursor-pointer hover:text-gray-600 transition-colors"
-                        onClick={handleCopy(
-                          "phone",
-                          order?.customers?.phone_number
-                        )}
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-start justify-between gap-2 text-sm text-gray-600">
-                    <div className="flex items-start gap-2">
-                      <div className="w-4 h-4">
-                        <MapPin className="h-4 w-4" />
-                      </div>
-                      {!order?.addresses?.full_address ? (
-                        <div>{" - "}</div>
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          <span>{order?.addresses?.full_address}</span>
-                          <span>{order?.addresses?.postcode}</span>
-                          <span>{order?.addresses?.country}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="w-4 h-4">
-                      {copied === "address" ? (
-                        <CopyCheck className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy
-                          className="h-4 w-4 text-gray-400 hover:cursor-pointer hover:text-gray-600 transition-colors"
-                          onClick={handleCopy(
-                            "address",
-                            order?.addresses?.full_address
-                          )}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CustomerCardTemplate order={order} />
 
             {/* Tracking */}
-            <Card id="tracking-card">
-              <CardHeader>
-                <div className="flex justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Truck className="h-5 w-5" />
-                    Shipping
-                  </CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0"
-                      >
-                        <MoreHorizontalIcon className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleAddTracking}>
-                        <Plus className="h-4 w-4" />
-                        <span>Add</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => console.log("editing tracking")}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => console.log("deleting tracking")}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Delete</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {trackings ? (
-                  <TrackingList trackings={trackings} />
-                ) : (
-                  <div className="text-center py-6">
-                    <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 mb-3">
-                      No tracking information
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAddTracking}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Tracking
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <TrackingCardTemplate orderId={orderId} />
           </div>
         </div>
       </div>

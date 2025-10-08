@@ -1,14 +1,16 @@
-import { CustomerQuery } from "@/components/modules/customer/types";
+import { Query } from '@/components/modules/customer/types';
 import {
   createCustomer,
   deleteCustomer,
+  getCustomerById,
   getCustomers,
   updateCustomer,
-} from "@/lib/api/customer";
-import useSWR from "swr";
+} from '@/lib/api/customer';
+import { UUID } from 'crypto';
+import useSWR from 'swr';
 
-export function useCustomer(params?: CustomerQuery) {
-  const { data, error, isLoading, mutate } = useSWR(["customers", params], () =>
+export function useCustomer(params?: Query) {
+  const { data, error, isLoading, mutate } = useSWR(['customers', params], () =>
     getCustomers(params)
   );
 
@@ -17,9 +19,23 @@ export function useCustomer(params?: CustomerQuery) {
     pagination: data?.pagination,
     isLoading,
     isError: error,
+    getCustomerById,
     refresh: mutate,
     createCustomer,
     deleteCustomer,
     updateCustomer,
+  };
+}
+
+export function useCustomerById(id: UUID) {
+  const { data, error, isLoading, mutate } = useSWR(['customer', id], () =>
+    getCustomerById(id)
+  );
+
+  return {
+    customer: data?.data || {},
+    isLoading,
+    isError: error,
+    refresh: mutate,
   };
 }

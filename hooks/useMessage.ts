@@ -1,15 +1,16 @@
-import { uploadFile } from '@/lib/api/import';
+import { sendMessage } from '@/lib/api/message';
+import { MessageInput } from '@/types/message';
 import useSWRMutation from 'swr/mutation';
 
-export function useImport() {
+export function useMessage() {
   const { trigger, data, error, isMutating } = useSWRMutation(
-    'import',
+    'message',
     // pass the function reference that accepts the file
-    (_key, { arg }: { arg: File }) => uploadFile(arg)
+    (key, { arg }: { arg: MessageInput }) => sendMessage(arg)
   );
 
   return {
-    importFile: trigger, // call this with a File object
+    sendMessage: trigger,
     data, // backend response
     error,
     isLoading: isMutating,

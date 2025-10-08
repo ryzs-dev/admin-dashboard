@@ -1,28 +1,37 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Plus, RefreshCw, Package, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useOrders } from "@/hooks/useOrders";
-import { useCustomer } from "@/hooks/useCustomer";
-import OrderFormDialog from "@/components/modules/order/OrderFormDialog";
-import { Order } from "@/components/modules/order/types";
-import { OrderInput } from "@/types/order";
-import OrderTable from "@/components/modules/order/OrderTable";
-import { useProducts } from "@/hooks/useProducts";
+import React, { useState } from 'react';
+import { Plus, RefreshCw, Package, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOrders } from '@/hooks/useOrders';
+import { useCustomer } from '@/hooks/useCustomer';
+import OrderFormDialog from '@/components/modules/order/OrderFormDialog';
+import { Order } from '@/components/modules/order/types';
+import { OrderInput } from '@/types/order';
+import OrderTable from '@/components/modules/order/OrderTable';
+import { useProducts } from '@/hooks/useProducts';
+import { bulkDeleteOrders } from '@/lib/api/order';
 
 export default function OrdersPage() {
-  const { orders, isLoading, isError, refresh, createOrder } = useOrders();
+  const {
+    orders,
+    pagination,
+    isLoading,
+    isError,
+    refresh,
+    createOrder,
+    updateOrder,
+  } = useOrders({
+    limit: 100,
+    offset: 0,
+    search: '',
+    sortBy: 'created_at',
+    sortOrder: 'desc',
+  });
   const { products } = useProducts();
-  const { customers } = useCustomer({ limit: 100 });
+  const { customers } = useCustomer({ limit: 1000 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
@@ -33,7 +42,7 @@ export default function OrdersPage() {
       setIsDialogOpen(false);
       setEditingOrder(null);
     } catch (error) {
-      console.error("Error saving order:", error);
+      console.error('Error saving order:', error);
     }
   };
 
@@ -65,7 +74,7 @@ export default function OrdersPage() {
     <div className="mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+          <h1 className="text-2xl font-bold mb-4">Orders</h1>
           <p className="text-muted-foreground">
             Manage your orders and track their status
           </p>
@@ -106,19 +115,17 @@ export default function OrdersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>All Orders</CardTitle>
-            <CardDescription>
-              A list of all orders in your system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <OrderTable orders={orders} />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="overflow-x-auto">
+          <OrderTable
+            orders={orders}
+            pagination={pagination}
+            bulkDeleteOrders={bulkDeleteOrders}
+            refresh={async () => {
+              await refresh();
+            }}
+            updateOrder={updateOrder}
+          />
+        </div>
       )}
     </div>
   );

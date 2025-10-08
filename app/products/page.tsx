@@ -1,26 +1,34 @@
-"use client"
+'use client';
 
-import ProductFormDialog from "@/components/modules/products/ProductFormDialog";
-import ProductTable from "@/components/modules/products/ProductTable";
-import { Product } from "@/components/modules/products/types";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useProducts } from "@/hooks/useProducts";
-import { ProductInput } from "@/types/product";
-import { UUID } from "crypto";
+import ProductFormDialog from '@/components/modules/products/ProductFormDialog';
+import ProductTable from '@/components/modules/products/ProductTable';
+import { Product } from '@/components/modules/products/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useProducts } from '@/hooks/useProducts';
+import { ProductInput } from '@/types/product';
+import { UUID } from 'crypto';
 
-import { AlertCircle, Plus, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, Plus, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ProductsPage() {
-  const { products, isLoading, isError, refresh,deleteProduct, createProduct, updateProduct } = useProducts();
+  const {
+    products,
+    isLoading,
+    isError,
+    refresh,
+    deleteProduct,
+    createProduct,
+    updateProduct,
+  } = useProducts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const handleCreate = async (productData: ProductInput) => {
     try {
-      if(editingProduct) {
+      if (editingProduct) {
         await updateProduct(editingProduct.id as UUID, productData);
       } else {
         await createProduct(productData);
@@ -31,12 +39,12 @@ export default function ProductsPage() {
     } catch (error) {
       console.error('Error creating/updating product:', error);
     }
-  }
+  };
 
-  const handleUpdate = (product:Product) => {
+  const handleUpdate = (product: Product) => {
     setEditingProduct(product);
     setIsDialogOpen(true);
-  }
+  };
 
   const handleDelete = async (productId: UUID) => {
     try {
@@ -45,12 +53,12 @@ export default function ProductsPage() {
     } catch (error) {
       console.error('Error deleting product:', error);
     }
-  }
+  };
 
   const handleNewProduct = () => {
     setEditingProduct(null);
     setIsDialogOpen(true);
-  }
+  };
 
   if (isLoading) {
     return (
@@ -71,11 +79,11 @@ export default function ProductsPage() {
     );
   }
 
-  return  (
+  return (
     <div className="mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <h1 className="text-2xl font-bold mb-4">Products</h1>
           <p className="text-muted-foreground">
             Manage your products and inventory
           </p>
@@ -89,24 +97,28 @@ export default function ProductsPage() {
       </div>
 
       <ProductFormDialog
-          isOpen={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false);
-            setEditingProduct(null);
-          }}
-          onSubmit={handleCreate}
-          initialData={editingProduct || undefined}
-        />
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setEditingProduct(null);
+        }}
+        onSubmit={handleCreate}
+        initialData={editingProduct || undefined}
+      />
 
       <Card>
         <CardContent className="flex flex-col items-center justify-center h-auto">
           {products && products.length > 0 ? (
-            <ProductTable products={products} onDelete={handleDelete} onEdit={handleUpdate} />
+            <ProductTable
+              products={products}
+              onDelete={handleDelete}
+              onEdit={handleUpdate}
+            />
           ) : (
             <div>No products found.</div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

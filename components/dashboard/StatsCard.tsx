@@ -1,31 +1,26 @@
 // components/dashboard/StatsCard.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, TrendingUp, Package } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils/currency';
+import { Users, DollarSign, TrendingUp, Package } from 'lucide-react';
 
-export interface Stats {
-  totalOrders: number;
-
-  totalRevenue: number;
-
-  avgOrderValue: number;
-
-  totalSubscribers: number;
-
-  conversionRate: number;
-
-  funnelStages: Record<number, number>;
+interface StatsCardProps {
+  total_customers: number;
+  total_revenue: number;
+  average_order_value: number;
+  mtd_revenue: number;
+  total_orders: number;
 }
 
-export const StatsCards = ({ stats }: { stats: Stats }) => {
+export const StatsCards = ({ stats }: { stats: StatsCardProps }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Total Subscribers</CardTitle>
+          <CardTitle>Total Customers</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between">
           <Users className="h-6 w-6 text-muted-foreground" />
-          <span className="text-2xl font-bold">{stats.totalSubscribers}</span>
+          <span className="text-2xl font-bold">{stats.total_customers}</span>
         </CardContent>
       </Card>
 
@@ -35,7 +30,7 @@ export const StatsCards = ({ stats }: { stats: Stats }) => {
         </CardHeader>
         <CardContent className="flex items-center justify-between">
           <Package className="h-6 w-6 text-muted-foreground" />
-          <span className="text-2xl font-bold">{stats.totalOrders}</span>
+          <span className="text-2xl font-bold">{stats.total_orders}</span>
         </CardContent>
       </Card>
 
@@ -46,7 +41,7 @@ export const StatsCards = ({ stats }: { stats: Stats }) => {
         <CardContent className="flex items-center justify-between">
           <DollarSign className="h-6 w-6 text-muted-foreground" />
           <span className="text-2xl font-bold">
-            RM {stats.totalRevenue.toFixed(2)}
+            {formatCurrency(stats.total_revenue)}
           </span>
         </CardContent>
       </Card>
@@ -58,19 +53,19 @@ export const StatsCards = ({ stats }: { stats: Stats }) => {
         <CardContent className="flex items-center justify-between">
           <DollarSign className="h-6 w-6 text-muted-foreground" />
           <span className="text-2xl font-bold">
-            RM {stats.avgOrderValue.toFixed(2)}
+            {formatCurrency(stats.average_order_value)}
           </span>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Conversion Rate</CardTitle>
+          <CardTitle>Revenue MTD</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between">
           <TrendingUp className="h-6 w-6 text-muted-foreground" />
           <span className="text-2xl font-bold">
-            {stats.conversionRate.toFixed(1)}%
+            {formatCurrency(stats.mtd_revenue)}
           </span>
         </CardContent>
       </Card>

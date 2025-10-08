@@ -1,21 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // components/layout/CRMLayout.tsx
-"use client";
+'use client';
 
-import { useState, ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useState, ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
   ShoppingBag,
   MessageCircle,
-  BarChart3,
   Settings,
   Menu,
   Package,
-  Zap,
   ChevronLeft,
-} from "lucide-react";
+  FileUp,
+} from 'lucide-react';
 
 interface CRMLayoutProps {
   children: ReactNode;
@@ -35,22 +34,29 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
   const router = useRouter();
 
   const menuItems: MenuItem[] = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/" },
-    { id: "customers", label: "Customers", icon: Users, href: "/customers" },
-    { id: "orders", label: "Orders", icon: ShoppingBag, href: "/orders" },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+    { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
     {
-      id: "Inbox",
-      label: "Inbox",
+      id: 'Inbox',
+      label: 'Inbox',
       icon: MessageCircle,
-      href: "/inbox",
+      href: '/inbox',
     },
-    { id: "products", label: "Products", icon: Package, href: "/products" },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: 'products', label: 'Products', icon: Package, href: '/products' },
+    {
+      id: 'import',
+      label: 'Import',
+      icon: FileUp,
+      href: '/import',
+      badge: 'NEW',
+    },
+    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/") {
-      return pathname === "/";
+    if (href === '/') {
+      return pathname === '/';
     }
     return pathname.startsWith(href);
   };
@@ -59,17 +65,17 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
     router.push(href);
   };
 
-  const getPageTitle = () => {
-    const currentItem = menuItems.find((item) => isActive(item.href));
-    return currentItem?.label || "Dashboard";
-  };
+  // const getPageTitle = () => {
+  //   const currentItem = menuItems.find((item) => isActive(item.href));
+  //   return currentItem?.label || "Dashboard";
+  // };
 
   return (
     <div className="h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-30 ${
-          sidebarOpen ? "w-64" : "w-20"
+          sidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
         {/* Header */}
@@ -102,15 +108,15 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
               onClick={() => handleNavigation(item.href)}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 hover:bg-blue-50 hover:border-r-2 hover:border-blue-500 group ${
                 isActive(item.href)
-                  ? "bg-blue-50 border-r-2 border-blue-500 text-blue-700"
-                  : "text-gray-600 hover:text-blue-700"
+                  ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700'
+                  : 'text-gray-600 hover:text-blue-700'
               }`}
             >
               <item.icon
                 className={`h-5 w-5 ${
                   isActive(item.href)
-                    ? "text-blue-600"
-                    : "text-gray-500 group-hover:text-blue-600"
+                    ? 'text-blue-600'
+                    : 'text-gray-500 group-hover:text-blue-600'
                 }`}
               />
               {sidebarOpen && (
@@ -119,9 +125,9 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
                   {item.badge && (
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.badge === "NEW"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"
+                        item.badge === 'NEW'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       {item.badge}
@@ -137,7 +143,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
       {/* Main Content */}
       <div
         className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? "ml-64" : "ml-20"
+          sidebarOpen ? 'ml-64' : 'ml-20'
         }`}
       >
         {/* Header */}
@@ -184,11 +190,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
         </div> */}
 
         {/* Page Content */}
-        <main
-          className="h-screen"
-        >
-          {children}
-        </main>
+        <main className="h-screen">{children}</main>
       </div>
     </div>
   );
