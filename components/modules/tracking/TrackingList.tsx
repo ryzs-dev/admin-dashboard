@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { TrackingEntryCard } from "./TrackingEntryCard";
-import { OrderTracking } from "./types";
+import { TrackingEntryCard } from './TrackingEntryCard';
+import { OrderTracking } from './types';
 
 interface TrackingListProps {
   trackings: OrderTracking[];

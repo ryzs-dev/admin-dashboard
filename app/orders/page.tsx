@@ -13,6 +13,7 @@ import { OrderInput } from '@/types/order';
 import OrderTable from '@/components/modules/order/OrderTable';
 import { useProducts } from '@/hooks/useProducts';
 import { bulkDeleteOrders } from '@/lib/api/order';
+import { useParcelDaily } from '@/hooks/useParcelDaily';
 
 export default function OrdersPage() {
   const {
@@ -34,6 +35,7 @@ export default function OrdersPage() {
   const { customers } = useCustomer({ limit: 1000 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const { createBulkParcelDailyShipments } = useParcelDaily();
 
   const handleSubmit = async (data: OrderInput) => {
     try {
@@ -120,6 +122,7 @@ export default function OrdersPage() {
             orders={orders}
             pagination={pagination}
             bulkDeleteOrders={bulkDeleteOrders}
+            createBulkParcelDailyShipments={createBulkParcelDailyShipments}
             refresh={async () => {
               await refresh();
             }}

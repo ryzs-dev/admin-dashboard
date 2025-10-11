@@ -23,6 +23,9 @@ import { DateRange } from 'react-day-picker';
 import { UUID } from 'crypto';
 import SendTrackingButton from '../utils/ui/SendTrackingButton';
 import { OrderInput } from '@/types/order';
+import { createBulkShipments } from '@/lib/utils/createBulkShipments';
+import { ShipmentInput } from '../parcel-daily/types';
+import { toast } from 'sonner';
 
 interface OrderTableProps {
   orders: Order[];
@@ -30,6 +33,9 @@ interface OrderTableProps {
   bulkDeleteOrders: (ids: UUID[]) => Promise<void>;
   refresh: () => Promise<void>;
   updateOrder: (id: UUID, updates: Partial<OrderInput>) => Promise<void>;
+  createBulkParcelDailyShipments: (
+    shipmentData: ShipmentInput[]
+  ) => Promise<void>;
 }
 
 export default function OrderTable({
@@ -37,6 +43,7 @@ export default function OrderTable({
   bulkDeleteOrders,
   refresh,
   updateOrder,
+  createBulkParcelDailyShipments,
 }: OrderTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,6 +123,31 @@ export default function OrderTable({
 
     return result;
   }, [orders, searchTerm, statusFilter, sortBy, dateRange]);
+
+  const handlePrepareShipments = async () => {
+    const selectedOrderObjects = orders.filter((order) =>
+      selectedOrders.includes(order.id)
+    );
+
+    const shipmentPayloads = selectedOrderObjects.map((order) =>
+      createBulkShipments(order)
+    );
+
+    console.log('📦 Prepared ParcelDaily Payloads:', shipmentPayloads);
+
+    try {
+      await createBulkParcelDailyShipments(shipmentPayloads);
+      setSelectedOrders([]);
+      toast.success(
+        `Successfully prepared ${selectedOrders.length} shipment${
+          selectedOrders.length > 1 ? 's' : ''
+        }`
+      );
+    } catch (error) {
+      console.error('Failed to prepare shipments:', error);
+      toast.error('Failed to prepare shipments');
+    }
+  };
 
   const handleBulkDelete = async () => {
     if (selectedOrders.length === 0) return;
@@ -502,6 +534,15 @@ export default function OrderTable({
                               Delete
                             </>
                           )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handlePrepareShipments}
+                          disabled={isBulkDeleting}
+                          className="hover:bg-red-100 text-red-700 hover:text-red-800"
+                        >
+                          Prepare Shipments
                         </Button>
                       </>
                     )}

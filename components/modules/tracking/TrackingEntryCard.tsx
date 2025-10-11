@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Package, Calendar, Hash, RefreshCcw } from "lucide-react";
-import { OrderTracking } from "./types";
-import { formatDateUTC8 } from "@/lib/utils/date";
+import { Package, Calendar, Hash, RefreshCcw } from 'lucide-react';
+import { OrderTracking } from './types';
+import { formatDateUTC8 } from '@/lib/utils/date';
 
 interface TrackingEntryCardProps {
   tracking: OrderTracking;
