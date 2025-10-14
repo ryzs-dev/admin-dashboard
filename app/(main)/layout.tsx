@@ -1,7 +1,7 @@
-// app/layout.tsx - Updated Root Layout
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import './globals.css';
+import '../globals.css';
+import CRMLayout from '@/components/layout/CRMLayout';
 import { Toaster } from 'sonner';
 
 const geistSans = Geist({
@@ -33,13 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-        <Toaster />
-      </body>
-    </html>
+    <main className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <CRMLayout>{children}</CRMLayout>
+      <Toaster />
+    </main>
   );
 }

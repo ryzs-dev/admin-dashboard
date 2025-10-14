@@ -34,7 +34,12 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
   const router = useRouter();
 
   const menuItems: MenuItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      href: '/dashboard',
+    },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
     {

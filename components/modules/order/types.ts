@@ -1,6 +1,6 @@
-import { UUID } from "crypto";
-import { Address, Customer } from "../customer/types";
-import { OrderTracking } from "../tracking/types";
+import { UUID } from 'crypto';
+import { Address, Customer } from '../customer/types';
+import { OrderTracking } from '../tracking/types';
 
 export interface Order {
   id: UUID;
@@ -8,13 +8,14 @@ export interface Order {
   addresses?: Address;
   customers?: Customer;
   order_date: string;
-  status: "unpaid" | "paid" | "refunded";
+  status: 'unpaid' | 'paid' | 'refunded';
   total_amount: number;
   payment_method: string;
   order_items: OrderItems[];
   order_tracking?: OrderTracking[];
   created_at: string;
   updated_at: string;
+  shipment_description?: string;
 }
 
 export interface OrderItems {

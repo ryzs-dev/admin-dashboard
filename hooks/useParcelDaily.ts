@@ -2,7 +2,6 @@ import {
   createBulkParcelDailyShipments,
   createParcelDailyShipment,
   getParcelDailyAccountInfo,
-  getParcelDailyOrderDetails,
 } from '@/lib/api/parcel-daily';
 import useSWR from 'swr';
 
@@ -16,7 +15,6 @@ export function useParcelDaily() {
     isError: error,
     refresh: mutate,
     createParcelDailyShipment,
-    getParcelDailyOrderDetails,
     createBulkParcelDailyShipments,
   };
 }

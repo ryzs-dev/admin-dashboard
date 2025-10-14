@@ -100,24 +100,6 @@ export default function OrderDetailsPage({
     }
   };
 
-  // const getStatusColor = (status: string) => {
-  //   switch (status) {
-  //     case 'cancelled': return 'destructive';
-  //     case 'refunded': return 'outline';
-  //     case 'completed': return 'default';
-  //     default: return 'secondary';
-  //   }
-  // };
-
-  // const getStatusDotColor = (status: string) => {
-  //   switch (status) {
-  //     case 'completed': return 'bg-green-500';
-  //     case 'cancelled': return 'bg-red-500';
-  //     case 'refunded': return 'bg-blue-500';
-  //     default: return 'bg-gray-400';
-  //   }
-  // };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {isOrderDialogOpen && (
@@ -280,56 +262,10 @@ export default function OrderDetailsPage({
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Order Timeline */}
-              {/* <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Order Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {order.timeline.map((event, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className={`w-3 h-3 rounded-full mt-0.5 ${getStatusDotColor(event.status)}`} />
-                      <div className="flex-1">
-                        <p className="font-medium">{event.action}</p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(event.date).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card> */}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Actions */}
-              {/* <Card>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <Button className="w-full" onClick={onEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Order
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print Invoice
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Receipt
-                  </Button>
-                </div>
-              </CardContent>
-            </Card> */}
-
               {/* Customer Information */}
               <CustomerCardTemplate order={order} />
 

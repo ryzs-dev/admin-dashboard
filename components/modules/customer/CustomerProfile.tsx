@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit2, Save, X } from 'lucide-react';
 import {
   Card,
@@ -30,20 +30,52 @@ import { useCustomerById } from '@/hooks/useCustomer';
 import { Order } from '../order/types';
 import CustomerStatsCard from './CustomerStatsCard';
 import { formatCurrency } from '@/lib/utils/currency';
+import { CustomerInput } from '@/types/customer';
+import { toast } from 'sonner';
 
 interface CustomerProfileProps {
   customer_id: UUID;
+  update?: (id: UUID, data: Partial<CustomerInput>) => Promise<void>;
 }
 
-export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
+export default function CustomerProfile({
+  customer_id,
+  update,
+}: CustomerProfileProps) {
   const { customer } = useCustomerById(customer_id);
 
   const [isEditing, setIsEditing] = useState(false);
 
-  const [editForm, setEditForm] = useState(customer);
+  const [editForm, setEditForm] = useState<CustomerInput>({
+    name: '',
+    phone_number: '',
+    email: '',
+    fb_name: '',
+    repeat_customer: 'new',
+  });
 
-  const handleSave = () => {
-    setIsEditing(false);
+  useEffect(() => {
+    if (customer) setEditForm(customer);
+  }, [customer]);
+
+  const handleSave = async () => {
+    const updateData: Partial<CustomerInput> = {
+      fb_name: editForm.fb_name,
+      name: editForm.name,
+      phone_number: editForm.phone_number,
+      email: editForm.email,
+      repeat_customer: editForm.repeat_customer,
+    };
+
+    try {
+      await update?.(customer_id, updateData);
+      toast.success('Customer updated successfully');
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error('Failed to update customer');
+    } finally {
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {
@@ -58,6 +90,9 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
       day: 'numeric',
     });
   };
+
+  // ✅ Prevent rendering before data exists
+  if (!customer) return <div className="p-6 text-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -81,6 +116,7 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
+
         <div className="flex flex-row gap-4">
           <div className="w-full gap-4 flex flex-col">
             {/* Header Card */}
@@ -129,7 +165,7 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
               </CardHeader>
             </Card>
 
-            {/* Customer Information */}
+            {/* Contact Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Contact Information</CardTitle>
@@ -141,7 +177,7 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
                     {isEditing ? (
                       <Input
                         id="name"
-                        value={editForm.name}
+                        value={editForm.name || ''}
                         onChange={(e) =>
                           setEditForm({ ...editForm, name: e.target.value })
                         }
@@ -157,7 +193,7 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
                       <Input
                         id="phone"
                         type="tel"
-                        value={editForm.phone_number}
+                        value={editForm.phone_number || ''}
                         onChange={(e) =>
                           setEditForm({
                             ...editForm,
@@ -211,7 +247,7 @@ export default function CustomerProfile({ customer_id }: CustomerProfileProps) {
                     <Label htmlFor="status">Customer Status</Label>
                     {isEditing ? (
                       <Select
-                        value={editForm.repeat_customer}
+                        value={editForm.repeat_customer || 'new'}
                         onValueChange={(value) =>
                           setEditForm({
                             ...editForm,

@@ -14,12 +14,19 @@ import { toast } from 'sonner';
 import { Order } from '../order/types';
 import { ShipmentInput } from './types';
 import { Label } from '@/components/ui/label';
-import { DollarSign, MapPin, Package, Truck } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { MapPin, Package2, Banknote, User } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { COURIER_SERVICES } from './constants';
 import { Switch } from '@/components/ui/switch';
 import { UUID } from 'crypto';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 interface CreateShipmentDialogProps {
   order: Order;
@@ -43,6 +50,9 @@ export default function CreateShipmentDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [codEnabled, setCodEnabled] = useState(false);
   const [cod, setCod] = useState<number | undefined>(contentValue);
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'dropoff'>(
+    'pickup'
+  );
 
   const country = order.addresses?.country;
 
@@ -76,18 +86,17 @@ export default function CreateShipmentDialog({
         country:
           order.addresses?.country === 'Singapore' ? 'Singapore' : 'Malaysia',
       },
-      kg: 0.5, // fixed
-      price: 0, // backend can calculate or you can pass if available
+      kg: 0.5,
+      price: 0,
       cod: codEnabled ? cod : undefined,
-      content: 'Feminine Products',
+      content: order.shipment_description || '',
       content_value: contentValue,
-      isDropoff: false,
+      isDropoff: deliveryType === 'dropoff',
     };
 
     try {
       await createParcelDailyShipment?.(payload, order.id);
       toast.success(`Shipment created`);
-      //   onSuccess?.(data.tracking_number);
       onClose();
     } catch (err) {
       console.error(err);
@@ -99,141 +108,220 @@ export default function CreateShipmentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
-            Create Shipment
+            Create New Shipment
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Courier Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Courier Service</Label>
-            </div>
-            <RadioGroup
-              value={selectedCourier}
-              onValueChange={setSelectedCourier}
-            >
-              <div className="grid gap-3">
-                {availableCouriers.map((courier) => (
-                  <div
-                    key={courier.value}
-                    className="flex items-center space-x-3"
-                  >
-                    <RadioGroupItem value={courier.value} id={courier.value} />
-                    <Label
-                      htmlFor={courier.value}
-                      className="flex items-center gap-2 cursor-pointer text-base font-normal"
-                    >
-                      <span className="text-xl">{courier.icon}</span>
-                      {courier.label}
-                    </Label>
-                  </div>
-                ))}
+        <div className="space-y-6 py-2">
+          {/* Recipient Information Card */}
+          <div className="rounded-lg border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="w-4 h-4 text-primary" />
               </div>
-            </RadioGroup>
-          </div>
-
-          <Separator />
-
-          {/* Recipient Info */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Delivery Details</Label>
+              <h3 className="font-semibold">Recipient Information</h3>
             </div>
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Recipient</p>
+                <p className="text-xs text-muted-foreground mb-1.5">Name</p>
                 <p className="font-medium">{order.customers?.name}</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Address</p>
-                <p className="text-sm leading-relaxed">
-                  {order.addresses?.full_address}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">
+                  Phone Number
                 </p>
-                <p className="text-sm leading-relaxed">
-                  {order.addresses?.postcode} {order.addresses?.country}
+                <p className="font-medium">{order.customers?.phone_number}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Email</p>
+                <p className="font-medium text-sm">
+                  {order.customers?.email || '-'}
                 </p>
               </div>
             </div>
           </div>
 
-          <Separator />
-
-          {/* Package Info */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Package Information</Label>
+          {/* Delivery Address Card */}
+          <div className="rounded-lg border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-primary" />
+              </div>
+              <h3 className="font-semibold">Delivery Address</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground">Content</p>
-                <p className="font-medium">Feminine Products</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Weight</p>
-                <p className="font-medium">0.5 kg</p>
-              </div>
+            <div className="space-y-2">
+              <p className="text-sm leading-relaxed">
+                {order.addresses?.full_address}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {order.addresses?.postcode} {order.addresses?.city},{' '}
+                {order.addresses?.state}
+              </p>
+              <p className="text-sm font-medium">{order.addresses?.country}</p>
             </div>
           </div>
 
-          <Separator />
+          {/* Shipment Configuration */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Left: Courier & Delivery */}
+            <div className="space-y-5 flex">
+              <div className="rounded-lg border bg-card p-5 space-y-4 w-full">
+                <h3 className="font-semibold text-sm">Courier Selection</h3>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Choose Courier
+                  </Label>
+                  <Select
+                    value={selectedCourier}
+                    onValueChange={setSelectedCourier}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select courier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCouriers.map((courier) => (
+                        <SelectItem key={courier.value} value={courier.value}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{courier.icon}</span>
+                            <span>{courier.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          {/* COD Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-muted-foreground" />
-                <Label
-                  htmlFor="cod-toggle"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Cash on Delivery (COD)
-                </Label>
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label className="text-xs text-muted-foreground">
+                    Delivery Method
+                  </Label>
+                  <RadioGroup
+                    value={deliveryType}
+                    onValueChange={(value: 'pickup' | 'dropoff') =>
+                      setDeliveryType(value)
+                    }
+                  >
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="pickup"
+                        className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-colors ${
+                          deliveryType === 'pickup'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border'
+                        }`}
+                      >
+                        <RadioGroupItem value="pickup" id="pickup" />
+                        <div>
+                          <div className="font-medium text-sm">
+                            Pickup Service
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Courier collects from you
+                          </div>
+                        </div>
+                      </label>
+                      <label
+                        htmlFor="dropoff"
+                        className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-colors ${
+                          deliveryType === 'dropoff'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border'
+                        }`}
+                      >
+                        <RadioGroupItem value="dropoff" id="dropoff" />
+                        <div>
+                          <div className="font-medium text-sm">Drop-off</div>
+                          <div className="text-xs text-muted-foreground">
+                            You drop at courier location
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  </RadioGroup>
+                </div>
               </div>
-              <Switch
-                id="cod-toggle"
-                checked={codEnabled}
-                onCheckedChange={setCodEnabled}
-              />
             </div>
 
-            {codEnabled && (
-              <div className="space-y-2">
-                <Label htmlFor="cod-amount" className="text-sm">
-                  COD Amount
-                </Label>
-                <Input
-                  id="cod-amount"
-                  type="number"
-                  value={cod}
-                  onChange={(e) => setCod(Number(e.target.value))}
-                  placeholder="Enter amount"
-                  className="text-base"
-                />
+            {/* Right: Package & Payment */}
+            <div className="space-y-5 flex flex-col">
+              <div className="rounded-lg border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Package2 className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-sm">Package Details</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-sm text-muted-foreground">
+                      Shipment Description
+                    </span>
+                    <span className="text-sm font-medium">
+                      {order.shipment_description || '-'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-muted-foreground">Value</span>
+                    <span className="text-sm font-medium">
+                      RM {contentValue}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
+
+              <div className="rounded-lg border bg-card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm">Cash on Delivery</h3>
+                  </div>
+                  <Switch
+                    id="cod-toggle"
+                    checked={codEnabled}
+                    onCheckedChange={setCodEnabled}
+                  />
+                </div>
+
+                {codEnabled && (
+                  <div className="space-y-2 pt-2">
+                    <Label
+                      htmlFor="cod-amount"
+                      className="text-xs text-muted-foreground"
+                    >
+                      Collection Amount
+                    </Label>
+                    <Input
+                      id="cod-amount"
+                      type="number"
+                      value={cod}
+                      onChange={(e) => setCod(Number(e.target.value))}
+                      placeholder="0.00"
+                      className="h-11"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 pt-4">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="min-w-24"
           >
             Cancel
           </Button>
           <Button
             onClick={handleCreateShipment}
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="min-w-32"
           >
             {isLoading ? 'Creating...' : 'Create Shipment'}
           </Button>

@@ -33,8 +33,3 @@ export async function createBulkParcelDailyShipments(
   });
   return data;
 }
-
-export async function getParcelDailyOrderDetails(orderId: UUID) {
-  const { data } = await api.get(`/order/${orderId}`);
-  return data;
-}
