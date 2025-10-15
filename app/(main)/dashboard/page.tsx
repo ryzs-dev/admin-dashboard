@@ -45,13 +45,6 @@ const CRMDashboard = () => {
       <div className="w-full mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-500 mt-1">
-              Welcome back, here&apos;s an overview of your business
-              performance.
-            </p>
-          </div>
           <div className="flex gap-3">
             <Button variant="outline" size="sm">
               <Calendar className="h-4 w-4 mr-2" />

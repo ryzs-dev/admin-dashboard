@@ -133,8 +133,6 @@ export default function OrderTable({
       createBulkShipments(order)
     );
 
-    console.log('📦 Prepared ParcelDaily Payloads:', shipmentPayloads);
-
     try {
       await createBulkParcelDailyShipments(shipmentPayloads);
       setSelectedOrders([]);
@@ -277,7 +275,7 @@ export default function OrderTable({
       </div>
 
       {/* Table Card */}
-      <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="border rounded-lg overflow-hidden">
         <div className="overflow-auto max-h-[600px]">
           <table className="w-full table-fixed">
             <colgroup>

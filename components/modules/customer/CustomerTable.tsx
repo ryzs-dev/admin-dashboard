@@ -1,6 +1,5 @@
 import { Customer } from './types';
-import { ArrowUpDown, PencilLine, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowUpDown } from 'lucide-react';
 import { UUID } from 'crypto';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -20,8 +19,6 @@ export default function CustomerTable({
   search,
   sortBy,
   onSortChange,
-  onEdit,
-  onDelete,
 }: CustomerTableProps) {
   const router = useRouter();
 
@@ -37,7 +34,6 @@ export default function CustomerTable({
             <col className="w-[150px]" />
             <col className="w-[150px]" />
             <col className="w-[150px]" />
-            <col className="w-[120px]" />
           </colgroup>
           <thead className="bg-gray-50 border-b sticky top-0">
             <tr>
@@ -103,9 +99,6 @@ export default function CustomerTable({
                   )}
                 </div>
               </th> */}
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y overflow-y-auto">
@@ -218,26 +211,6 @@ export default function CustomerTable({
                       })}
                     </span>
                   </td> */}
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => onEdit(c.id)}
-                      >
-                        <PencilLine className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => onDelete(c.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
                 </tr>
               ))
             )}

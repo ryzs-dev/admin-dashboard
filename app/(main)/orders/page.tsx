@@ -74,20 +74,14 @@ export default function OrdersPage() {
 
   return (
     <div className="mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-4">Orders</h1>
-          <p className="text-muted-foreground">
-            Manage your orders and track their status
-          </p>
-        </div>
+      {/* <div className="flex items-center justify-between mb-6">
         <div className="flex gap-2">
           <Button onClick={handleNewOrder}>
             <Plus className="h-4 w-4 mr-2" />
             New Order
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Order Form Dialog */}
       <OrderFormDialog

@@ -1,20 +1,47 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// components/layout/CRMLayout.tsx
 'use client';
 
-import { useState, ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
   ShoppingBag,
   MessageCircle,
   Settings,
-  Menu,
   Package,
-  ChevronLeft,
   FileUp,
+  Bell,
+  LogOut,
+  ChevronDown,
 } from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
+import { useAuth } from '@/providers/auth-providers';
 
 interface CRMLayoutProps {
   children: ReactNode;
@@ -23,15 +50,16 @@ interface CRMLayoutProps {
 interface MenuItem {
   id: string;
   label: string;
-  icon: any;
+  icon: typeof LayoutDashboard;
   href: string;
   badge?: string | number;
 }
 
-export default function CRMLayout({ children }: CRMLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+function CRMSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, signOut } = useAuth();
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   const menuItems: MenuItem[] = [
     {
@@ -43,10 +71,11 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
     {
-      id: 'Inbox',
+      id: 'inbox',
       label: 'Inbox',
       icon: MessageCircle,
       href: '/inbox',
+      badge: 3,
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
     {
@@ -60,143 +89,256 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
   ];
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
+    if (href === '/dashboard') {
+      return pathname === '/dashboard';
     }
     return pathname.startsWith(href);
   };
 
-  const handleNavigation = (href: string) => {
-    router.push(href);
+  const getInitials = (email: string) => {
+    return email.split('@')[0].slice(0, 2).toUpperCase();
   };
 
-  // const getPageTitle = () => {
-  //   const currentItem = menuItems.find((item) => isActive(item.href));
-  //   return currentItem?.label || "Dashboard";
-  // };
-
   return (
-    <div className="h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-30 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        }`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          {sidebarOpen && (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span className="font-bold text-xl text-gray-800">LUNAA CRM</span>
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-2 py-1">
+          <div className="flex h-4 w-4 items-center justify-center rounded-lg border border-black shrink-0">
+            <span className="text-sm font-bold text-black">L</span>
+          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-lg font-bold">LUNAA CRM</span>
             </div>
           )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            {sidebarOpen ? (
-              <ChevronLeft className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
         </div>
+      </SidebarHeader>
 
-        {/* Navigation */}
-        <nav className="mt-6">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.href)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 hover:bg-blue-50 hover:border-r-2 hover:border-blue-500 group ${
-                isActive(item.href)
-                  ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700'
-                  : 'text-gray-600 hover:text-blue-700'
-              }`}
-            >
-              <item.icon
-                className={`h-5 w-5 ${
-                  isActive(item.href)
-                    ? 'text-blue-600'
-                    : 'text-gray-500 group-hover:text-blue-600'
-                }`}
-              />
-              {sidebarOpen && (
-                <>
-                  <span className="flex-1 font-medium">{item.label}</span>
-                  {item.badge && (
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.badge === 'NEW'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
+      <Separator className="my-2" />
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.href)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                      {item.badge && !isCollapsed && (
+                        <Badge
+                          variant={
+                            item.badge === 'NEW' ? 'default' : 'secondary'
+                          }
+                          className="ml-auto"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent h-16">
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src="" alt={user?.email || 'User'} />
+                    <AvatarFallback>
+                      {user?.email ? getInitials(user.email) : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <>
+                      <div className="flex flex-col text-left text-sm">
+                        <span className="truncate font-medium">
+                          {user?.email?.split('@')[0] || 'User'}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {user?.email || 'user@example.com'}
+                        </span>
+                      </div>
+                      <ChevronDown className="ml-auto h-4 w-4" />
+                    </>
                   )}
-                </>
-              )}
-            </button>
-          ))}
-        </nav>
-      </div>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {/* <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuSeparator /> */}
+                <DropdownMenuItem onClick={signOut} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
 
-      {/* Main Content */}
-      <div
-        className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? 'ml-64' : 'ml-20'
-        }`}
-      >
-        {/* Header */}
-        {/* <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {getPageTitle()}
-              </h1>
-              <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-3 py-2">
-                <Search className="h-4 w-4 text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search customers, orders, products..."
-                  className="bg-transparent text-sm text-gray-600 placeholder-gray-400 border-none outline-none w-80"
-                />
-              </div>
+export default function CRMLayout({ children }: CRMLayoutProps) {
+  const pathName = usePathname();
+  // Capitalize the header for better readability
+  const header = pathName
+    .trimStart()
+    .split('/')[1]
+    ?.replace(/^\w/, (c) => c.toUpperCase());
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <CRMSidebar />
+
+        {/* Main Content Area */}
+        <div className="flex flex-1 flex-col">
+          {/* Header */}
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+            {/* Search Bar */}
+            <SidebarTrigger className="shrink-0" />
+            <div className="flex-1">
+              <h1 className="text-lg font-bold text-gray-800">{header}</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="h-5 w-5" />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {notifications}
-                  </span>
-                )}
-              </button>
+            {/* Header Actions */}
+            <div className="flex items-center gap-2">
+              {/* Notifications */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+                      3
+                    </span>
+                    <span className="sr-only">Notifications</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="flex flex-col gap-2 p-2">
+                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+                      <p className="font-medium">New order received</p>
+                      <p className="text-muted-foreground">
+                        Order #1234 from John Doe
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        2 minutes ago
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+                      <p className="font-medium">Customer inquiry</p>
+                      <p className="text-muted-foreground">
+                        New message in inbox
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        1 hour ago
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+                      <p className="font-medium">Low stock alert</p>
+                      <p className="text-muted-foreground">
+                        Product XYZ is running low
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        3 hours ago
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="justify-center">
+                    View all notifications
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-800">
-                    Admin User
-                  </p>
-                  <p className="text-xs text-gray-500">admin@lunaa.com</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              </div>
+              {/* User Menu */}
+              {/* <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 gap-2 px-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="" alt={user?.email || 'User'} />
+                      <AvatarFallback>
+                        {user?.email ? getInitials(user.email) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden flex-col items-start text-left text-sm md:flex">
+                      <span className="font-medium">
+                        {user?.email?.split('@')[0] || 'User'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Admin
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">
+                        {user?.email?.split('@')[0] || 'User'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email || 'user@example.com'}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {}} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu> */}
             </div>
-          </div>
-        </div> */}
+          </header>
 
-        {/* Page Content */}
-        <main className="h-screen">{children}</main>
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

@@ -29,13 +29,8 @@ export default function CustomersPage() {
   return (
     <div className="max-h-screen bg-gray-50 flex">
       <div className="w-full mx-auto p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Customers</h1>
-        </div>
-
         {/* Search and Filters */}
-        <div className="mb-6 flex gap-3">
+        <div className="mb-6 flex justify-between gap-3">
           <Input
             placeholder="Search by name or phone..."
             value={search}

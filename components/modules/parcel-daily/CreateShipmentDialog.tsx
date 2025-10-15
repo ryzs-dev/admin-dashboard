@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { Order } from '../order/types';
 import { ShipmentInput } from './types';
 import { Label } from '@/components/ui/label';
-import { MapPin, Package2, Banknote, User } from 'lucide-react';
+import { MapPin, Package2, Banknote, User, Truck } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { COURIER_SERVICES } from './constants';
 import { Switch } from '@/components/ui/switch';
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import Image from 'next/image';
 
 interface CreateShipmentDialogProps {
   order: Order;
@@ -119,9 +120,8 @@ export default function CreateShipmentDialog({
           {/* Recipient Information Card */}
           <div className="rounded-lg border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-4 h-4 text-primary" />
-              </div>
+              <User className="w-4 h-4 text-primary" />
+
               <h3 className="font-semibold">Recipient Information</h3>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -147,9 +147,8 @@ export default function CreateShipmentDialog({
           {/* Delivery Address Card */}
           <div className="rounded-lg border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-primary" />
-              </div>
+              <MapPin className="w-4 h-4 text-primary" />
+
               <h3 className="font-semibold">Delivery Address</h3>
             </div>
             <div className="space-y-2">
@@ -169,7 +168,10 @@ export default function CreateShipmentDialog({
             {/* Left: Courier & Delivery */}
             <div className="space-y-5 flex">
               <div className="rounded-lg border bg-card p-5 space-y-4 w-full">
-                <h3 className="font-semibold text-sm">Courier Selection</h3>
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-sm">Courier Selection</h3>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
                     Choose Courier
@@ -178,14 +180,22 @@ export default function CreateShipmentDialog({
                     value={selectedCourier}
                     onValueChange={setSelectedCourier}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="w-full p-2 ">
                       <SelectValue placeholder="Select courier" />
                     </SelectTrigger>
                     <SelectContent>
                       {availableCouriers.map((courier) => (
                         <SelectItem key={courier.value} value={courier.value}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{courier.icon}</span>
+                          <div className="flex items-center gap-4">
+                            <Image
+                              src={courier.logo}
+                              alt={courier.label}
+                              width={64}
+                              height={64}
+                              className="rounded-sm"
+                            />
+
+                            {/* <span className="text-lg">{courier.logo}</span> */}
                             <span>{courier.label}</span>
                           </div>
                         </SelectItem>
@@ -217,12 +227,7 @@ export default function CreateShipmentDialog({
                       >
                         <RadioGroupItem value="pickup" id="pickup" />
                         <div>
-                          <div className="font-medium text-sm">
-                            Pickup Service
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Courier collects from you
-                          </div>
+                          <div className="font-medium text-sm">Pick Up</div>
                         </div>
                       </label>
                       <label
@@ -236,9 +241,6 @@ export default function CreateShipmentDialog({
                         <RadioGroupItem value="dropoff" id="dropoff" />
                         <div>
                           <div className="font-medium text-sm">Drop-off</div>
-                          <div className="text-xs text-muted-foreground">
-                            You drop at courier location
-                          </div>
                         </div>
                       </label>
                     </div>

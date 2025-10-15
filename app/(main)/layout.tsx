@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import '../globals.css';
 import CRMLayout from '@/components/layout/CRMLayout';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/providers/auth-providers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,15 +28,19 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <main className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <CRMLayout>{children}</CRMLayout>
-      <Toaster />
-    </main>
+    <AuthProvider>
+      <main
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <CRMLayout>{children}</CRMLayout>
+        <Toaster />
+      </main>
+    </AuthProvider>
   );
 }
