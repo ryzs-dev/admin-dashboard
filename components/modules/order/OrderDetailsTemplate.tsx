@@ -44,7 +44,7 @@ export default function OrderDetailsPage({
 }: OrderDetailsPageProps) {
   const { createParcelDailyShipment } = useParcelDaily();
 
-  const { getOrderById, updateOrder, deleteOrder } = useOrders();
+  const { fetchOrderById, updateOrder, deleteOrder } = useOrders();
 
   const { customers } = useCustomer({ limit: 100 });
   const { products } = useProducts();
@@ -73,12 +73,12 @@ export default function OrderDetailsPage({
 
   useEffect(() => {
     async function fetchOrderDetails() {
-      const { order } = await getOrderById(orderId);
+      const { order } = await fetchOrderById(orderId);
       setFetchedOrder(order);
     }
 
     fetchOrderDetails();
-  }, [orderId, getOrderById]);
+  }, [orderId, fetchOrderById]);
 
   if (!fetchedOrder) {
     return <div>Loading...</div>;
@@ -100,6 +100,8 @@ export default function OrderDetailsPage({
     }
   };
 
+  if (!fetchedOrder) return <div>Loading...</div>;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {isOrderDialogOpen && (
@@ -113,20 +115,13 @@ export default function OrderDetailsPage({
         />
       )}
 
-      {isCreateShipmentOpen && (
-        <CreateShipmentDialog
-          isOpen={isCreateShipmentOpen}
-          onClose={() => setIsCreateShipmentOpen(false)}
-          order={order}
-          contentValue={order.total_amount}
-          createParcelDailyShipment={createParcelDailyShipment}
-          onSuccess={(trackingNumber) => {
-            setFetchedOrder((prev) =>
-              prev ? { ...prev, tracking_number: trackingNumber } : prev
-            );
-          }}
-        />
-      )}
+      <CreateShipmentDialog
+        isOpen={isCreateShipmentOpen}
+        onClose={() => setIsCreateShipmentOpen(false)}
+        order={order}
+        contentValue={order.total_amount}
+        createParcelDailyShipment={createParcelDailyShipment}
+      />
 
       <div className="max-w-screen mx-auto space-y-6">
         <div className="mx-auto px-4 py-6 ">
@@ -177,24 +172,22 @@ export default function OrderDetailsPage({
                     Edit Order
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <DeleteDialog
-                        title="Delete Order"
-                        description="Are you sure you want to delete this order?"
-                        onConfirm={() => handleDeleteOrder(order.id as UUID)}
-                      >
-                        {({ open }) => (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 focus:text-red-600"
-                            onClick={open}
-                          >
-                            Delete Order
-                          </Button>
-                        )}
-                      </DeleteDialog>
-                    </DropdownMenuItem>
+                    <DeleteDialog
+                      title="Delete Order"
+                      description="Are you sure you want to delete this order?"
+                      onConfirm={() => handleDeleteOrder(order.id as UUID)}
+                    >
+                      {({ open }) => (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 focus:text-red-600"
+                          onClick={open}
+                        >
+                          Delete Order
+                        </Button>
+                      )}
+                    </DeleteDialog>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

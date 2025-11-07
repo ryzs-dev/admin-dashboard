@@ -15,12 +15,18 @@ import {
   updateTrackingEntry,
 } from '@/lib/api/orderTracking';
 import { UUID } from 'crypto';
+import { useCallback } from 'react';
 import useSWR from 'swr';
 
 export function useOrders(params?: Query) {
   const { data, error, isLoading, mutate } = useSWR(['orders', params], () =>
     getAllOrders(params)
   );
+
+  // ✅ Memoize this function so it doesn't change on every render
+  const fetchOrderById = useCallback(async (orderId: UUID) => {
+    return await getOrderById(orderId);
+  }, []);
 
   return {
     orders: data?.orders,
@@ -32,7 +38,7 @@ export function useOrders(params?: Query) {
     deleteOrder,
     bulkDeleteOrders,
     updateOrder,
-    getOrderById,
+    fetchOrderById,
   };
 }
 

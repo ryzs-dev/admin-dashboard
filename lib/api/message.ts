@@ -15,3 +15,18 @@ export async function sendMessage(message: MessageInput) {
   const { data } = await api.post('/template', message);
   return data;
 }
+
+export async function getMessages() {
+  const { data } = await api.get('/');
+  return data;
+}
+
+export async function getConversations() {
+  const { data } = await api.get('/conversations');
+  return data;
+}
+
+export async function getMessagesByConversation(conversationId: string) {
+  const { data } = await api.get(`/conversations/${conversationId}`);
+  return data;
+}

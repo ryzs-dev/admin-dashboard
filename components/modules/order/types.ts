@@ -5,6 +5,7 @@ import { OrderTracking } from '../tracking/types';
 export interface Order {
   id: UUID;
   customer_id: UUID;
+  order_number: string;
   addresses?: Address;
   customers?: Customer;
   order_date: string;

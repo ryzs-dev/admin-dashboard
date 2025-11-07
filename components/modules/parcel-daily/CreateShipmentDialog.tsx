@@ -28,25 +28,20 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
+import { createParcelDailyShipment } from '@/lib/api/parcel-daily';
 
 interface CreateShipmentDialogProps {
   order: Order;
   contentValue: number;
   isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: (trackingNumber: string) => void;
-  createParcelDailyShipment?: (
-    shipmentData: ShipmentInput,
-    orderId: UUID
-  ) => Promise<unknown>;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function CreateShipmentDialog({
   order,
   contentValue,
   isOpen,
-  onClose,
-  createParcelDailyShipment,
+  onOpenChange,
 }: CreateShipmentDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [codEnabled, setCodEnabled] = useState(false);
@@ -54,7 +49,6 @@ export default function CreateShipmentDialog({
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'dropoff'>(
     'pickup'
   );
-
   const country = order.addresses?.country;
 
   const availableCouriers = useMemo(() => {
@@ -96,20 +90,34 @@ export default function CreateShipmentDialog({
     };
 
     try {
-      await createParcelDailyShipment?.(payload, order.id);
+      await createParcelDailyShipment(payload, order.id as UUID);
       toast.success(`Shipment created`);
-      onClose();
+      setIsLoading(false);
+      onOpenChange?.(false);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create shipment');
-    } finally {
       setIsLoading(false);
+      onOpenChange?.(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent
+        aria-description="create-new-shipment"
+        className="sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          if (isLoading) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isLoading) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
             Create New Shipment
@@ -117,52 +125,55 @@ export default function CreateShipmentDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          {/* Recipient Information Card */}
-          <div className="rounded-lg border bg-card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <User className="w-4 h-4 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Recipient Information Card */}
+            <div className="rounded-lg border bg-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="w-4 h-4 text-primary" />
 
-              <h3 className="font-semibold">Recipient Information</h3>
+                <h3 className="font-semibold">Recipient Information</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Name</p>
+                  <p className="font-medium">{order.customers?.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Phone Number
+                  </p>
+                  <p className="font-medium">{order.customers?.phone_number}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Email</p>
+                  <p className="font-medium text-sm">
+                    {order.customers?.email || '-'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Name</p>
-                <p className="font-medium">{order.customers?.name}</p>
+
+            {/* Delivery Address Card */}
+            <div className="rounded-lg border bg-card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-4 h-4 text-primary" />
+
+                <h3 className="font-semibold">Delivery Address</h3>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">
-                  Phone Number
+              <div className="space-y-2">
+                <p className="text-sm leading-relaxed">
+                  {order.addresses?.full_address}
                 </p>
-                <p className="font-medium">{order.customers?.phone_number}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Email</p>
-                <p className="font-medium text-sm">
-                  {order.customers?.email || '-'}
+                <p className="text-sm text-muted-foreground">
+                  {order.addresses?.postcode} {order.addresses?.city},{' '}
+                  {order.addresses?.state}
+                </p>
+                <p className="text-sm font-medium">
+                  {order.addresses?.country}
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Delivery Address Card */}
-          <div className="rounded-lg border bg-card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <MapPin className="w-4 h-4 text-primary" />
-
-              <h3 className="font-semibold">Delivery Address</h3>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm leading-relaxed">
-                {order.addresses?.full_address}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {order.addresses?.postcode} {order.addresses?.city},{' '}
-                {order.addresses?.state}
-              </p>
-              <p className="text-sm font-medium">{order.addresses?.country}</p>
-            </div>
-          </div>
-
           {/* Shipment Configuration */}
           <div className="grid grid-cols-2 gap-4">
             {/* Left: Courier & Delivery */}
@@ -179,6 +190,7 @@ export default function CreateShipmentDialog({
                   <Select
                     value={selectedCourier}
                     onValueChange={setSelectedCourier}
+                    disabled={isLoading}
                   >
                     <SelectTrigger className="w-full p-2 ">
                       <SelectValue placeholder="Select courier" />
@@ -215,6 +227,7 @@ export default function CreateShipmentDialog({
                     onValueChange={(value: 'pickup' | 'dropoff') =>
                       setDeliveryType(value)
                     }
+                    disabled={isLoading}
                   >
                     <div className="space-y-2">
                       <label
@@ -285,6 +298,7 @@ export default function CreateShipmentDialog({
                     id="cod-toggle"
                     checked={codEnabled}
                     onCheckedChange={setCodEnabled}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -303,6 +317,7 @@ export default function CreateShipmentDialog({
                       onChange={(e) => setCod(Number(e.target.value))}
                       placeholder="0.00"
                       className="h-11"
+                      disabled={isLoading}
                     />
                   </div>
                 )}
@@ -314,9 +329,9 @@ export default function CreateShipmentDialog({
         <DialogFooter className="gap-2 pt-4">
           <Button
             variant="outline"
-            onClick={onClose}
             disabled={isLoading}
             className="min-w-24"
+            onClick={() => onOpenChange?.(false)}
           >
             Cancel
           </Button>
