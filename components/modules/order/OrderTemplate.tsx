@@ -66,15 +66,15 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                {/* <DropdownMenuItem>
                   <Printer className="h-4 w-4 mr-2" /> Print
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuItem>
                   <Download className="h-4 w-4 mr-2" /> Download Invoice
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuItem>
                   <Mail className="h-4 w-4 mr-2" /> Email Customer
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={() => setShipmentDialogOpen(true)}>
                   <Box className="h-4 w-4 mr-2" /> Create Shipment
                 </DropdownMenuItem>

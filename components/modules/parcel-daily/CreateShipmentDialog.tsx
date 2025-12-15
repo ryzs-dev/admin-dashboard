@@ -125,7 +125,7 @@ export default function CreateShipmentDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="flex flex-col gap-5">
             {/* Recipient Information Card */}
             <div className="rounded-lg border bg-card p-5">
               <div className="flex items-center gap-2 mb-4">

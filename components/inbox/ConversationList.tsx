@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useConversationMessages } from '@/hooks/useConversationMessages';
-import { Separator } from '../ui/separator';
 
 export default function WhatsAppInbox() {
   const { conversations: convData, isLoading: convLoading } =

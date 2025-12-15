@@ -14,7 +14,6 @@ import {
   MoreHorizontal,
   Eye,
   Copy,
-  Send,
   ExternalLink,
 } from 'lucide-react';
 import { Order } from './types';
@@ -114,8 +113,13 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
       const orderNumber =
         row.original.order_number ||
         `ORD-${row.original.id.slice(0, 8).toUpperCase()}`;
+
+      // DISPLAY date (day month year)
       const orderDate = new Date(row.original.order_date);
-      const isRecent = Date.now() - orderDate.getTime() < 24 * 60 * 60 * 1000; // Last 24h
+
+      // LOGIC date (recent check)
+      const createdAt = new Date(row.original.created_at);
+      const isRecent = Date.now() - createdAt.getTime() < 24 * 60 * 60 * 1000;
 
       return (
         <div className="flex flex-col gap-1 py-1">
@@ -153,8 +157,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               month: 'short',
               day: 'numeric',
               year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
             })}
           </span>
         </div>
@@ -205,7 +207,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="text-xs text-gray-500 truncate cursor-default">
-                    {customer?.email || 'No email provided'}
+                    {customer?.email || '-'}
                   </span>
                 </TooltipTrigger>
                 {customer?.email && (
@@ -229,7 +231,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     cell: ({ row }) => {
       const status =
         row.original.order_tracking?.[0]?.status.toLowerCase() as keyof typeof STATUS_CONFIG;
-      console.log('Order Status:', status);
       const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
       const Icon = config.icon;
 
@@ -390,16 +391,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                 View details
               </DropdownMenuItem>
 
-              {!hasTracking && (
-                <DropdownMenuItem
-                  onClick={() => actions.onCreateShipment(order.id)}
-                  className="cursor-pointer"
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  Create shipment
-                </DropdownMenuItem>
-              )}
-
               {hasTracking && (
                 <DropdownMenuItem
                   onClick={() =>
@@ -413,16 +404,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                   Track shipment
                 </DropdownMenuItem>
               )}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onClick={() => actions.onCopyOrderId(order.id)}
-                className="cursor-pointer"
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy order ID
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

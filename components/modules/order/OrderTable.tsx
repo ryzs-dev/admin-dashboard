@@ -69,7 +69,7 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
           toast.success('Order ID copied to clipboard');
         },
         onTrackShipment: (trackingNumber) => {
-          console.log('Track shipment:', trackingNumber);
+          console.log('Track shipment for :', trackingNumber);
           // TODO: Open tracking modal or redirect to courier site
         },
       }),
