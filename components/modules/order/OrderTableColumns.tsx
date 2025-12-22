@@ -15,6 +15,7 @@ import {
   Eye,
   Copy,
   ExternalLink,
+  Send,
 } from 'lucide-react';
 import { Order } from './types';
 import {
@@ -37,6 +38,7 @@ interface ColumnActions {
   onCreateShipment: (orderId: string) => void;
   onCopyOrderId: (orderId: string) => void;
   onTrackShipment?: (trackingNumber: string) => void;
+  sendTrackingNumber?: (trackingNumber: string) => void;
 }
 
 // Status configuration for better visual feedback
@@ -254,6 +256,8 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     cell: ({ row }) => {
       const tracking = row.original.order_tracking?.[0];
 
+      const isSent = tracking?.message_status === 'sent';
+
       if (!tracking) {
         return (
           <div className="flex items-center gap-2 text-gray-400">
@@ -268,38 +272,34 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
           <div className="flex-shrink-0">
             <div
               className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                row.original.status.toLowerCase() === 'delivered'
-                  ? 'bg-green-100'
-                  : 'bg-blue-100'
+                isSent ? 'bg-green-100' : 'bg-blue-100'
               }`}
             >
               <Truck
                 className={`w-4 h-4 ${
-                  row.original.status.toLowerCase() === 'delivered'
-                    ? 'text-green-600'
-                    : 'text-blue-600'
+                  isSent ? 'text-green-600' : 'text-blue-600'
                 }`}
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="flex flex-col gap-0.5 min-w-0 ">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      actions.onTrackShipment?.(tracking.tracking_number);
+                      actions.onTrackShipment?.(row.original.id);
                     }}
-                    className="text-sm font-medium text-gray-900 font-mono truncate hover:text-blue-600 transition-colors text-left group flex items-center gap-1"
+                    className="text-sm font-medium text-gray-900 font-mono truncate hover:text-blue-600 transition-colors text-left group flex items-center gap-1 hover:cursor-pointer"
                   >
                     {tracking.tracking_number}
                     <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Click to track shipment</p>
+                  <p>Click to Send Tracking</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -330,27 +330,16 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     ),
     cell: ({ row }) => {
       const amount = row.original.total_amount;
-      const isHighValue = amount > 1000;
 
       return (
         <div className="text-center">
-          <div
-            className={`text-sm font-semibold ${isHighValue ? 'text-gray-900' : 'text-gray-700'}`}
-          >
+          <div className={`text-sm font-semibold text-gray-700`}>
             RM{' '}
             {amount.toLocaleString('en-MY', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
           </div>
-          {isHighValue && (
-            <Badge
-              variant="outline"
-              className="text-xs mt-1 bg-amber-50 text-amber-700 border-amber-200"
-            >
-              High value
-            </Badge>
-          )}
         </div>
       );
     },
@@ -363,8 +352,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     enableHiding: false,
     cell: ({ row }) => {
       const order = row.original;
-      const hasTracking = !!order.order_tracking?.[0];
-
       return (
         <div className="flex justify-end">
           <DropdownMenu>
@@ -390,20 +377,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </DropdownMenuItem>
-
-              {hasTracking && (
-                <DropdownMenuItem
-                  onClick={() =>
-                    actions.onTrackShipment?.(
-                      order.order_tracking![0].tracking_number
-                    )
-                  }
-                  className="cursor-pointer"
-                >
-                  <Truck className="mr-2 h-4 w-4" />
-                  Track shipment
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

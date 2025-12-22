@@ -1,4 +1,3 @@
-import { Query } from '@/components/modules/customer/types';
 import { OrderTrackingInput } from '@/components/modules/tracking/types';
 import {
   bulkDeleteOrders,
@@ -15,18 +14,37 @@ import {
   updateTrackingEntry,
 } from '@/lib/api/orderTracking';
 import { UUID } from 'crypto';
-import { useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 
-export function useOrders(params?: Query) {
-  const { data, error, isLoading, mutate } = useSWR(['orders', params], () =>
-    getAllOrders(params)
+export function useOrders() {
+  const filters = useSearchParams();
+
+  const params = useMemo(
+    () => ({
+      search: filters.get('search') || undefined,
+      status:
+        filters.get('status') !== 'all' ? filters.get('status') : undefined,
+      dateFrom: filters.get('dateFrom')
+        ? new Date(filters.get('dateFrom')!)
+        : undefined,
+      dateTo: filters.get('dateTo')
+        ? new Date(filters.get('dateTo')!)
+        : undefined,
+    }),
+    [filters]
   );
 
-  // ✅ Memoize this function so it doesn't change on every render
-  const fetchOrderById = useCallback(async (orderId: UUID) => {
-    return await getOrderById(orderId);
-  }, []);
+  const { data, error, isLoading, mutate } = useSWR(
+    ['orders', JSON.stringify(params)],
+    () => getAllOrders(params)
+  );
+
+  const fetchOrderById = useCallback(
+    (orderId: UUID) => getOrderById(orderId),
+    []
+  );
 
   return {
     orders: data?.orders,
@@ -53,7 +71,6 @@ export function useOrderTracking(orderId: UUID) {
     refreshTracking: mutate,
     isLoading,
     isError: error,
-    updateTrackingEntry,
     refreshOrderTracking: mutate,
     createTracking: (input: OrderTrackingInput) =>
       createOrderTrackingByOrderId(orderId, input),

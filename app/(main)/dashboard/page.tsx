@@ -19,8 +19,6 @@ import { StatsCards } from '@/components/dashboard/StatsCard';
 
 const CRMDashboard = () => {
   const { stats } = useStats();
-  console.log('stats:', stats);
-
   // Mock data
   const revenueData = [
     { month: 'Jan', revenue: 12000 },

@@ -6,10 +6,7 @@ import {
   LayoutDashboard,
   Users,
   ShoppingBag,
-  MessageCircle,
-  Settings,
   Package,
-  FileUp,
   Bell,
   LogOut,
   ChevronDown,
@@ -70,22 +67,22 @@ function CRMSidebar() {
     },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
-    {
-      id: 'inbox',
-      label: 'Inbox',
-      icon: MessageCircle,
-      href: '/inbox',
-      badge: 3,
-    },
+    // {
+    //   id: 'inbox',
+    //   label: 'Inbox',
+    //   icon: MessageCircle,
+    //   href: '/inbox',
+    //   badge: 3,
+    // },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
-    {
-      id: 'import',
-      label: 'Import',
-      icon: FileUp,
-      href: '/import',
-      badge: 'NEW',
-    },
-    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+    // {
+    //   id: 'import',
+    //   label: 'Import',
+    //   icon: FileUp,
+    //   href: '/import',
+    //   badge: 'NEW',
+    // },
+    // { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
 
   const isActive = (href: string) => {

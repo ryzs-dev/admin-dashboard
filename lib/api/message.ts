@@ -16,6 +16,11 @@ export async function sendMessage(message: MessageInput) {
   return data;
 }
 
+export async function sendTrackingInfo(data: any) {
+  const response = await api.post('/track/admin', data);
+  return response.data;
+}
+
 export async function getMessages() {
   const { data } = await api.get('/');
   return data;

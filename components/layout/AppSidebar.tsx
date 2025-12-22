@@ -6,10 +6,8 @@ import {
   LayoutDashboard,
   Users,
   ShoppingBag,
-  MessageCircle,
   Settings,
   Package,
-  FileUp,
   ChevronDown,
   User,
   LogOut,
@@ -35,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/providers/auth-providers';
 
@@ -48,21 +45,21 @@ const menuItems = [
   },
   { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
   { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
-  {
-    id: 'inbox',
-    label: 'Inbox',
-    icon: MessageCircle,
-    href: '/inbox',
-    badge: 3,
-  },
+  // {
+  //   id: 'inbox',
+  //   label: 'Inbox',
+  //   icon: MessageCircle,
+  //   href: '/inbox',
+  //   badge: 3,
+  // },
   { id: 'products', label: 'Products', icon: Package, href: '/products' },
-  {
-    id: 'import',
-    label: 'Import',
-    icon: FileUp,
-    href: '/import',
-    badge: 'NEW',
-  },
+  // {
+  //   id: 'import',
+  //   label: 'Import',
+  //   icon: FileUp,
+  //   href: '/import',
+  //   badge: 'NEW',
+  // },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
 ];
 
@@ -112,22 +109,7 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.href)}
                     tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <Badge
-                          variant={
-                            item.badge === 'NEW' ? 'default' : 'secondary'
-                          }
-                          className="ml-auto"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
+                  ></SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

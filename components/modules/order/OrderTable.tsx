@@ -29,18 +29,14 @@ import {
   RowSelectionState,
 } from '@tanstack/react-table';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Order } from './types';
-import {
-  Search,
-  Download,
-  Filter,
-  X,
-  Package,
-  AlertCircle,
-} from 'lucide-react';
+import { Filter, Package, AlertCircle } from 'lucide-react';
 import { createColumns } from './OrderTableColumns';
 import { toast } from 'sonner';
+import { useMessage } from '@/hooks/useMessage';
+import { DatePicker } from '../utils/ui/DatePicker';
+import { formatDateToYYYYMMDD } from '@/lib/utils/date';
 
 interface OrderTableProps {
   data: Order[];
@@ -48,14 +44,78 @@ interface OrderTableProps {
   isLoading?: boolean;
 }
 
-export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
+export function OrderTable({ data, isLoading }: OrderTableProps) {
   const router = useRouter();
+  const { sendTrackingInfo } = useMessage();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'all',
+    dateFrom: '',
+    dateTo: '',
+  });
+  const [localFilters, setLocalFilters] = useState({ ...filters });
   // Action handlers
+
+  const handleSendTracking = useCallback(
+    async (selectedIds: string[]) => {
+      if (!selectedIds || selectedIds.length === 0) {
+        toast.error('No orders selected for tracking');
+        return;
+      }
+
+      const payload: any[] = [];
+
+      for (const id of selectedIds) {
+        const order = data.find((o) => o.id === id);
+        if (!order) continue;
+
+        const orderTrackingId = order.order_tracking?.[0]?.id;
+        const name = order.customers?.name || '';
+        const phone = order.customers?.phone_number || '';
+        const courier = order.order_tracking?.[0]?.courier || '';
+        const tracking = order.order_tracking?.[0]?.tracking_number || '';
+
+        const missingFields: string[] = [];
+        if (!orderTrackingId) missingFields.push('order tracking ID');
+        if (!phone) missingFields.push('phone');
+        if (!tracking) missingFields.push('tracking');
+        if (!courier) missingFields.push('courier');
+
+        if (missingFields.length > 0) {
+          toast.error(
+            `Order ${order.order_number} is missing: ${missingFields.join(', ')}`
+          );
+          return;
+        }
+
+        payload.push({
+          orderTrackingId,
+          name,
+          phone,
+          courier,
+          tracking,
+        });
+      }
+
+      if (payload.length === 0) {
+        toast.error('No valid tracking jobs to enqueue.');
+        return;
+      }
+
+      try {
+        await sendTrackingInfo(payload);
+        toast.success(`📦 ${payload.length} tracking job(s) queued`);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to enqueue tracking jobs');
+      }
+    },
+    [data, sendTrackingInfo]
+  );
+
   const columns = useMemo(
     () =>
       createColumns({
@@ -68,21 +128,42 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
           navigator.clipboard.writeText(orderId);
           toast.success('Order ID copied to clipboard');
         },
-        onTrackShipment: (trackingNumber) => {
-          console.log('Track shipment for :', trackingNumber);
-          // TODO: Open tracking modal or redirect to courier site
+        sendTrackingNumber: (trackingNumber) => {
+          console.log('Send tracking number:', trackingNumber);
+        },
+        onTrackShipment: (id) => {
+          console.log('Track shipment for :', id);
+          handleSendTracking([id]);
         },
       }),
-    [router]
+    [router, handleSendTracking]
   );
 
   // Filter data by status
   const filteredData = useMemo(() => {
-    if (statusFilter === 'all') return data;
-    return data.filter(
-      (order) => order.status.toLowerCase() === statusFilter.toLowerCase()
-    );
-  }, [data, statusFilter]);
+    return data.filter((order) => {
+      const orderDate = new Date(order.created_at);
+
+      // Global search
+      const search = filters.search.toLowerCase();
+      const matchesSearch =
+        order.order_number.toLowerCase().includes(search) ||
+        order.customers?.name.toLowerCase().includes(search);
+
+      // Status filter
+      const statusMatch =
+        filters.status === 'all' ||
+        order.order_tracking?.[0]?.message_status.toLowerCase() ===
+          filters.status.toLowerCase();
+
+      // Date range filter
+      const fromMatch =
+        !filters.dateFrom || orderDate >= new Date(filters.dateFrom);
+      const toMatch = !filters.dateTo || orderDate <= new Date(filters.dateTo);
+
+      return matchesSearch && statusMatch && fromMatch && toMatch;
+    });
+  }, [data, filters]);
 
   const table = useReactTable({
     data: filteredData,
@@ -93,11 +174,9 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       rowSelection,
-      globalFilter,
     },
     initialState: {
       pagination: {
@@ -176,45 +255,76 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1 sm:w-[300px]">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search orders, customers..."
-                  value={globalFilter ?? ''}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="pl-9 pr-9"
-                />
-                {globalFilter && (
-                  <button
-                    onClick={() => setGlobalFilter('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+              <Input
+                placeholder="Search orders..."
+                value={localFilters.search}
+                onChange={(e) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    search: e.target.value,
+                  }))
+                }
+              />
 
-              {/* Status Filter */}
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[160px]">
+              <DatePicker
+                value={
+                  localFilters.dateFrom || localFilters.dateTo
+                    ? {
+                        from: localFilters.dateFrom
+                          ? new Date(localFilters.dateFrom)
+                          : undefined,
+                        to: localFilters.dateTo
+                          ? new Date(localFilters.dateTo)
+                          : undefined,
+                      }
+                    : undefined
+                }
+                onChange={(range) => {
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    dateFrom: formatDateToYYYYMMDD(range?.from),
+                    dateTo: formatDateToYYYYMMDD(range?.to),
+                  }));
+                }}
+              />
+
+              <Select
+                value={localFilters.status}
+                onValueChange={(value) =>
+                  setLocalFilters((prev) => ({ ...prev, status: value }))
+                }
+              >
+                <SelectTrigger className="flex w-full sm:w-auto">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="All Status" />
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
                 </SelectContent>
               </Select>
 
-              {/* Export Button */}
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export
+              <Button
+                size="sm"
+                onClick={() => {
+                  const params = new URLSearchParams();
+
+                  if (localFilters.search)
+                    params.set('search', localFilters.search);
+                  if (localFilters.status && localFilters.status !== 'all')
+                    params.set('status', localFilters.status);
+                  if (localFilters.dateFrom)
+                    params.set('dateFrom', localFilters.dateFrom);
+                  if (localFilters.dateTo)
+                    params.set('dateTo', localFilters.dateTo);
+
+                  router.push(`?${params.toString()}`, { scroll: false });
+                  setFilters({ ...localFilters }); // optional for client-side filtering
+                }}
+              >
+                Apply
               </Button>
             </div>
 
@@ -237,7 +347,7 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
                         const selectedIds = selectedRows.map(
                           (row) => row.original.id
                         );
-                        onBulkAction?.(selectedIds);
+                        handleSendTracking(selectedIds);
                       }}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
@@ -326,11 +436,6 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
                         <p className="text-sm font-medium text-gray-900">
                           No orders found
                         </p>
-                        <p className="text-xs mt-1 text-gray-500">
-                          {globalFilter || statusFilter !== 'all'
-                            ? 'Try adjusting your filters'
-                            : 'Orders will appear here once created'}
-                        </p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -389,14 +494,6 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => table.setPageIndex(0)}
-                    disabled={!table.getCanPreviousPage()}
-                  >
-                    First
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                   >
@@ -420,14 +517,6 @@ export function OrderTable({ data, onBulkAction, isLoading }: OrderTableProps) {
                     disabled={!table.getCanNextPage()}
                   >
                     Next
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    disabled={!table.getCanNextPage()}
-                  >
-                    Last
                   </Button>
                 </div>
               </div>

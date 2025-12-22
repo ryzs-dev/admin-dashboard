@@ -15,10 +15,15 @@ export const COURIER_SERVICES = {
       label: 'J&T Express',
       logo: '/images/couriers/jnt.png',
     },
+    {
+      value: 'kex',
+      label: 'KEX',
+      logo: '/images/couriers/kex.png',
+    },
   ],
   Singapore: [
     {
-      value: 'sf',
+      value: 'sf_express',
       label: 'SF Express',
       logo: '/images/couriers/sf.webp',
     },

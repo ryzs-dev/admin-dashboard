@@ -16,7 +16,18 @@ const api = axios.create({
 });
 
 export async function getAllOrders(params?: Query) {
-  const res = await api.get('/', { params });
+  const { search, dateFrom, dateTo, offset } = params ?? {};
+
+  const isFiltered = !!search || (!!dateFrom && !!dateTo);
+
+  const queryParams: Record<string, any> = {
+    ...params,
+    limit: isFiltered ? undefined : (params?.limit ?? 100), // fetch all if filtered
+    offset: offset ?? 0,
+  };
+
+  const res = await api.get('/', { params: queryParams });
+
   return res.data as {
     orders: Order[];
     pagination: { limit: number; offset: number; total: number };

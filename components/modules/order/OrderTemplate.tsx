@@ -4,14 +4,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
-  Printer,
-  Download,
-  Mail,
   MoreVertical,
   Package,
   User,
   MapPin,
   Box,
+  Pencil,
+  Trash,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,16 +24,24 @@ import { Label } from '@/components/ui/label';
 import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
 import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
 import { useRouter } from 'next/navigation';
+import { useMessage } from '@/hooks/useMessage';
 
 const OrderTemplate = ({ order }: { order: Order }) => {
   const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
-  console.log(order);
-
+  const { sendTrackingInfo } = useMessage();
   const router = useRouter();
-
-  //   const shipping = 15.0;
-
   const total = order.total_amount;
+
+  const sendTracking = (order: any) => {
+    const messageData = {
+      name: order.customers?.name || '',
+      phone: order.customers?.phone_number || '',
+      tracking: order.order_tracking?.[0]?.tracking_number || '',
+      courier: order.order_tracking?.[0]?.courier || '',
+    };
+
+    sendTrackingInfo(messageData);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,8 +82,25 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 {/* <DropdownMenuItem>
                   <Mail className="h-4 w-4 mr-2" /> Email Customer
                 </DropdownMenuItem> */}
-                <DropdownMenuItem onClick={() => setShipmentDialogOpen(true)}>
-                  <Box className="h-4 w-4 mr-2" /> Create Shipment
+
+                {!order.order_tracking || order.order_tracking.length === 0 ? (
+                  <DropdownMenuItem onClick={() => setShipmentDialogOpen(true)}>
+                    <Box className="h-4 w-4 mr-2" /> Create Shipment
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => sendTracking(order)}>
+                    <Box className="h-4 w-4 mr-2" /> Send Tracking
+                  </DropdownMenuItem>
+                )}
+
+                {/* <DropdownMenuItem onClick={() => console.log('Edit Order')}>
+                  <Pencil className="h-4 w-4 mr-2" /> Edit Order
+                </DropdownMenuItem> */}
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => console.log('Delete Order')}
+                >
+                  <Trash className="h-4 w-4 mr-2 text-red-600" /> Delete Order
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

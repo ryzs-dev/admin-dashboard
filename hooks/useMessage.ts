@@ -1,4 +1,4 @@
-import { sendMessage } from '@/lib/api/message';
+import { sendMessage, sendTrackingInfo } from '@/lib/api/message';
 import { MessageInput } from '@/types/message';
 import useSWRMutation from 'swr/mutation';
 
@@ -10,6 +10,7 @@ export function useMessage() {
   );
 
   return {
+    sendTrackingInfo: (data: any) => sendTrackingInfo(data),
     sendMessage: trigger,
     data, // backend response
     error,

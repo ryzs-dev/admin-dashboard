@@ -22,6 +22,8 @@ export interface Query {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   filter?: FilterType;
+  dateFrom?: Date;
+  dateTo?: Date;
 }
 
 export type FilterType = 'all' | 'today' | 'week' | 'month';
