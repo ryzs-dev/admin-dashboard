@@ -31,7 +31,6 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
-import { useParcelDaily } from '@/hooks/useParcelDaily';
 
 interface OrderDetailsPageProps {
   orderId: UUID;
@@ -42,8 +41,6 @@ export default function OrderDetailsPage({
   orderId,
   onBack,
 }: OrderDetailsPageProps) {
-  const { createParcelDailyShipment } = useParcelDaily();
-
   const { fetchOrderById, updateOrder, deleteOrder } = useOrders();
 
   const { customers } = useCustomer({ limit: 100 });
@@ -117,10 +114,8 @@ export default function OrderDetailsPage({
 
       <CreateShipmentDialog
         isOpen={isCreateShipmentOpen}
-        onClose={() => setIsCreateShipmentOpen(false)}
         order={order}
         contentValue={order.total_amount}
-        createParcelDailyShipment={createParcelDailyShipment}
       />
 
       <div className="max-w-screen mx-auto space-y-6">
