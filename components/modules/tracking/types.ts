@@ -1,8 +1,9 @@
 import { UUID } from 'crypto';
+import { Courier } from './UpdateTrackingDialog';
 
 export interface OrderTrackingInput {
   tracking_number: string;
-  courier: string;
+  courier?: Courier;
   status: 'pending' | 'shipped' | 'delivered' | 'returned';
 }
 

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { OrderTrackingInput } from './types';
+import { Courier } from './UpdateTrackingDialog';
 
 interface TrackingDialogProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export default function TrackingDialog({
 }: TrackingDialogProps) {
   const [formData, setFormData] = useState<OrderTrackingInput>({
     tracking_number: '',
-    courier: '',
+    courier: undefined,
     status: 'pending',
   });
 
@@ -62,7 +63,7 @@ export default function TrackingDialog({
     if (isOpen) {
       setFormData({
         tracking_number: initialData?.tracking_number || '',
-        courier: initialData?.courier || '',
+        courier: initialData?.courier ?? undefined,
         status: initialData?.status || 'pending',
       });
     }
@@ -104,7 +105,10 @@ export default function TrackingDialog({
             <Select
               value={formData.courier}
               onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, courier: value }))
+                setFormData((prev) => ({
+                  ...prev,
+                  courier: value as Courier,
+                }))
               }
             >
               <SelectTrigger>

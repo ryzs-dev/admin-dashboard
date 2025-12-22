@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { OrderTrackingInput } from './types';
+import { Courier } from './UpdateTrackingDialog';
 
 interface Props {
   open: boolean;
@@ -27,7 +28,7 @@ interface Props {
 
 export function CreateTrackingDialog({ open, onOpenChange, onSubmit }: Props) {
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [courier, setCourier] = useState('');
+  const [courier, setCourier] = useState<Courier | ''>('');
   const [status, setStatus] = useState<OrderTrackingInput['status']>('pending');
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +36,7 @@ export function CreateTrackingDialog({ open, onOpenChange, onSubmit }: Props) {
     setLoading(true);
     await onSubmit({
       tracking_number: trackingNumber,
-      courier,
+      courier: courier as Courier,
       status,
     });
     setLoading(false);
@@ -56,11 +57,21 @@ export function CreateTrackingDialog({ open, onOpenChange, onSubmit }: Props) {
             onChange={(e) => setTrackingNumber(e.target.value)}
           />
 
-          <Input
-            placeholder="Courier"
+          <Select
             value={courier}
-            onChange={(e) => setCourier(e.target.value)}
-          />
+            onValueChange={(value) => setCourier(value as Courier)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Courier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="spx">Shopee Express</SelectItem>
+              <SelectItem value="flash">Flash</SelectItem>
+              <SelectItem value="jnt">J&T</SelectItem>
+              <SelectItem value="kex">KEX</SelectItem>
+              <SelectItem value="sf_express">SF Express</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select
             value={status}

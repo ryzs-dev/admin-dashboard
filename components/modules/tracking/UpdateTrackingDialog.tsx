@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { UUID } from 'crypto';
 
-type Courier = 'shopee_express' | 'flash' | 'jnt' | 'kex' | 'sf_express';
+export type Courier = 'spx' | 'flash' | 'jnt' | 'kex' | 'sf_express';
 
 interface Props {
   open: boolean;
