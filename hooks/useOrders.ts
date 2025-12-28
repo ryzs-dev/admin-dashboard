@@ -6,7 +6,7 @@ import {
   deleteOrder,
   getAllOrders,
   getOrderById,
-  getOrderTrackingByOrderId,
+  getOrderTrackingByOrderId, updateLineItems,
   updateOrder,
 } from '@/lib/api/order';
 import {
@@ -57,6 +57,7 @@ export function useOrders() {
     bulkDeleteOrders,
     updateOrder,
     fetchOrderById,
+    updateLineItems
   };
 }
 

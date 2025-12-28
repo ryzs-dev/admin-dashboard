@@ -25,12 +25,21 @@ import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
 import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
 import { useRouter } from 'next/navigation';
 import { useMessage } from '@/hooks/useMessage';
+import { UUID } from 'crypto';
+import { useOrders } from '@/hooks/useOrders';
+import { toast } from 'sonner';
+import DeleteDialog from '../alert/DeleteDialog';
+import EditOrderDialog from '@/components/modules/order/EditOrderItemsDialog';
 
 const OrderTemplate = ({ order }: { order: Order }) => {
-  const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
-  const { sendTrackingInfo } = useMessage();
   const router = useRouter();
-  const total = order.total_amount;
+  const { order_items } = order;
+  const { sendTrackingInfo } = useMessage();
+  const { updateLineItems, deleteOrder, refresh } = useOrders();
+  const [open, setOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
+  const [editOrder, setEditOrder] = useState(false);
 
   const sendTracking = (order: any) => {
     const messageData = {
@@ -41,6 +50,22 @@ const OrderTemplate = ({ order }: { order: Order }) => {
     };
 
     sendTrackingInfo(messageData);
+  };
+
+  const handleDeleteOrder = async (orderId: UUID) => {
+    setIsDeleting(true);
+
+    try {
+      await deleteOrder(orderId);
+      toast.success('Order deleted');
+      router.push('/orders');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete order');
+    } finally {
+      setIsDeleting(false);
+      setOpen(false);
+    }
   };
 
   return (
@@ -93,12 +118,12 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   </DropdownMenuItem>
                 )}
 
-                {/* <DropdownMenuItem onClick={() => console.log('Edit Order')}>
+                <DropdownMenuItem onClick={() => setEditOrder(true)}>
                   <Pencil className="h-4 w-4 mr-2" /> Edit Order
-                </DropdownMenuItem> */}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => console.log('Delete Order')}
+                  onClick={() => setOpen(true)}
                 >
                   <Trash className="h-4 w-4 mr-2 text-red-600" /> Delete Order
                 </DropdownMenuItem>
@@ -118,36 +143,59 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {order.order_items?.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between items-start border-b border-gray-100 pb-3 last:border-none"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {item.products?.name}
-                      </p>
-                    </div>
-                    <div className="text-right text-sm">
-                      <p className="font-medium">MYR {item.products?.price} </p>
-                      <p className="text-gray-500 text-xs">
-                        Quantity: {item.quantity}
-                      </p>
-                    </div>
+                {order_items.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Product
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Quantity
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Price (MYR)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {order_items.map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {item?.products.name}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                              {item?.products.price}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                ) : (
+                  <div className="p-4 text-center text-gray-400 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium">No Items</p>
+                  </div>
+                )}
 
+                {/* Total */}
                 <div className="pt-4 space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span>MYR {total?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Shipping</span>
-                  </div>
                   <div className="flex justify-between pt-2 text-base font-semibold text-gray-900">
                     <span>Total</span>
-                    <span>MYR {total.toFixed(2)}</span>
+                    <span>MYR {order.total_amount}</span>
                   </div>
                 </div>
               </CardContent>
@@ -202,9 +250,33 @@ const OrderTemplate = ({ order }: { order: Order }) => {
 
       <CreateShipmentDialog
         order={order}
-        contentValue={total}
+        contentValue={order.total_amount}
         isOpen={shipmentDialogOpen}
         onOpenChange={setShipmentDialogOpen}
+      />
+
+      <EditOrderDialog
+        order={order}
+        isOpen={editOrder}
+        onOpenChange={setEditOrder}
+        onUpdateOrder={async (data) => {
+          try {
+            await updateLineItems(order.id, data);
+            toast.success('Order updated');
+          } catch (error) {
+            console.error(error);
+            toast.error('Failed to update order');
+          }
+        }}
+      />
+
+      <DeleteDialog
+        open={open}
+        setOpen={setOpen}
+        isLoading={isDeleting}
+        onConfirm={handleDeleteOrder.bind(null, order.id)}
+        title="Delete order?"
+        description="This action cannot be undone. The order will be permanently removed."
       />
     </div>
   );

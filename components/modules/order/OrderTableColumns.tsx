@@ -16,6 +16,7 @@ import {
   Copy,
   ExternalLink,
   Send,
+  Trash2Icon,
 } from 'lucide-react';
 import { Order } from './types';
 import {
@@ -32,9 +33,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { UUID } from 'crypto';
 
 interface ColumnActions {
   onViewDetails: (orderId: string) => void;
+  onDeleteOrder: (orderId: UUID) => void;
   onCreateShipment: (orderId: string) => void;
   onCopyOrderId: (orderId: string) => void;
   onTrackShipment?: (trackingNumber: string) => void;
@@ -376,6 +379,14 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               >
                 <Eye className="mr-2 h-4 w-4" />
                 View details
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => actions.onDeleteOrder(order.id)}
+                className="cursor-pointer"
+                variant="destructive"
+              >
+                <Trash2Icon className="mr-2 h-4 w-4 text-red-400" />
+                Delete order
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

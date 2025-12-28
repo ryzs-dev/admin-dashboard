@@ -37,6 +37,9 @@ import { toast } from 'sonner';
 import { useMessage } from '@/hooks/useMessage';
 import { DatePicker } from '../utils/ui/DatePicker';
 import { formatDateToYYYYMMDD } from '@/lib/utils/date';
+import { useOrders } from '@/hooks/useOrders';
+import DeleteDialog from '../alert/DeleteDialog';
+import { UUID } from 'crypto';
 
 interface OrderTableProps {
   data: Order[];
@@ -46,10 +49,10 @@ interface OrderTableProps {
 
 export function OrderTable({ data, isLoading }: OrderTableProps) {
   const router = useRouter();
+  const { deleteOrder, refresh } = useOrders();
   const { sendTrackingInfo } = useMessage();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
@@ -57,6 +60,10 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
     dateTo: '',
   });
   const [localFilters, setLocalFilters] = useState({ ...filters });
+  const [deleteTargetId, setDeleteTargetId] = useState<UUID | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
+
   // Action handlers
 
   const handleSendTracking = useCallback(
@@ -116,6 +123,24 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
     [data, sendTrackingInfo]
   );
 
+  const onDeleteOrder = async () => {
+    if (!deleteTargetId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteOrder(deleteTargetId);
+      toast.success('Order deleted');
+      refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete order');
+    } finally {
+      setIsDeleting(false);
+      setOpen(false);
+      setDeleteTargetId(null);
+    }
+  };
+
   const columns = useMemo(
     () =>
       createColumns({
@@ -134,6 +159,10 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
         onTrackShipment: (id) => {
           console.log('Track shipment for :', id);
           handleSendTracking([id]);
+        },
+        onDeleteOrder: async (orderId) => {
+          setDeleteTargetId(orderId);
+          setOpen(true);
         },
       }),
     [router, handleSendTracking]
@@ -524,6 +553,15 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
           )}
         </CardContent>
       </Card>
+
+      <DeleteDialog
+        open={open}
+        setOpen={setOpen}
+        isLoading={isDeleting}
+        onConfirm={onDeleteOrder}
+        title="Delete order?"
+        description="This action cannot be undone. The order will be permanently removed."
+      />
     </div>
   );
 }

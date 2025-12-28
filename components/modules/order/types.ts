@@ -24,11 +24,10 @@ export interface OrderItems {
   order_id: string;
   product_id: string;
   quantity: number;
-  price: number;
-  products?: {
+  products: {
     id: UUID;
+    code: string;
     name: string;
     price: number;
-    created_at: string;
   };
 }

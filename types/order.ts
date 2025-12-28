@@ -13,3 +13,11 @@ export interface OrderItemsInput {
   product_id: UUID;
   quantity: number;
 }
+
+export interface UpdateLineItemsInput {
+  line_items: {
+    product_id: UUID;
+    quantity: number;
+  }[]
+  total_amount: number;
+}

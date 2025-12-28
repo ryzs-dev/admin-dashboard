@@ -1,6 +1,6 @@
 import { Query } from '@/components/modules/customer/types';
 import { OrderTrackingInput } from '@/components/modules/tracking/types';
-import { OrderInput } from '@/types/order';
+import { OrderInput, UpdateLineItemsInput } from '@/types/order';
 import { Order } from '@/components/modules/order/types';
 import axios from 'axios';
 import { UUID } from 'crypto';
@@ -74,5 +74,10 @@ export async function createOrderTrackingByOrderId(
 
 export async function getOrderTrackingByOrderId(id: UUID) {
   const { data } = await api.get(`/${id}/tracking`);
+  return data;
+}
+
+export async function updateLineItems(order_id: UUID, payload: UpdateLineItemsInput) {
+  const { data} = await api.patch(`/${order_id}/line-items`, payload);
   return data;
 }
