@@ -83,13 +83,7 @@ export default function CustomerProfile({
     setEditForm(customer);
   };
 
-  const formatDate = (dateString: Date) => {
-    return new Date(dateString).toLocaleDateString('en-MY', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  console.log(customer.orders);
 
   // ✅ Prevent rendering before data exists
   if (!customer) return <div className="p-6 text-center">Loading...</div>;
@@ -128,11 +122,6 @@ export default function CustomerProfile({
                       <CardTitle className="text-2xl">
                         {customer.name}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <span className="text-sm">
-                          Customer since {formatDate(customer.created_at)}
-                        </span>
-                      </CardDescription>
                     </div>
                   </div>
 
@@ -278,7 +267,7 @@ export default function CustomerProfile({
               <CardHeader>
                 <CardTitle>Order History</CardTitle>
                 <CardDescription>
-                  Complete purchase history for this customer
+                  Purchase history for this customer
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -293,9 +282,6 @@ export default function CustomerProfile({
                           <th className="h-12 px-4 text-left align-middle font-medium">
                             Date
                           </th>
-                          <th className="h-12 px-4 text-center align-middle font-medium">
-                            Status
-                          </th>
                           <th className="h-12 px-4 text-right align-middle font-medium">
                             Total
                           </th>
@@ -305,14 +291,12 @@ export default function CustomerProfile({
                         {customer?.orders?.map((order: Order) => (
                           <tr key={order.id} className="border-b last:border-0">
                             <td className="h-12 px-4 align-middle">
-                              {order.id}
+                              {order.order_number}
                             </td>
                             <td className="h-12 px-4 align-middle">
                               {order.order_date}
                             </td>
-                            <td className="h-12 px-4 align-middle text-center">
-                              {order.status}
-                            </td>
+
                             <td className="h-12 px-4 align-middle text-right">
                               {formatCurrency(order.total_amount)}
                             </td>

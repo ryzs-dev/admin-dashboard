@@ -199,16 +199,23 @@ export default function CustomerTable({
                   </td>
                   <td className="p-4">
                     <span className="text-sm text-gray-600 truncate block">
-                      {c.last_order_date}
+                      {c.last_order_date
+                        ? new Date(c.last_order_date).toLocaleDateString(
+                            'en-US',
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }
+                          )
+                        : '—'}{' '}
+                      {/* fallback for no date */}
                     </span>
                   </td>
+
                   {/* <td className="p-4">
                     <span className="text-sm text-gray-600">
-                      {new Date(c.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+
                     </span>
                   </td> */}
                 </tr>

@@ -61,6 +61,11 @@ const STATUS_CONFIG = {
     color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Truck,
   },
+  delivering: {
+    label: 'Delivering',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: Truck,
+  },
   delivered: {
     label: 'Delivered',
     color: 'bg-green-100 text-green-800 border-green-200',

@@ -64,6 +64,8 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
 
+  console.log(data);
+
   // Action handlers
 
   const handleSendTracking = useCallback(

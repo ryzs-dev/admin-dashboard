@@ -11,7 +11,7 @@ export interface Customer {
   total_amount_spent: number;
   total_purchase_count: number;
   has_recent_purchase: boolean;
-  last_order_date?: string;
+  last_order_date?: string | Date;
   repeat_customer: 'returning' | 'new';
 }
 
