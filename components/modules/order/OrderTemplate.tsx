@@ -11,6 +11,7 @@ import {
   Box,
   Pencil,
   Trash,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,16 +31,20 @@ import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import DeleteDialog from '../alert/DeleteDialog';
 import EditOrderDialog from '@/components/modules/order/EditOrderItemsDialog';
+import { useAddress } from '@/hooks/useAddress';
+import EditAddressDialog from '@/components/modules/order/EditAddressDialog';
 
 const OrderTemplate = ({ order }: { order: Order }) => {
   const router = useRouter();
   const { order_items } = order;
   const { sendTrackingInfo } = useMessage();
   const { updateLineItems, deleteOrder, refresh } = useOrders();
+  const { updateAddress } = useAddress();
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
   const [editOrder, setEditOrder] = useState(false);
+  const [editAddressOpen, setEditAddressOpen] = useState(false);
 
   const sendTracking = (order: any) => {
     const messageData = {
@@ -228,12 +233,28 @@ const OrderTemplate = ({ order }: { order: Order }) => {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-gray-800">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   Shipping Address
                 </CardTitle>
+
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditAddressOpen(true)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit Address
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
+
               <CardContent>
                 <div className="space-y-1 text-sm text-gray-600">
                   <p>{order.addresses?.full_address}</p>
@@ -266,6 +287,21 @@ const OrderTemplate = ({ order }: { order: Order }) => {
           } catch (error) {
             console.error(error);
             toast.error('Failed to update order');
+          }
+        }}
+      />
+
+      <EditAddressDialog
+        address={order.addresses}
+        open={editAddressOpen}
+        onOpenChange={setEditAddressOpen}
+        onSubmit={async (data) => {
+          try {
+            await updateAddress(order.id, data);
+            toast.success('Address updated');
+            refresh();
+          } catch (err: any) {
+            toast.error('Failed to update address');
           }
         }}
       />
