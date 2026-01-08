@@ -90,13 +90,20 @@ export default function CreateShipmentDialog({
     };
 
     try {
-      await createParcelDailyShipment(payload, order.id as UUID);
+      const data = await createParcelDailyShipment(payload, order.id as UUID);
+      console.log(data);
       toast.success(`Shipment created`);
       setIsLoading(false);
       onOpenChange?.(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to create shipment');
+
+      const message =
+        err?.response?.data?.details?.details.message ||
+        'Failed to create shipment';
+
+      toast.error(message);
+
       setIsLoading(false);
       onOpenChange?.(false);
     }
