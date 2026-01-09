@@ -297,10 +297,11 @@ const OrderTemplate = ({ order }: { order: Order }) => {
         onOpenChange={setEditAddressOpen}
         onSubmit={async (data) => {
           try {
-            await updateAddress(order.id, data);
+            await updateAddress(order.addresses?.id as UUID, data);
             toast.success('Address updated');
             refresh();
           } catch (err: any) {
+            console.log(err);
             toast.error('Failed to update address');
           }
         }}
