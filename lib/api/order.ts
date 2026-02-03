@@ -29,6 +29,7 @@ export async function getAllOrders(params?: Query) {
   const res = await api.get('/', { params: queryParams });
 
   return res.data as {
+    total: number;
     orders: Order[];
     pagination: { limit: number; offset: number; total: number };
   };
@@ -77,7 +78,10 @@ export async function getOrderTrackingByOrderId(id: UUID) {
   return data;
 }
 
-export async function updateLineItems(order_id: UUID, payload: UpdateLineItemsInput) {
-  const { data} = await api.patch(`/${order_id}/line-items`, payload);
+export async function updateLineItems(
+  order_id: UUID,
+  payload: UpdateLineItemsInput
+) {
+  const { data } = await api.patch(`/${order_id}/line-items`, payload);
   return data;
 }

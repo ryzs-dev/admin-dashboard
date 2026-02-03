@@ -16,6 +16,7 @@ export interface Customer {
 }
 
 export interface Query {
+  page?: number;
   limit?: number;
   offset?: number;
   search?: string;
@@ -24,6 +25,7 @@ export interface Query {
   filter?: FilterType;
   dateFrom?: Date;
   dateTo?: Date;
+  status?: string;
 }
 
 export type FilterType = 'all' | 'today' | 'week' | 'month';

@@ -1,23 +1,19 @@
 'use client';
 
 import { Suspense } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderTable } from '@/components/modules/order/OrderTable';
-import { useOrders } from '@/hooks/useOrders';
 
-function OrdersPageContent() {
-  const { orders, isLoading } = useOrders();
-
-  return (
-    <div className="p-6">
-      <OrderTable data={orders ?? []} isLoading={isLoading} />
-    </div>
-  );
-}
+const queryClient = new QueryClient();
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<div className="p-6">Loading orders...</div>}>
-      <OrdersPageContent />
-    </Suspense>
+    <QueryClientProvider client={queryClient}>
+      <Suspense fallback={<div className="p-6">Loading orders...</div>}>
+        <div className="p-4">
+          <OrderTable />
+        </div>
+      </Suspense>
+    </QueryClientProvider>
   );
 }

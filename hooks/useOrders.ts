@@ -6,7 +6,8 @@ import {
   deleteOrder,
   getAllOrders,
   getOrderById,
-  getOrderTrackingByOrderId, updateLineItems,
+  getOrderTrackingByOrderId,
+  updateLineItems,
   updateOrder,
 } from '@/lib/api/order';
 import {
@@ -18,27 +19,65 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 
-export function useOrders() {
-  const filters = useSearchParams();
+interface FetchOrdersParams {
+  pagination: { pageIndex: number; pageSize: number };
+  filters?: {
+    search?: string;
+    status?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  };
+  sorting?: { id: string; desc: boolean }[];
+}
 
-  const params = useMemo(
+export function useOrders() {
+  const searchParams = useSearchParams();
+
+  const defaultFilters = useMemo(
     () => ({
-      search: filters.get('search') || undefined,
+      search: searchParams.get('search') || undefined,
       status:
-        filters.get('status') !== 'all' ? filters.get('status') : undefined,
-      dateFrom: filters.get('dateFrom')
-        ? new Date(filters.get('dateFrom')!)
+        searchParams.get('status') !== 'all'
+          ? searchParams.get('status')!
+          : undefined,
+      dateFrom: searchParams.get('dateFrom')
+        ? new Date(searchParams.get('dateFrom')!)
         : undefined,
-      dateTo: filters.get('dateTo')
-        ? new Date(filters.get('dateTo')!)
+      dateTo: searchParams.get('dateTo')
+        ? new Date(searchParams.get('dateTo')!)
         : undefined,
     }),
-    [filters]
+    [searchParams]
   );
 
-  const { data, error, isLoading, mutate } = useSWR(
-    ['orders', JSON.stringify(params)],
-    () => getAllOrders(params)
+  // Fetch orders with optional pagination & sorting
+  const fetchOrders = useCallback(
+    async ({
+      pagination,
+      filters = defaultFilters,
+      sorting,
+    }: FetchOrdersParams) => {
+      const response = await getAllOrders({
+        limit: pagination.pageSize,
+        offset: pagination.pageIndex * pagination.pageSize,
+        search: filters.search,
+        status: filters.status,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        sortBy: sorting?.[0]?.id,
+        sortOrder: sorting?.[0]?.desc ? 'asc' : 'desc',
+      });
+
+      return {
+        rows: response.orders,
+        pagination: {
+          limit: pagination.pageSize,
+          offset: pagination.pageIndex * pagination.pageSize,
+          total: response.pagination.total,
+        },
+      };
+    },
+    [defaultFilters]
   );
 
   const fetchOrderById = useCallback(
@@ -47,17 +86,13 @@ export function useOrders() {
   );
 
   return {
-    orders: data?.orders,
-    pagination: data?.pagination,
-    isLoading,
-    isError: error,
-    refresh: mutate,
+    fetchOrders,
+    fetchOrderById,
     createOrder,
     deleteOrder,
     bulkDeleteOrders,
     updateOrder,
-    fetchOrderById,
-    updateLineItems
+    updateLineItems,
   };
 }
 

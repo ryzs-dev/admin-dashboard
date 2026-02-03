@@ -212,13 +212,13 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex w-full">
         <CRMSidebar />
 
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center bg-background gap-4 border-b px-6 w-full">
             {/* Search Bar */}
             <SidebarTrigger className="shrink-0" />
             <div className="flex-1">
@@ -333,7 +333,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">{children}</main>
+          <main>{children}</main>
         </div>
       </div>
     </SidebarProvider>

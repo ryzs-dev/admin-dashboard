@@ -38,7 +38,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
   const router = useRouter();
   const { order_items } = order;
   const { sendTrackingInfo } = useMessage();
-  const { updateLineItems, deleteOrder, refresh } = useOrders();
+  const { updateLineItems, deleteOrder } = useOrders();
   const { updateAddress } = useAddress();
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -299,9 +299,8 @@ const OrderTemplate = ({ order }: { order: Order }) => {
           try {
             await updateAddress(order.addresses?.id as UUID, data);
             toast.success('Address updated');
-            refresh();
           } catch (err: any) {
-            console.log(err);
+            console.error(err);
             toast.error('Failed to update address');
           }
         }}
