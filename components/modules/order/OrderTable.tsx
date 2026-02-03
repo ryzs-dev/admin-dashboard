@@ -246,41 +246,6 @@ export function OrderTable({ data, isLoading }: OrderTableProps) {
 
   return (
     <div className="space-y-4">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="">
-            <div className="flex flex-col gap-1">
-              <p className="text-sm text-gray-500 font-medium">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="">
-            <div className="flex flex-col gap-1">
-              <p className="text-sm text-gray-500 font-medium">Delivered</p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats.delivered}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="">
-            <div className="flex flex-col gap-1">
-              <p className="text-sm text-gray-500 font-medium">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">
-                RM{' '}
-                {stats.total.toLocaleString('en-MY', {
-                  minimumFractionDigits: 2,
-                })}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters and Search */}
       <Card>
         <CardHeader className="pb-4">

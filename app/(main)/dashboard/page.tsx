@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
@@ -16,27 +16,13 @@ import {
 } from 'recharts';
 import { useStats } from '@/hooks/useStats';
 import { StatsCards } from '@/components/dashboard/StatsCard';
+import { addMonths, format } from 'date-fns';
 
 const CRMDashboard = () => {
-  const { stats } = useStats();
-  // Mock data
-  const revenueData = [
-    { month: 'Jan', revenue: 12000 },
-    { month: 'Feb', revenue: 19000 },
-    { month: 'Mar', revenue: 15000 },
-    { month: 'Apr', revenue: 25000 },
-    { month: 'May', revenue: 22000 },
-    { month: 'Jun', revenue: 30000 },
-  ];
+  const [selectedMonth, setSelectedMonth] = useState('2026-01');
+  const { stats, revenueChart, customerChart } = useStats(selectedMonth);
 
-  const customerData = [
-    { month: 'Jan', new: 120, returning: 180 },
-    { month: 'Feb', new: 150, returning: 210 },
-    { month: 'Mar', new: 180, returning: 240 },
-    { month: 'Apr', new: 200, returning: 280 },
-    { month: 'May', new: 170, returning: 260 },
-    { month: 'Jun', new: 220, returning: 300 },
-  ];
+  const currentDate = new Date(`${selectedMonth}-01T00:00:00`);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -44,9 +30,29 @@ const CRMDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setSelectedMonth(format(addMonths(currentDate, -1), 'yyyy-MM'))
+              }
+            >
+              ←
+            </Button>
+
             <Button variant="outline" size="sm">
               <Calendar className="h-4 w-4 mr-2" />
-              This Month
+              {format(currentDate, 'MMMM yyyy')}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setSelectedMonth(format(addMonths(currentDate, 1), 'yyyy-MM'))
+              }
+            >
+              →
             </Button>
             {/* <Button size="sm">Export Report</Button> */}
           </div>
@@ -91,14 +97,14 @@ const CRMDashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#888" />
-                  <YAxis stroke="#888" />
+                <LineChart data={revenueChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis />
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey="revenue"
+                    dataKey="value"
                     stroke="#2563eb"
                     strokeWidth={2}
                   />
@@ -114,13 +120,11 @@ const CRMDashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={customerData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#888" />
-                  <YAxis stroke="#888" />
+                <BarChart data={customerChart}>
+                  <XAxis dataKey="month" />
+                  <YAxis />
                   <Tooltip />
-                  <Bar dataKey="new" fill="#2563eb" />
-                  <Bar dataKey="returning" fill="#60a5fa" />
+                  <Bar dataKey="new_customers" fill="#2563eb" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-export async function getDashboardStats() {
-  const { data } = await api.get('/dashboard');
+export async function getDashboardStats(month: string) {
+  const { data } = await api.get(`/dashboard?month=${month}`);
   return data;
 }
