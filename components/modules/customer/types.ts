@@ -25,7 +25,7 @@ export interface Query {
   filter?: FilterType;
   dateFrom?: Date;
   dateTo?: Date;
-  status?: string;
+  status?: string | null;
 }
 
 export type FilterType = 'all' | 'today' | 'week' | 'month';
