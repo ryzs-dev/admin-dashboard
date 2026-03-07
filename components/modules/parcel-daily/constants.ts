@@ -6,9 +6,9 @@ export const COURIER_SERVICES = {
       logo: '/images/couriers/shopee.svg', // ✅ remove `/public`
     },
     {
-      value: 'flash',
-      label: 'Flash Express',
-      logo: '/images/couriers/flash.png',
+      value: 'dhl',
+      label: 'DHL Express',
+      logo: '/images/couriers/dhl-logo.png',
     },
     {
       value: 'jnt',

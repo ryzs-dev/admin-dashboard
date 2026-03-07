@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash,
   MoreHorizontal,
+  ExternalLink,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ import DeleteDialog from '../alert/DeleteDialog';
 import EditOrderDialog from '@/components/modules/order/EditOrderItemsDialog';
 import { useAddress } from '@/hooks/useAddress';
 import EditAddressDialog from '@/components/modules/order/EditAddressDialog';
+import Link from 'next/link';
 
 const OrderTemplate = ({ order }: { order: Order }) => {
   const router = useRouter();
@@ -217,17 +219,34 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Label>Name:</Label>
-                  <p>{order.customers?.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Email:</Label>
-                  <p>{order.customers?.email}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Phone:</Label>
-                  <p>{order.customers?.phone_number}</p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className=" text-gray-500">Customer</span>
+
+                    <Link
+                      href={`/customers/${order.customers?.id}`}
+                      className="inline-flex items-center gap-1 font-semibold text-gray-900 hover:text-blue-600 transition-colors group"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 " />
+                      {order.customers?.name}
+                    </Link>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Email</span>
+                    <span className="text-gray-900">
+                      {order.customers?.email || '-'}
+                    </span>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Phone</span>
+                    <span className="text-gray-900">
+                      {order.customers?.phone_number || '-'}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -256,10 +275,49 @@ const OrderTemplate = ({ order }: { order: Order }) => {
               </CardHeader>
 
               <CardContent>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>{order.addresses?.full_address}</p>
-                  <p>{order.addresses?.city}</p>
-                  <p>{order.addresses?.country}</p>
+                <div className="space-y-4 text-sm">
+                  {order.addresses ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between gap-6">
+                        <span className="text-gray-500">Full Address</span>
+                        <span className="text-gray-900 text-right max-w-xs">
+                          {order.addresses.full_address}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Postcode</span>
+                        <span className="text-gray-900">
+                          {order.addresses.postcode}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">City</span>
+                        <span className="text-gray-900">
+                          {order.addresses.city}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">State</span>
+                        <span className="text-gray-900">
+                          {order.addresses.state}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Country</span>
+                        <span className="text-gray-900">
+                          {order.addresses.country}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      No address available
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

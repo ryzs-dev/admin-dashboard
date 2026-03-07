@@ -32,6 +32,7 @@ import CustomerStatsCard from './CustomerStatsCard';
 import { formatCurrency } from '@/lib/utils/currency';
 import { CustomerInput } from '@/types/customer';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface CustomerProfileProps {
   customer_id: UUID;
@@ -288,20 +289,45 @@ export default function CustomerProfile({
                         </tr>
                       </thead>
                       <tbody>
-                        {customer?.orders?.map((order: Order) => (
-                          <tr key={order.id} className="border-b last:border-0">
-                            <td className="h-12 px-4 align-middle">
-                              {order.order_number}
-                            </td>
-                            <td className="h-12 px-4 align-middle">
-                              {order.order_date}
-                            </td>
+                        {customer?.orders?.length ? (
+                          customer.orders.map((order: Order) => (
+                            <tr
+                              key={order.id}
+                              className="border-b last:border-0 hover:bg-gray-50 transition-colors"
+                            >
+                              {/* Order Number (Clickable Relation) */}
+                              <td className="h-12 px-4 align-middle">
+                                <Link
+                                  href={`/orders/${order.id}`}
+                                  className="font-medium text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+                                >
+                                  {order.order_number}
+                                </Link>
+                              </td>
 
-                            <td className="h-12 px-4 align-middle text-right">
-                              {formatCurrency(order.total_amount)}
+                              {/* Order Date */}
+                              <td className="h-12 px-4 align-middle text-gray-600">
+                                {new Date(
+                                  order.order_date
+                                ).toLocaleDateString()}
+                              </td>
+
+                              {/* Amount */}
+                              <td className="h-12 px-4 align-middle text-right font-semibold text-gray-900">
+                                {formatCurrency(order.total_amount)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="h-16 text-center text-sm text-gray-400"
+                            >
+                              No orders yet
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
