@@ -24,6 +24,7 @@ interface FetchOrdersParams {
   filters?: {
     search?: string;
     status?: string;
+    tracking?: string;
     dateFrom?: Date;
     dateTo?: Date;
   };
@@ -62,6 +63,7 @@ export function useOrders() {
         offset: pagination.pageIndex * pagination.pageSize,
         search: filters.search,
         status: filters.status,
+        tracking: filters.tracking,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
         sortBy: sorting?.[0]?.id,

@@ -74,6 +74,7 @@ export function OrderTable() {
     status: 'all',
     dateFrom: '',
     dateTo: '',
+    tracking: 'all',
   });
   const [localFilters, setLocalFilters] = useState({ ...filters });
 
@@ -82,7 +83,7 @@ export function OrderTable() {
   const [open, setOpen] = useState(false);
 
   const { data, isFetching } = useQuery<OrdersResponse, Error>({
-    queryKey: ['orders', pagination, sorting, filters],
+    queryKey: ['orders', pagination, sorting, JSON.stringify(filters)],
     queryFn: () =>
       fetchOrders({
         pagination,
@@ -90,6 +91,7 @@ export function OrderTable() {
         filters: {
           search: filters.search,
           status: filters.status,
+          tracking: filters.tracking,
           dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
           dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
         },
@@ -97,7 +99,7 @@ export function OrderTable() {
     keepPreviousData: true,
   } as UseQueryOptions<OrdersResponse, Error>);
 
-  console.log('Data', data);
+  console.log('Order Data:', data);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -121,11 +123,11 @@ export function OrderTable() {
         const order = data?.rows.find((o) => o.id === id);
         if (!order) continue;
 
-        const orderTrackingId = order.order_tracking?.[0]?.id;
+        const orderTrackingId = order.order_tracking?.id;
         const name = order.customers?.name || '';
         const phone = order.customers?.phone_number || '';
-        const courier = order.order_tracking?.[0]?.courier || '';
-        const tracking = order.order_tracking?.[0]?.tracking_number || '';
+        const courier = order.order_tracking?.courier || '';
+        const tracking = order.order_tracking?.tracking_number || '';
 
         const missingFields: string[] = [];
         if (!orderTrackingId) missingFields.push('order tracking ID');
@@ -268,7 +270,8 @@ export function OrderTable() {
               {(localFilters.search ||
                 localFilters.dateFrom ||
                 localFilters.dateTo ||
-                localFilters.status !== 'all') && (
+                localFilters.status !== 'all' ||
+                localFilters.tracking !== 'all') && (
                 <button
                   onClick={() => {
                     setLocalFilters({
@@ -276,12 +279,14 @@ export function OrderTable() {
                       dateFrom: '',
                       dateTo: '',
                       status: 'all',
+                      tracking: 'all',
                     });
                     setFilters({
                       search: '',
                       dateFrom: '',
                       dateTo: '',
                       status: 'all',
+                      tracking: 'all',
                     });
                   }}
                   className="text-xs text-gray-500 hover:text-gray-700 underline"
@@ -321,13 +326,18 @@ export function OrderTable() {
                           }
                         : undefined
                     }
-                    onChange={(range) =>
+                    onChange={(range) => {
+                      const from = formatDateToYYYYMMDD(range?.from);
+                      const to = range?.to
+                        ? formatDateToYYYYMMDD(range?.to)
+                        : formatDateToYYYYMMDD(range?.from);
+
                       setLocalFilters((prev) => ({
                         ...prev,
-                        dateFrom: formatDateToYYYYMMDD(range?.from),
-                        dateTo: formatDateToYYYYMMDD(range?.to),
-                      }))
-                    }
+                        dateFrom: from,
+                        dateTo: to,
+                      }));
+                    }}
                   />
                 </div>
 
@@ -340,13 +350,32 @@ export function OrderTable() {
                   >
                     <SelectTrigger className="w-full">
                       <Filter className="h-4 w-4 text-gray-500 mr-2" />
-                      <SelectValue placeholder="All Status" />
+                      <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="sent">Sent</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="In Transit">In Transit</SelectItem>
+                      <SelectItem value="Delivering">Delivering</SelectItem>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <Select
+                    value={localFilters.tracking}
+                    onValueChange={(value) =>
+                      setLocalFilters((prev) => ({ ...prev, tracking: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Tracking" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Orders</SelectItem>
+                      <SelectItem value="with">With Tracking</SelectItem>
+                      <SelectItem value="without">No Tracking</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

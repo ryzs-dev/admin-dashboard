@@ -91,7 +91,6 @@ export default function CreateShipmentDialog({
 
     try {
       const data = await createParcelDailyShipment(payload, order.id as UUID);
-      console.log(data);
       toast.success(`Shipment created`);
       setIsLoading(false);
       onOpenChange?.(false);

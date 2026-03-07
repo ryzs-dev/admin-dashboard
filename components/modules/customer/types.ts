@@ -25,6 +25,7 @@ export interface Query {
   filter?: FilterType;
   dateFrom?: Date;
   dateTo?: Date;
+  tracking?: string;
   status?: string | null;
 }
 

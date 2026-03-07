@@ -237,10 +237,10 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
   // Status column with visual badges
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Delivery Status',
     cell: ({ row }) => {
       const status =
-        row.original.order_tracking?.[0]?.status.toLowerCase() as keyof typeof STATUS_CONFIG;
+        row.original.order_tracking?.status.toLowerCase() as keyof typeof STATUS_CONFIG;
       const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
       const Icon = config.icon;
 
@@ -260,9 +260,9 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
   // Tracking column with interactive elements
   {
     accessorKey: 'order_tracking',
-    header: 'Tracking',
+    header: 'Tracking Number',
     cell: ({ row }) => {
-      const tracking = row.original.order_tracking?.[0];
+      const tracking = row.original.order_tracking;
 
       const isSent = tracking?.message_status === 'sent';
 

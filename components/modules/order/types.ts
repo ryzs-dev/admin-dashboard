@@ -13,7 +13,7 @@ export interface Order {
   total_amount: number;
   payment_method: string;
   order_items: OrderItems[];
-  order_tracking?: OrderTracking[];
+  order_tracking?: OrderTracking;
   created_at: string;
   updated_at: string;
   shipment_description?: string;
