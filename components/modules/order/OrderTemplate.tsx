@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Order } from './types';
-import { Label } from '@/components/ui/label';
 import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
 import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
 import { useRouter } from 'next/navigation';
@@ -115,7 +114,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   <Mail className="h-4 w-4 mr-2" /> Email Customer
                 </DropdownMenuItem> */}
 
-                {!order.order_tracking || order.order_tracking.length === 0 ? (
+                {!order.order_tracking ? (
                   <DropdownMenuItem onClick={() => setShipmentDialogOpen(true)}>
                     <Box className="h-4 w-4 mr-2" /> Create Shipment
                   </DropdownMenuItem>
