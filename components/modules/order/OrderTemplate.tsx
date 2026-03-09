@@ -74,6 +74,15 @@ const OrderTemplate = ({ order }: { order: Order }) => {
     }
   };
 
+  const hasTracking =
+    order.order_tracking &&
+    (Array.isArray(order.order_tracking)
+      ? order.order_tracking.length > 0
+      : true);
+
+  console.log('order_tracking:', order.order_tracking);
+  console.log('hasTracking:', hasTracking);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto py-10 px-6 space-y-8">
@@ -114,7 +123,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   <Mail className="h-4 w-4 mr-2" /> Email Customer
                 </DropdownMenuItem> */}
 
-                {!order.order_tracking ? (
+                {!hasTracking ? (
                   <DropdownMenuItem onClick={() => setShipmentDialogOpen(true)}>
                     <Box className="h-4 w-4 mr-2" /> Create Shipment
                   </DropdownMenuItem>
