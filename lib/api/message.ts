@@ -9,10 +9,12 @@ const api = axios.create({
 });
 
 export async function sendMessage(message: MessageInput) {
-  if (!message.to_number) {
-    throw new Error('Recipient number is required');
+  if (!message.to_number || !message.body.text) {
+    throw new Error('Recipient number / body is required');
   }
-  const { data } = await api.post('/template', message);
+
+  console.log('To', message.to_number, 'Body', message.body.text);
+  const { data } = await api.post('/', message);
   return data;
 }
 

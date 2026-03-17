@@ -10,6 +10,7 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  MessageCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -67,13 +68,13 @@ function CRMSidebar() {
     },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
-    // {
-    //   id: 'inbox',
-    //   label: 'Inbox',
-    //   icon: MessageCircle,
-    //   href: '/inbox',
-    //   badge: 3,
-    // },
+    {
+      id: 'inbox',
+      label: 'Inbox',
+      icon: MessageCircle,
+      href: '/inbox',
+      badge: 3,
+    },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
     // {
     //   id: 'import',

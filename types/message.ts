@@ -6,6 +6,7 @@ export interface MessageInput {
     tracking_number?: string;
     courier?: string;
     url?: string;
+    text?: string;
   };
   timestamp?: string;
   metadata?: [];

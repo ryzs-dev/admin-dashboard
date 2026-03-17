@@ -3,48 +3,59 @@
 import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useConversationMessages } from '@/hooks/useConversationMessages';
+import {
+  formatChatTimestamp,
+  renderMessage,
+  unixToGMT8,
+} from '@/lib/utils/metaWhatsapp';
+import MediaPreview from './media/MediaPreview';
+import { MessageInput } from '@/types/message';
 
 export default function WhatsAppInbox() {
   const { conversations: convData, isLoading: convLoading } =
     useConversations();
   const [selectedId, setSelectedId] = useState<string>('');
-  const { messages: msgData, isLoading: msgLoading } =
-    useConversationMessages(selectedId);
+  const {
+    messages: msgData,
+    isLoading: msgLoading,
+    sendMessage,
+    refresh,
+  } = useConversationMessages(selectedId);
   const [text, setText] = useState('');
-
-  const handleSelectConversation = (id: string) => setSelectedId(id);
-
-  const handleSendMessage = async () => {
-    console.log('Send message:', { to: selectedId, body: text });
-  };
+  const [searchTerm, setSearchTerm] = useState('');
+  const [previewMedia, setPreviewMedia] = useState<{
+    mediaId: string;
+    fileName?: string;
+  } | null>(null);
 
   const selectedConversation = convData.data?.find(
     (c: any) => c.id === selectedId
   );
 
-  console.log('Selected Conversation:', selectedConversation);
-  console.log('Messages:', msgData);
+  const filteredConversations =
+    convData.data?.filter((c: any) => {
+      const nameMatch = c.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const phoneMatch = c.phone_number?.includes(searchTerm);
+      return nameMatch || phoneMatch;
+    }) || [];
 
-  function convertToGMT8(utcString: string): string {
-    const utcDate = new Date(utcString);
+  const handleSelectConversation = (id: string) => setSelectedId(id);
 
-    const gmt8Date = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000);
+  const handleSendMessage = async () => {
+    if (!text.trim() || !selectedConversation) return;
 
-    const hours = String(gmt8Date.getHours()).padStart(2, '0');
-    const minutes = String(gmt8Date.getMinutes()).padStart(2, '0');
+    const message: MessageInput = {
+      to_number: selectedConversation.phone_number,
+      body: { text: text.trim() },
+      direction: 'outbound',
+      type: 'text',
+    };
 
-    return `${hours}:${minutes}`;
-  }
-
-  function unixToDate(unixSeconds: number): string {
-    // Convert seconds → milliseconds
-    const date = new Date(unixSeconds * 1000);
-
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${hours}:${minutes}`;
-  }
+    await sendMessage(message);
+    setText('');
+  };
 
   return (
     <div className="flex max-h-[93vh] bg-gray-50">
@@ -54,19 +65,29 @@ export default function WhatsAppInbox() {
           <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
         </div>
 
+        <div className="px-4 py-2 border-b border-gray-100">
+          <input
+            type="text"
+            placeholder="Search users..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {convLoading ? (
             <div className="flex justify-center items-center h-32">
               Loading...
             </div>
           ) : (
-            convData.data?.map((c: any) => (
+            filteredConversations.map((c: any) => (
               <div
                 key={c.id}
                 onClick={() => handleSelectConversation(c.id)}
-                className={`px-4 py-3 cursor-pointer transition-all duration-200 rounded-lg hover:bg-gray-50 ${
+                className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
                   selectedId === c.id
-                    ? 'bg-blue-50 border-l-3 border-l-blue-500 pl-3'
+                    ? 'bg-blue-100 pl-3'
                     : 'border-l-3 border-transparent'
                 }`}
               >
@@ -74,18 +95,16 @@ export default function WhatsAppInbox() {
                   <div className="flex-1 min-w-0 pr-3">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-sm font-semibold text-gray-900 truncate">
-                        {c.name ? c.name : c.phone_number}
+                        {c.name.toUpperCase()} ({c.phone_number})
                       </h3>
                       {c.last_message_at && (
                         <span className="text-xs text-gray-400 whitespace-nowrap">
-                          {convertToGMT8(c.last_message_at)}
+                          {formatChatTimestamp(c.last_message_at)}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-gray-500 truncate line-clamp-1">
-                      {c.last_message?.type === 'image'
-                        ? '📷 Image'
-                        : c.last_message?.text_body || 'No messages yet'}
+                      Last Sent at {formatChatTimestamp(c.last_message_at)}
                     </p>
                   </div>
 
@@ -110,20 +129,13 @@ export default function WhatsAppInbox() {
           <>
             {/* Chat Header */}
             <div className="px-6 py-4 border-b border-gray-200 bg-white">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-sm font-medium text-gray-600"></span>
-                </div>
-                <div>
-                  <h2 className="font-semibold text-gray-900">
-                    {selectedConversation?.name
-                      ? selectedConversation.name
-                      : selectedConversation?.phone_number}
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    {selectedConversation?.status.toUpperCase()}
-                  </p>
-                </div>
+              <div className="flex-col items-center">
+                <h2 className="font-semibold text-gray-900 pb-1">
+                  {selectedConversation.name.toUpperCase()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {selectedConversation?.phone_number}
+                </p>
               </div>
             </div>
 
@@ -134,33 +146,76 @@ export default function WhatsAppInbox() {
                   Loading messages...
                 </div>
               ) : (
-                msgData.data?.map((m: any) => (
-                  <div
-                    key={m.id}
-                    className={`flex ${m.direction === 'inbound' ? 'justify-start' : 'justify-end'}`}
-                  >
+                msgData.data?.map((m: any) => {
+                  const rendered = renderMessage(m);
+                  return (
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm ${
-                        m.direction === 'inbound'
-                          ? 'bg-white border border-gray-200 text-gray-900'
-                          : 'bg-blue-500 text-white'
-                      }`}
+                      key={m.id}
+                      className={`flex ${m.direction === 'inbound' ? 'justify-start' : 'justify-end'}`}
                     >
-                      <p className="text-sm leading-relaxed">{m.text_body}</p>
-                      {m.timestamp && (
-                        <p
-                          className={`text-xs mt-1 ${
-                            m.direction === 'inbound'
-                              ? 'text-gray-400'
-                              : 'text-blue-100'
-                          }`}
-                        >
-                          {unixToDate(m.timestamp)}
-                        </p>
-                      )}
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm ${
+                          m.direction === 'inbound'
+                            ? 'bg-white border border-gray-200 text-gray-900'
+                            : 'bg-blue-500 text-white'
+                        }`}
+                      >
+                        {rendered.type === 'image' ? (
+                          <button
+                            onClick={() =>
+                              setPreviewMedia({
+                                mediaId: rendered.mediaId,
+                                fileName: rendered.fileName,
+                              })
+                            }
+                            className="flex items-center space-x-2 text-sm underline opacity-80 hover:opacity-100"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <span>{rendered.fileName || 'View image'}</span>
+                          </button>
+                        ) : (
+                          <p className="text-sm leading-relaxed">
+                            {rendered.content}
+                          </p>
+                        )}
+                        {m.timestamp && (
+                          <div
+                            className={`flex items-center justify-end mt-1 space-x-2 text-xs ${
+                              m.direction === 'inbound'
+                                ? 'text-gray-400'
+                                : 'text-blue-100'
+                            }`}
+                          >
+                            <span>{unixToGMT8(m.timestamp)}</span>
+
+                            <span>•</span>
+
+                            <span className="capitalize">{m.status}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
+              )}
+              {previewMedia && (
+                <MediaPreview
+                  mediaId={previewMedia.mediaId}
+                  fileName={previewMedia.fileName}
+                  onClose={() => setPreviewMedia(null)}
+                />
               )}
             </div>
 

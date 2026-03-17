@@ -11,6 +11,7 @@ import {
   ChevronDown,
   User,
   LogOut,
+  MessageCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -45,13 +46,12 @@ const menuItems = [
   },
   { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
   { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
-  // {
-  //   id: 'inbox',
-  //   label: 'Inbox',
-  //   icon: MessageCircle,
-  //   href: '/inbox',
-  //   badge: 3,
-  // },
+  {
+    id: 'inbox',
+    label: 'Inbox',
+    icon: MessageCircle,
+    href: '/inbox',
+  },
   { id: 'products', label: 'Products', icon: Package, href: '/products' },
   // {
   //   id: 'import',
