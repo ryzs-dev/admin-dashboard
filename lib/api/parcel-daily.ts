@@ -24,3 +24,17 @@ export async function createParcelDailyShipment(
   const { data } = await api.post('/order/create', { shipmentData, orderId });
   return data;
 }
+
+export async function createBulkParcelDailyShipments(
+  shipments: ShipmentInput[]
+) {
+  try {
+    const { data } = await api.post('/order/create/bulk', { shipments });
+    return data as { success: boolean; data: unknown };
+  } catch (error: any) {
+    console.error(error?.response?.data || error.message);
+    throw new Error(
+      error?.response?.data?.error || 'Failed to create bulk shipments'
+    );
+  }
+}

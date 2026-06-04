@@ -62,18 +62,33 @@ export async function createOrder(order: OrderInput) {
   }
 }
 
+export type BulkShipmentResultItem = {
+  order_id: string;
+  success: boolean;
+  error?: string;
+  data?: unknown;
+};
+
 export async function createBulkOrder(orderIds: string[]) {
   try {
     const { data } = await api.post('/create/bulk', {
       order_ids: orderIds,
     });
 
-    return data;
+    return data as {
+      success: boolean;
+      message: string;
+      succeeded: number;
+      failed: number;
+      results: BulkShipmentResultItem[];
+    };
   } catch (error: any) {
     console.error(error?.response?.data || error.message);
 
     throw new Error(
-      error?.response?.data?.message || 'Failed to create bulk order'
+      error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        'Failed to create bulk shipments'
     );
   }
 }

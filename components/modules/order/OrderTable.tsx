@@ -28,7 +28,14 @@ import {
 } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Filter, Loader2, ChevronRight, ChevronLeft, Plus } from 'lucide-react';
+import {
+  Filter,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  Plus,
+  Send,
+} from 'lucide-react';
 import { createColumns } from './OrderTableColumns';
 import { toast } from 'sonner';
 import { useMessage } from '@/hooks/useMessage';
@@ -87,6 +94,7 @@ export function OrderTable() {
   const [open, setOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isBulkShipping, setIsBulkShipping] = useState(false);
 
   const handleCreateOrder = async (data: OrderInput) => {
     setIsCreating(true);
@@ -226,17 +234,43 @@ export function OrderTable() {
   const handleCreateBulkShipments = async () => {
     const ids = selectedRows.map((r) => r.original.id);
 
-    console.log('Sending Bulk Orders');
+    if (!ids.length) {
+      toast.error('Select at least one order');
+      return;
+    }
 
-    console.log(ids);
+    setIsBulkShipping(true);
     try {
-      await createBulkOrder(ids);
+      const result = await createBulkOrder(ids);
       table.resetRowSelection();
-      toast.success('Bulk Order Created Successfully');
-    } catch (error: any) {
-      console.error(error);
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-      toast.error(error.message || 'Something went wrong');
+      if (result.succeeded === result.results.length) {
+        toast.success(result.message);
+      } else if (result.succeeded > 0) {
+        toast.success(result.message);
+        const failed = result.results.filter((r) => !r.success);
+        const preview = failed
+          .slice(0, 3)
+          .map((r) => r.error ?? 'Unknown error')
+          .join('; ');
+        toast.warning(
+          failed.length > 3
+            ? `${preview} (+${failed.length - 3} more)`
+            : preview
+        );
+      } else {
+        const firstError =
+          result.results[0]?.error ?? 'No shipments were created';
+        toast.error(firstError);
+      }
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : 'Something went wrong'
+      );
+    } finally {
+      setIsBulkShipping(false);
     }
   };
 
@@ -596,7 +630,7 @@ export function OrderTable() {
         description="This action cannot be undone. The order will be permanently removed."
       />
 
-      {/* {hasSelection && (
+      {hasSelection && (
         <div
           className={cn(
             'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
@@ -630,21 +664,23 @@ export function OrderTable() {
             <Button
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
-              onClick={() => handleCreateBulkShipments(selectedRows)}
+              onClick={handleCreateBulkShipments}
+              disabled={isBulkShipping}
             >
-              Create Bulk Shipments
+              {isBulkShipping ? 'Creating…' : 'Create Bulk Shipments'}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="text-gray-400 hover:text-gray-600 h-8 px-2 text-xs"
               onClick={() => table.resetRowSelection()}
+              disabled={isBulkShipping}
             >
               Clear
             </Button>
           </div>
         </div>
-      )} */}
+      )}
     </div>
   );
 }
