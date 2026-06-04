@@ -86,7 +86,7 @@ function AutomationUI() {
     { id: '3', type: 'message', content: 'Just checking in 👋' },
   ]);
 
-  function handleDragEnd(event) {
+  function handleDragEnd(event: any) {
     const { active, over } = event;
     if (!over) return;
 
@@ -97,17 +97,17 @@ function AutomationUI() {
     }
   }
 
-  function updateStep(id, field, value) {
+  function updateStep(id: string, field: string, value: string) {
     setSteps((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
     );
   }
 
-  function deleteStep(id) {
+  function deleteStep(id: string) {
     setSteps((prev) => prev.filter((s) => s.id !== id));
   }
 
-  function insertStep(index, type) {
+  function insertStep(index: number, type: string) {
     const newStep =
       type === 'message'
         ? { id: Date.now().toString(), type: 'message', content: 'New message' }
@@ -156,7 +156,7 @@ function AutomationUI() {
               {steps.map((step, index) => (
                 <div key={step.id} className="space-y-2">
                   {/* Insert BEFORE */}
-                  <InsertBar onAdd={(type) => insertStep(index, type)} />
+                  <InsertBar onAdd={(type: string) => insertStep(index, type)} />
 
                   <SortableItem
                     id={step.id}
@@ -168,7 +168,7 @@ function AutomationUI() {
               ))}
 
               {/* Insert at END */}
-              <InsertBar onAdd={(type) => insertStep(steps.length, type)} />
+              <InsertBar onAdd={(type: string) => insertStep(steps.length, type)} />
             </div>
           </SortableContext>
         </DndContext>
@@ -179,7 +179,7 @@ function AutomationUI() {
   );
 }
 
-function InsertBar({ onAdd }) {
+function InsertBar({ onAdd }: { onAdd: (type: string) => void }) {
   return (
     <div className="flex gap-2 justify-center">
       <Button size="sm" variant="outline" onClick={() => onAdd('message')}>
@@ -192,7 +192,7 @@ function InsertBar({ onAdd }) {
   );
 }
 
-function SortableItem({ id, step, onChange, onDelete }) {
+function SortableItem({ id, step, onChange, onDelete }: { id: string, step: { id: string, type: string, content?: string, delay?: string }, onChange: (id: string, field: string, value: string) => void, onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
 

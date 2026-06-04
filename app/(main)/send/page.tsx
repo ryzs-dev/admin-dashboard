@@ -101,15 +101,15 @@ export default function Send() {
         };
 
         console.log("Payload:", payload);
-        await sendMessage({
-          to,
-          type: "template",
-          template: {
-            name: `${selectedTemplate.name}`,
-            language: { code: `${selectedTemplate.language}` },
-            components: [bodyComponent],
-          },
-        });
+        // await sendMessage({
+        //   to,
+        //   type: "template",
+        //   template: {
+        //     name: `${selectedTemplate.name}`,
+        //     language: { code: `${selectedTemplate.language}` },
+        //     components: [bodyComponent],
+        //   },
+        // });
       } else {
         console.log("Sending Text");
 

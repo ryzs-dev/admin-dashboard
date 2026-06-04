@@ -58,7 +58,7 @@ export default function BroadcastDetailPage() {
 
   console.log(segments);
 
-  async function handleTrigger(id) {
+  async function handleTrigger(id: string) {
     try {
       setTriggering(true);
       await triggerBroadcast(id);

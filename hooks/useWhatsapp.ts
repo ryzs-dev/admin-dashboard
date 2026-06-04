@@ -1,4 +1,4 @@
-import { transformMetaTemplate } from '@/app/(main)/templates/page';
+import { transformMetaTemplate } from '@/lib/utils/transformMetaTemplate';
 import fetcher from '@/lib/fetcher';
 import axios from 'axios';
 
