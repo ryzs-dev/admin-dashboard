@@ -26,6 +26,7 @@ export interface Query {
   dateFrom?: Date;
   dateTo?: Date;
   tracking?: string;
+  location?: string;
   status?: string | null;
 }
 

@@ -55,16 +55,26 @@ export default function OrderDetailsPage({
     setIsCreateShipmentOpen(true);
   };
 
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
   const handleSubmitOrder = async (data: OrderInput) => {
+    if (!editingOrder) return;
+
+    setIsSavingOrder(true);
     try {
-      if (editingOrder) {
-        await updateOrder(editingOrder.id as UUID, data);
-      }
+      await updateOrder(editingOrder.id as UUID, data);
+      const { order } = await fetchOrderById(orderId);
+      setFetchedOrder(order);
       setIsOrderDialogOpen(false);
       setEditingOrder(null);
       toast.success('Order saved successfully');
     } catch (error) {
       console.error('Error saving order:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to save order'
+      );
+    } finally {
+      setIsSavingOrder(false);
     }
   };
 
@@ -104,11 +114,12 @@ export default function OrderDetailsPage({
       {isOrderDialogOpen && (
         <OrderFormDialog
           isOpen={isOrderDialogOpen}
-          onClose={() => setIsOrderDialogOpen(false)}
+          onClose={() => !isSavingOrder && setIsOrderDialogOpen(false)}
           onSubmit={handleSubmitOrder}
           initialData={editingOrder || undefined}
           customers={customers || []}
           products={products || []}
+          isSubmitting={isSavingOrder}
         />
       )}
 

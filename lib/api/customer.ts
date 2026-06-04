@@ -21,6 +21,14 @@ export async function getCustomers(params?: Query) {
   };
 }
 
+export async function getAllCustomerIds(params: {
+  search?: string;
+  filter?: 'all' | 'today' | 'week' | 'month';
+}) {
+  const res = await api.get('/ids', { params });
+  return res.data.ids as string[];
+}
+
 export async function getCustomer(phone_number: string) {
   const { data } = await api.get(`/${phone_number}`);
   return data;
@@ -40,8 +48,13 @@ export async function updateCustomer(
   id: UUID,
   customer: Partial<CustomerInput>
 ) {
-  const { data } = await api.patch(`/${id}`, customer);
-  return data;
+  try {
+    const { data } = await api.patch(`/${id}`, customer);
+    return data;
+  } catch (error: any) {
+    console.error('Error updating customer:', error.response?.data || error);
+    throw error;
+  }
 }
 
 export async function deleteCustomer(id: UUID) {

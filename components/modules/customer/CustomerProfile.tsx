@@ -71,9 +71,8 @@ export default function CustomerProfile({
     try {
       await update?.(customer_id, updateData);
       toast.success('Customer updated successfully');
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      toast.error('Failed to update customer');
+    } catch (error: any) {
+      toast.error(`${error.response.data.details}`);
     } finally {
       setIsEditing(false);
     }

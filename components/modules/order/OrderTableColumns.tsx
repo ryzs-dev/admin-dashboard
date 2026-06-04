@@ -34,6 +34,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { UUID } from 'crypto';
+import { cn } from '@/lib/utils';
 
 interface ColumnActions {
   onViewDetails: (orderId: string) => void;
@@ -79,7 +80,6 @@ const STATUS_CONFIG = {
 } as const;
 
 export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
-  // Selection column
   {
     id: 'select',
     header: ({ table }) => (
@@ -88,7 +88,13 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
           checked={table.getIsAllPageRowsSelected()}
           onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
           aria-label="Select all orders"
-          className="data-[state=checked]:bg-blue-600"
+          className={cn(
+            'h-5 w-5 rounded-sm border border-gray-300',
+            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600',
+            'hover:border-indigo-400',
+            'focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 focus-visible:outline-none',
+            'transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+          )}
         />
       </div>
     ),
@@ -98,7 +104,13 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
           checked={row.getIsSelected()}
           onCheckedChange={(val) => row.toggleSelected(!!val)}
           aria-label={`Select order ${row.original.order_number || row.original.id}`}
-          className="data-[state=checked]:bg-blue-600"
+          className={cn(
+            'h-5 w-5 rounded-sm border border-gray-300',
+            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600',
+            'hover:border-indigo-400',
+            'focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 focus-visible:outline-none',
+            'transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+          )}
         />
       </div>
     ),
@@ -107,7 +119,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     size: 40,
   },
 
-  // Order ID & Date column
   {
     accessorKey: 'id',
     header: ({ column }) => (

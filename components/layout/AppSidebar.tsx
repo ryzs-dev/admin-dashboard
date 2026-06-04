@@ -12,6 +12,7 @@ import {
   User,
   LogOut,
   MessageCircle,
+  Box,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,6 +54,7 @@ const menuItems = [
     href: '/inbox',
   },
   { id: 'products', label: 'Products', icon: Package, href: '/products' },
+  { id: 'funnel', label: 'Funnel', icon: Box, href: '/funnel' },
   // {
   //   id: 'import',
   //   label: 'Import',

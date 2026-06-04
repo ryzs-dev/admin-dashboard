@@ -11,6 +11,11 @@ import {
   LogOut,
   ChevronDown,
   MessageCircle,
+  Box,
+  Zap,
+  User2,
+  Radio,
+  Book,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -76,6 +81,20 @@ function CRMSidebar() {
       badge: 3,
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
+    { id: 'templates', label: 'Templates', icon: Book, href: '/templates' },
+    { id: 'automation', label: 'Automation', icon: Zap, href: '/automation' },
+    {
+      id: 'segments',
+      label: 'Segments',
+      icon: User2,
+      href: '/segments',
+    },
+    {
+      id: 'broadcasts',
+      label: 'Broadcasts',
+      icon: Radio,
+      href: '/broadcast',
+    },
     // {
     //   id: 'import',
     //   label: 'Import',

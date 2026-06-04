@@ -28,23 +28,23 @@ import {
 } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  Filter,
-  AlertCircle,
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-} from 'lucide-react';
+import { Filter, Loader2, ChevronRight, ChevronLeft, Plus } from 'lucide-react';
 import { createColumns } from './OrderTableColumns';
 import { toast } from 'sonner';
 import { useMessage } from '@/hooks/useMessage';
 import { DatePicker } from '../utils/ui/DatePicker';
 import { formatDateToYYYYMMDD } from '@/lib/utils/date';
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import DeleteDialog from '../alert/DeleteDialog';
 import { UUID } from 'crypto';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
+import { cn } from '@/lib/utils';
+import { createBulkOrder } from '@/lib/api/order';
+import OrderFormDialog from './OrderFormDialog';
+import { useCustomer } from '@/hooks/useCustomer';
+import { useProducts } from '@/hooks/useProducts';
+import { OrderInput } from '@/types/order';
 interface OrdersResponse {
   rows: Order[];
   pagination: {
@@ -56,7 +56,10 @@ interface OrdersResponse {
 
 export function OrderTable() {
   const router = useRouter();
-  const { fetchOrders, deleteOrder } = useOrders();
+  const queryClient = useQueryClient();
+  const { fetchOrders, deleteOrder, createOrder } = useOrders();
+  const { customers } = useCustomer({ limit: 500 });
+  const { products } = useProducts();
   const { sendTrackingInfo } = useMessage();
   const searchParams = useSearchParams();
 
@@ -75,12 +78,38 @@ export function OrderTable() {
     dateFrom: '',
     dateTo: '',
     tracking: 'all',
+    location: 'all',
   });
   const [localFilters, setLocalFilters] = useState({ ...filters });
 
   const [deleteTargetId, setDeleteTargetId] = useState<UUID | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateOrder = async (data: OrderInput) => {
+    setIsCreating(true);
+    try {
+      const result = await createOrder(data);
+      toast.success(
+        result?.order?.order_number
+          ? `Order ${result.order.order_number} created`
+          : 'Order created successfully'
+      );
+      setIsCreateOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      if (result?.order?.id) {
+        router.push(`/orders/${result.order.id}`);
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to create order';
+      toast.error(message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const { data, isFetching } = useQuery<OrdersResponse, Error>({
     queryKey: ['orders', pagination, sorting, JSON.stringify(filters)],
@@ -92,6 +121,7 @@ export function OrderTable() {
           search: filters.search,
           status: filters.status,
           tracking: filters.tracking,
+          location: filters.location,
           dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
           dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
         },
@@ -99,17 +129,49 @@ export function OrderTable() {
     keepPreviousData: true,
   } as UseQueryOptions<OrdersResponse, Error>);
 
-  console.log('Order Data:', data);
-
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', (pagination.pageIndex + 1).toString());
     params.set('pageSize', pagination.pageSize.toString());
 
-    router.replace(`/orders?${params.toString()}`);
-  }, [pagination.pageIndex, pagination.pageSize, router, searchParams]);
+    if (filters.location && filters.location !== 'all') {
+      params.set('location', filters.location);
+    } else {
+      params.delete('location');
+    }
 
-  // Bulk send tracking
+    if (filters.tracking && filters.tracking !== 'all') {
+      params.set('tracking', filters.tracking);
+    } else {
+      params.delete('tracking');
+    }
+
+    router.replace(`/orders?${params.toString()}`);
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    filters,
+    router,
+    searchParams,
+  ]);
+
+  useEffect(() => {
+    const location = searchParams.get('location') || 'all';
+    const tracking = searchParams.get('tracking') || 'all';
+
+    setFilters((prev) => ({
+      ...prev,
+      location,
+      tracking,
+    }));
+
+    setLocalFilters((prev) => ({
+      ...prev,
+      location,
+      tracking,
+    }));
+  }, [searchParams]);
+
   const handleSendTracking = useCallback(
     async (selectedIds: string[]) => {
       if (!selectedIds.length) {
@@ -160,6 +222,23 @@ export function OrderTable() {
     },
     [data, sendTrackingInfo]
   );
+
+  const handleCreateBulkShipments = async () => {
+    const ids = selectedRows.map((r) => r.original.id);
+
+    console.log('Sending Bulk Orders');
+
+    console.log(ids);
+    try {
+      await createBulkOrder(ids);
+      table.resetRowSelection();
+      toast.success('Bulk Order Created Successfully');
+    } catch (error: any) {
+      console.error(error);
+
+      toast.error(error.message || 'Something went wrong');
+    }
+  };
 
   // Delete order
   const onDeleteOrder = async () => {
@@ -219,81 +298,61 @@ export function OrderTable() {
   const hasSelection = selectedRows.length > 0;
 
   return (
-    <div>
-      {/* Filters */}
+    <div className="m-4">
+      <OrderFormDialog
+        isOpen={isCreateOpen}
+        onClose={() => !isCreating && setIsCreateOpen(false)}
+        onSubmit={handleCreateOrder}
+        customers={customers ?? []}
+        products={products ?? []}
+        isSubmitting={isCreating}
+      />
+
       <Card>
         <CardHeader className="space-y-6">
-          {/* Bulk Actions - Show first when active for better visibility */}
-          {hasSelection && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-lg">
-                    <AlertCircle className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {selectedRows.length}{' '}
-                      {selectedRows.length === 1 ? 'order' : 'orders'} selected
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Ready for bulk action
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-                    onClick={() =>
-                      handleSendTracking(selectedRows.map((r) => r.original.id))
-                    }
-                  >
-                    Send Tracking
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.resetRowSelection()}
-                  >
-                    Clear Selection
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Filters Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
-              {(localFilters.search ||
-                localFilters.dateFrom ||
-                localFilters.dateTo ||
-                localFilters.status !== 'all' ||
-                localFilters.tracking !== 'all') && (
-                <button
-                  onClick={() => {
-                    setLocalFilters({
-                      search: '',
-                      dateFrom: '',
-                      dateTo: '',
-                      status: 'all',
-                      tracking: 'all',
-                    });
-                    setFilters({
-                      search: '',
-                      dateFrom: '',
-                      dateTo: '',
-                      status: 'all',
-                      tracking: 'all',
-                    });
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+              <h2 className="text-lg font-semibold text-gray-700">Filters</h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="gap-1.5"
                 >
-                  Clear all
-                </button>
-              )}
+                  <Plus className="h-4 w-4" />
+                  New Order
+                </Button>
+                {(localFilters.search ||
+                  localFilters.dateFrom ||
+                  localFilters.dateTo ||
+                  localFilters.status !== 'all' ||
+                  localFilters.tracking !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setLocalFilters({
+                        search: '',
+                        dateFrom: '',
+                        dateTo: '',
+                        status: 'all',
+                        tracking: 'all',
+                        location: 'all',
+                      });
+                      setFilters({
+                        search: '',
+                        dateFrom: '',
+                        dateTo: '',
+                        status: 'all',
+                        tracking: 'all',
+                        location: 'all',
+                      });
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3 w-full">
@@ -379,6 +438,23 @@ export function OrderTable() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex-1">
+                  <Select
+                    value={localFilters.location}
+                    onValueChange={(value) =>
+                      setLocalFilters((prev) => ({ ...prev, location: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Location</SelectItem>
+                      <SelectItem value="east">East Malaysia</SelectItem>
+                      <SelectItem value="west">West Malaysia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="justify-end flex">
                 <Button
@@ -457,53 +533,57 @@ export function OrderTable() {
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0">
           {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      'transition-colors duration-200', // smooth color changes
+                      row.getIsSelected()
+                        ? 'bg-indigo-50' // subtle background when selected
+                        : 'hover:bg-gray-50' // hover effect when not selected
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
                         {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
+                          cell.column.columnDef.cell,
+                          cell.getContext()
                         )}
-                      </TableHead>
+                      </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-40 text-center"
-                    >
-                      <p>No orders found</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-40 text-center"
+                  >
+                    <p>No orders found</p>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -515,6 +595,56 @@ export function OrderTable() {
         title="Delete order?"
         description="This action cannot be undone. The order will be permanently removed."
       />
+
+      {/* {hasSelection && (
+        <div
+          className={cn(
+            'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
+            'w-[90%] max-w-lg',
+            'bg-indigo-100 border border-gray-200 rounded-2xl',
+            'px-4 py-3 shadow-xl shadow-black/10',
+            'flex items-center justify-between gap-4',
+            'animate-in slide-in-from-bottom-4 fade-in duration-200'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center h-7 px-2.5 bg-indigo-600 text-white text-xs font-bold rounded-lg tabular-nums">
+              {selectedRows.length}
+            </span>
+            <p className="text-sm font-medium text-gray-700">
+              {selectedRows.length === 1 ? 'order' : 'orders'} selected
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
+              onClick={() =>
+                handleSendTracking(selectedRows.map((r) => r.original.id))
+              }
+            >
+              <Send className="h-3.5 w-3.5 mr-1.5" />
+              Send Tracking
+            </Button>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
+              onClick={() => handleCreateBulkShipments(selectedRows)}
+            >
+              Create Bulk Shipments
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-gray-600 h-8 px-2 text-xs"
+              onClick={() => table.resetRowSelection()}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 }

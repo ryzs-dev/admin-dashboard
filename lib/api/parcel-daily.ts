@@ -24,12 +24,3 @@ export async function createParcelDailyShipment(
   const { data } = await api.post('/order/create', { shipmentData, orderId });
   return data;
 }
-
-export async function createBulkParcelDailyShipments(
-  shipmentData: ShipmentInput[]
-) {
-  const { data } = await api.post('/order/create/bulk', {
-    shipments: shipmentData,
-  });
-  return data;
-}

@@ -16,9 +16,10 @@ const api = axios.create({
 });
 
 export async function getAllOrders(params?: Query) {
-  const { search, dateFrom, dateTo, offset, tracking } = params ?? {};
+  const { search, dateFrom, dateTo, offset, tracking, location } = params ?? {};
 
-  const isFiltered = !!search || !!dateFrom || !!dateTo || !!tracking;
+  const isFiltered =
+    !!search || !!dateFrom || !!dateTo || !!tracking || !!location;
 
   const queryParams: Record<string, any> = {
     ...params,
@@ -46,8 +47,35 @@ export async function getOrderByCustomerId(customer_id: UUID) {
 }
 
 export async function createOrder(order: OrderInput) {
-  const { data } = await api.post('/', order);
-  return data;
+  try {
+    const { data } = await api.post('/', order);
+    return data as {
+      success: boolean;
+      message: string;
+      order: { id: string; order_number?: string };
+    };
+  } catch (error: any) {
+    console.error(error?.response?.data || error.message);
+    throw new Error(
+      error?.response?.data?.error || 'Failed to create order'
+    );
+  }
+}
+
+export async function createBulkOrder(orderIds: string[]) {
+  try {
+    const { data } = await api.post('/create/bulk', {
+      order_ids: orderIds,
+    });
+
+    return data;
+  } catch (error: any) {
+    console.error(error?.response?.data || error.message);
+
+    throw new Error(
+      error?.response?.data?.message || 'Failed to create bulk order'
+    );
+  }
 }
 
 export async function updateOrder(id: UUID, order: Partial<OrderInput>) {

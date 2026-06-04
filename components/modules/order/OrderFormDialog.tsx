@@ -28,11 +28,12 @@ import { Product } from '../products/types';
 type OrderFormDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: OrderInput) => void;
+  onSubmit: (data: OrderInput) => void | Promise<void>;
   initialData?: Order;
   customers: Customer[];
   products: Product[];
   trigger?: React.ReactNode;
+  isSubmitting?: boolean;
 };
 
 export default function OrderFormDialog({
@@ -43,6 +44,7 @@ export default function OrderFormDialog({
   customers,
   products,
   trigger,
+  isSubmitting = false,
 }: OrderFormDialogProps) {
   const [formData, setFormData] = useState<{
     customer_id: string;
@@ -120,10 +122,10 @@ export default function OrderFormDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm() || isSubmitting) {
       return;
     }
 
@@ -139,7 +141,7 @@ export default function OrderFormDialog({
       payment_method: formData.payment_method,
     };
 
-    onSubmit(orderData);
+    await onSubmit(orderData);
   };
 
   const addOrderItem = () => {
@@ -369,11 +371,20 @@ export default function OrderFormDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
-            {initialData ? 'Update Order' : 'Create Order'}
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting
+              ? 'Saving…'
+              : initialData
+                ? 'Update Order'
+                : 'Create Order'}
           </Button>
         </DialogFooter>
       </DialogContent>

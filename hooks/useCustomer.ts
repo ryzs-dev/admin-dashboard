@@ -15,7 +15,7 @@ export function useCustomer(params?: Query) {
   );
 
   return {
-    customers: data?.data,
+    customers: data?.data || [],
     pagination: data?.pagination,
     isLoading,
     isError: error,

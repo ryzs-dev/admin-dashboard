@@ -20,6 +20,11 @@ export const COURIER_SERVICES = {
       label: 'KEX',
       logo: '/images/couriers/kex.png',
     },
+    {
+      value: 'lex',
+      label: 'Lazada Express',
+      logo: '/images/couriers/lex.webp',
+    },
   ],
   Singapore: [
     {
