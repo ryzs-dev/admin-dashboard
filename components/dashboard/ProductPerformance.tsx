@@ -66,7 +66,7 @@ export function TopProductsTable({
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Revenue</TableHead>
                 <TableHead className="text-right">Orders</TableHead>
-                <TableHead className="text-right">Repeat Customer %</TableHead>
+                <TableHead className="text-right">Return Rate</TableHead>
                 <TableHead className="text-right">Avg Order Value</TableHead>
               </TableRow>
             </TableHeader>
@@ -124,7 +124,7 @@ export function ProductPerformanceInsights({
                   <div>
                     <p className="font-semibold">{product.product_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {product.unique_customers} unique customers
+                      {product.unique_customers} lifetime buyers
                     </p>
                   </div>
                   <TrendBadge trend={product.revenue_trend} />
@@ -142,13 +142,13 @@ export function ProductPerformanceInsights({
                     <p className="font-medium">{product.total_orders}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Repeat Rate</p>
+                    <p className="text-muted-foreground">Return Rate</p>
                     <p className="font-medium">
                       {product.repeat_customer_rate.toFixed(1)}%
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Customer LTV</p>
+                    <p className="text-muted-foreground">Avg Spent / Buyer</p>
                     <p className="font-medium">
                       {formatCurrency(product.customer_lifetime_value)}
                     </p>
@@ -158,7 +158,7 @@ export function ProductPerformanceInsights({
                     <p className="font-medium">{product.quantity_sold}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Repeat Customers</p>
+                    <p className="text-muted-foreground">Repeat Buyers</p>
                     <p className="font-medium">{product.repeat_customers}</p>
                   </div>
                 </div>

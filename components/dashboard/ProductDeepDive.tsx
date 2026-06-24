@@ -87,15 +87,15 @@ export function ProductDeepDive({
                 value={formatCurrency(selectedProduct.total_revenue)}
               />
               <MetricCard
-                label="Repeat Customer Rate"
+                label="Return Rate (Lifetime)"
                 value={`${selectedProduct.repeat_customer_rate.toFixed(1)}%`}
               />
               <MetricCard
-                label="Unique Customers"
+                label="Lifetime Buyers"
                 value={String(selectedProduct.unique_customers)}
               />
               <MetricCard
-                label="Customer LTV"
+                label="Avg Spent / Buyer"
                 value={formatCurrency(selectedProduct.customer_lifetime_value)}
               />
             </div>
@@ -127,7 +127,7 @@ export function ProductDeepDive({
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Monthly Repeat Purchase Trend">
+              <ChartCard title="Monthly Return Rate">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -138,7 +138,7 @@ export function ProductDeepDive({
                     <Line
                       type="monotone"
                       dataKey="repeat_customer_rate"
-                      name="Repeat Rate %"
+                      name="Return Rate %"
                       stroke="#9333ea"
                       strokeWidth={2}
                     />
@@ -189,7 +189,7 @@ export function ProductDeepDive({
                       yAxisId="right"
                       type="monotone"
                       dataKey="repeat_customer_rate"
-                      name="Retention %"
+                      name="Return Rate %"
                       stroke="#f97316"
                       strokeWidth={2}
                     />
