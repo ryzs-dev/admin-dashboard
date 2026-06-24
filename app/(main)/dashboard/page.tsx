@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
@@ -14,20 +15,61 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { useStats } from '@/hooks/useStats';
+import {
+  useProductMonthlyTrends,
+  useProductPerformance,
+  useStats,
+} from '@/hooks/useStats';
 import { StatsCards } from '@/components/dashboard/StatsCard';
+import {
+  ProductPerformanceInsights,
+  TopProductsTable,
+} from '@/components/dashboard/ProductPerformance';
+import { ProductDeepDive } from '@/components/dashboard/ProductDeepDive';
+import { getCurrentMonthKey, parseMonthKey } from '@/lib/utils/date';
 import { addMonths, format } from 'date-fns';
 
-const CRMDashboard = () => {
-  const [selectedMonth, setSelectedMonth] = useState('2026-01');
-  const { stats, revenueChart, customerChart } = useStats(selectedMonth);
+function findDefaultProductId(
+  products: { product_id: string; product_name: string }[]
+) {
+  return (
+    products.find((product) => /femrose|femlift/i.test(product.product_name))
+      ?.product_id ??
+    products[0]?.product_id ??
+    null
+  );
+}
 
-  const currentDate = new Date(`${selectedMonth}-01T00:00:00`);
+const CRMDashboard = () => {
+  const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthKey());
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+
+  const { stats, revenueChart, customerChart } = useStats(selectedMonth);
+  const {
+    products,
+    isLoading: productsLoading,
+  } = useProductPerformance(selectedMonth);
+  const {
+    trends,
+    isLoading: trendsLoading,
+  } = useProductMonthlyTrends(selectedProductId, selectedMonth);
+
+  const currentDate = parseMonthKey(selectedMonth);
+
+  const defaultProductId = useMemo(
+    () => findDefaultProductId(products),
+    [products]
+  );
+
+  useEffect(() => {
+    if (!selectedProductId && defaultProductId) {
+      setSelectedProductId(defaultProductId);
+    }
+  }, [defaultProductId, selectedProductId]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="w-full mx-auto space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex gap-3">
             <Button
@@ -54,43 +96,12 @@ const CRMDashboard = () => {
             >
               →
             </Button>
-            {/* <Button size="sm">Export Report</Button> */}
           </div>
         </div>
-        {/* Stats Grid */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat: StatDTO, index: number) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">{stat.title}</p>
-                    <h3 className="text-2xl font-bold">{stat.value}</h3>
-                    <div className="flex items-center mt-2">
-                      {stat.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
-                      )}
-                      <span
-                        className={`text-sm ml-1 ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}
-                      >
-                        {stat.change}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <stat.icon className="h-6 w-6 text-gray-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div> */}
+
         <StatsCards stats={stats} />
-        {/* Charts Row */}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Revenue Chart */}
           <Card>
             <CardHeader>
               <CardTitle>Revenue Overview</CardTitle>
@@ -113,7 +124,6 @@ const CRMDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Customer Chart */}
           <Card>
             <CardHeader>
               <CardTitle>Customer Acquisition</CardTitle>
@@ -130,6 +140,19 @@ const CRMDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        <TopProductsTable products={products} isLoading={productsLoading} />
+        <ProductPerformanceInsights
+          products={products}
+          isLoading={productsLoading}
+        />
+        <ProductDeepDive
+          products={products}
+          trends={trends}
+          selectedProductId={selectedProductId}
+          onProductChange={setSelectedProductId}
+          isLoading={productsLoading || trendsLoading}
+        />
       </div>
     </div>
   );
