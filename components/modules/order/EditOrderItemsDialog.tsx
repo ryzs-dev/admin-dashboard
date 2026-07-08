@@ -43,9 +43,21 @@ const EditOrderDialog = ({
     return null;
   }
 
+  const uniqueProducts = React.useMemo(() => {
+    const seen = new Set<string>();
+    return (products ?? []).filter((product: Product) => {
+      if (seen.has(product.id)) return false;
+      seen.add(product.id);
+      return true;
+    });
+  }, [products]);
+
   const handleQuantityChange = (id: string, quantity: number) => {
+    const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
     setLineItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      prev.map((item) =>
+        item.id === id ? { ...item, quantity: safeQuantity } : item
+      )
     );
   };
 
@@ -60,7 +72,7 @@ const EditOrderDialog = ({
     if (!product) return;
 
     // Avoid adding duplicate
-    if (lineItems.find((item) => item.id === productId)) return;
+    if (lineItems.find((item) => item.product_id === productId)) return;
 
     setLineItems((prev) => [
       ...prev,
@@ -132,7 +144,7 @@ const EditOrderDialog = ({
                 <SelectValue placeholder="Select product to add" />
               </SelectTrigger>
               <SelectContent>
-                {products.map((product: Product) => (
+                {uniqueProducts.map((product: Product) => (
                   <SelectItem key={product.id} value={product.id}>
                     {product.name}
                   </SelectItem>

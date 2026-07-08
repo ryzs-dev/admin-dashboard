@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Customer } from '../customer/types';
 import { Order } from './types';
 import { OrderInput, OrderItemsInput } from '@/types/order';
@@ -63,6 +63,15 @@ export default function OrderFormDialog({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const uniqueProducts = useMemo(() => {
+    const seen = new Set<string>();
+    return (products ?? []).filter((product) => {
+      if (seen.has(product.id)) return false;
+      seen.add(product.id);
+      return true;
+    });
+  }, [products]);
 
   // Reset form when dialog opens/closes or initialData changes
   useEffect(() => {
@@ -249,7 +258,7 @@ export default function OrderFormDialog({
             <div className="space-y-2">
               {formData.order_items.map((item, index) => {
                 // Filter products that are not already selected in other rows
-                const availableProducts = products.filter(
+                const availableProducts = uniqueProducts.filter(
                   (p) =>
                     !formData.order_items.some(
                       (oi, i) => i !== index && oi.product_id === p.id

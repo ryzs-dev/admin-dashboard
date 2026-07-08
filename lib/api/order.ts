@@ -69,10 +69,14 @@ export type BulkShipmentResultItem = {
   data?: unknown;
 };
 
-export async function createBulkOrder(orderIds: string[]) {
+export async function createBulkOrder(
+  orderIds: string[],
+  options?: { isDropoff?: boolean }
+) {
   try {
     const { data } = await api.post('/create/bulk', {
       order_ids: orderIds,
+      is_dropoff: options?.isDropoff === true,
     });
 
     return data as {

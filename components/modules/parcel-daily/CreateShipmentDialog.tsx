@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -49,6 +49,15 @@ export default function CreateShipmentDialog({
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'dropoff'>(
     'pickup'
   );
+
+  useEffect(() => {
+    if (isOpen) {
+      setDeliveryType('pickup');
+      setCodEnabled(false);
+      setCod(contentValue);
+    }
+  }, [isOpen, contentValue]);
+
   const country = order.addresses?.country;
 
   const availableCouriers = useMemo(() => {

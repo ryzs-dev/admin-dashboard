@@ -95,6 +95,9 @@ export function OrderTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isBulkShipping, setIsBulkShipping] = useState(false);
+  const [bulkDeliveryType, setBulkDeliveryType] = useState<'pickup' | 'dropoff'>(
+    'pickup'
+  );
 
   const handleCreateOrder = async (data: OrderInput) => {
     setIsCreating(true);
@@ -241,7 +244,9 @@ export function OrderTable() {
 
     setIsBulkShipping(true);
     try {
-      const result = await createBulkOrder(ids);
+      const result = await createBulkOrder(ids, {
+        isDropoff: bulkDeliveryType === 'dropoff',
+      });
       table.resetRowSelection();
       await queryClient.invalidateQueries({ queryKey: ['orders'] });
 
@@ -651,6 +656,21 @@ export function OrderTable() {
           </div>
 
           <div className="flex items-center gap-1">
+            <Select
+              value={bulkDeliveryType}
+              onValueChange={(value: 'pickup' | 'dropoff') =>
+                setBulkDeliveryType(value)
+              }
+              disabled={isBulkShipping}
+            >
+              <SelectTrigger className="h-8 w-[110px] text-xs bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pickup">Pick up</SelectItem>
+                <SelectItem value="dropoff">Drop-off</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
