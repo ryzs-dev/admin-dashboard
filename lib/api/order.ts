@@ -16,14 +16,11 @@ const api = axios.create({
 });
 
 export async function getAllOrders(params?: Query) {
-  const { search, dateFrom, dateTo, offset, tracking, location } = params ?? {};
-
-  const isFiltered =
-    !!search || !!dateFrom || !!dateTo || !!tracking || !!location;
+  const { offset } = params ?? {};
 
   const queryParams: Record<string, any> = {
     ...params,
-    limit: isFiltered ? undefined : (params?.limit ?? 100),
+    limit: params?.limit ?? 10,
     offset: offset ?? 0,
   };
 
@@ -71,12 +68,13 @@ export type BulkShipmentResultItem = {
 
 export async function createBulkOrder(
   orderIds: string[],
-  options?: { isDropoff?: boolean }
+  options?: { isDropoff?: boolean; serviceProvider?: string }
 ) {
   try {
     const { data } = await api.post('/create/bulk', {
       order_ids: orderIds,
       is_dropoff: options?.isDropoff === true,
+      service_provider: options?.serviceProvider,
     });
 
     return data as {

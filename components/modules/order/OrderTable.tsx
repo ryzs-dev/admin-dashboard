@@ -48,6 +48,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
 import { cn } from '@/lib/utils';
 import { createBulkOrder } from '@/lib/api/order';
+import { COURIER_SERVICES } from '../parcel-daily/constants';
 import OrderFormDialog from './OrderFormDialog';
 import { useCustomer } from '@/hooks/useCustomer';
 import { useProducts } from '@/hooks/useProducts';
@@ -95,6 +96,7 @@ export function OrderTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isBulkShipping, setIsBulkShipping] = useState(false);
+  const [bulkCourier, setBulkCourier] = useState('spx');
   const [bulkDeliveryType, setBulkDeliveryType] = useState<'pickup' | 'dropoff'>(
     'pickup'
   );
@@ -246,6 +248,7 @@ export function OrderTable() {
     try {
       const result = await createBulkOrder(ids, {
         isDropoff: bulkDeliveryType === 'dropoff',
+        serviceProvider: bulkCourier,
       });
       table.resetRowSelection();
       await queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -366,7 +369,8 @@ export function OrderTable() {
                   localFilters.dateFrom ||
                   localFilters.dateTo ||
                   localFilters.status !== 'all' ||
-                  localFilters.tracking !== 'all') && (
+                  localFilters.tracking !== 'all' ||
+                  localFilters.location !== 'all') && (
                   <button
                     onClick={() => {
                       setLocalFilters({
@@ -398,7 +402,7 @@ export function OrderTable() {
               <div className="max-w-4xl w-full flex gap-3">
                 <div className="w-full flex-3">
                   <Input
-                    placeholder="Search by order ID, customer, or product..."
+                    placeholder="Search by order ID, name, phone, or email..."
                     value={localFilters.search}
                     onChange={(e) =>
                       setLocalFilters((prev) => ({
@@ -639,7 +643,7 @@ export function OrderTable() {
         <div
           className={cn(
             'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-            'w-[90%] max-w-lg',
+            'w-[90%] max-w-2xl',
             'bg-indigo-100 border border-gray-200 rounded-2xl',
             'px-4 py-3 shadow-xl shadow-black/10',
             'flex items-center justify-between gap-4',
@@ -656,6 +660,27 @@ export function OrderTable() {
           </div>
 
           <div className="flex items-center gap-1">
+            <Select
+              value={bulkCourier}
+              onValueChange={setBulkCourier}
+              disabled={isBulkShipping}
+            >
+              <SelectTrigger className="h-8 w-[150px] text-xs bg-white">
+                <SelectValue placeholder="Courier" />
+              </SelectTrigger>
+              <SelectContent>
+                {COURIER_SERVICES.Malaysia.map((courier) => (
+                  <SelectItem key={courier.value} value={courier.value}>
+                    {courier.label}
+                  </SelectItem>
+                ))}
+                {COURIER_SERVICES.Singapore.map((courier) => (
+                  <SelectItem key={courier.value} value={courier.value}>
+                    {courier.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={bulkDeliveryType}
               onValueChange={(value: 'pickup' | 'dropoff') =>

@@ -34,7 +34,7 @@ const carriers = [
   { value: 'Flash Express', label: 'Flash Express' },
   { value: 'Shopee Express', label: 'Shopee Express' },
   { value: 'SF Express', label: 'SF Express' },
-  { value: 'Pos Laju', label: 'Pos Laju' },
+  { value: 'poslaju', label: 'Pos Laju' },
   { value: 'J&T Express', label: 'J&T Express' },
 ];
 

@@ -4,7 +4,7 @@ import { ShipmentInput } from '@/components/modules/parcel-daily/types';
 export function createBulkShipments(order: Order): ShipmentInput {
   console.log('Creating shipment for order:', order);
   return {
-    serviceProvider: 'spx', // default for now
+    serviceProvider: 'spx',
     clientAddress: {
       fullName: order.customers?.name || '',
       countryCode: order.customers?.phone_number?.startsWith('+65')

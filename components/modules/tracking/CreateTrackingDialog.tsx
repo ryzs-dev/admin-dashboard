@@ -70,6 +70,8 @@ export function CreateTrackingDialog({ open, onOpenChange, onSubmit }: Props) {
               <SelectItem value="jnt">J&T</SelectItem>
               <SelectItem value="kex">KEX</SelectItem>
               <SelectItem value="sf_express">SF Express</SelectItem>
+              <SelectItem value="poslaju">Pos Laju</SelectItem>
+              <SelectItem value="dhl">DHL</SelectItem>
             </SelectContent>
           </Select>
 

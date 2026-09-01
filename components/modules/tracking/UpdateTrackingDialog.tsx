@@ -18,7 +18,15 @@ import {
 } from '@/components/ui/select';
 import { UUID } from 'crypto';
 
-export type Courier = 'spx' | 'flash' | 'jnt' | 'kex' | 'sf_express';
+export type Courier =
+  | 'spx'
+  | 'flash'
+  | 'jnt'
+  | 'kex'
+  | 'sf_express'
+  | 'poslaju'
+  | 'dhl'
+  | 'lex';
 
 interface Props {
   open: boolean;
@@ -97,6 +105,8 @@ export function UpdateTrackingDialog({
                 <SelectItem value="jnt">J&T</SelectItem>
                 <SelectItem value="kex">KEX</SelectItem>
                 <SelectItem value="sf_express">SF Express</SelectItem>
+                <SelectItem value="poslaju">Pos Laju</SelectItem>
+                <SelectItem value="dhl">DHL</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -25,6 +25,11 @@ export const COURIER_SERVICES = {
       label: 'Lazada Express',
       logo: '/images/couriers/lex.webp',
     },
+    {
+      value: 'poslaju',
+      label: 'Pos Laju',
+      logo: '/images/couriers/poslaju.svg',
+    },
   ],
   Singapore: [
     {

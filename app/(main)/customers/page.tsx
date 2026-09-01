@@ -32,7 +32,7 @@ export default function CustomersPage() {
         {/* Search and Filters */}
         <div className="mb-6 flex justify-between gap-3">
           <Input
-            placeholder="Search by name or phone..."
+            placeholder="Search by name, phone, or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-md h-10"
