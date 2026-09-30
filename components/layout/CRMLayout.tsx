@@ -44,6 +44,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/providers/auth-providers';
 
 interface CRMLayoutProps {
@@ -120,12 +121,18 @@ function CRMSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1">
-          <div className="flex h-4 w-4 items-center justify-center rounded-lg border border-black shrink-0">
-            <span className="text-sm font-bold text-black">L</span>
-          </div>
+          <Image
+            src="/brand/lunaa-icon.png"
+            alt="Lunaa"
+            width={300}
+            height={300}
+            className="h-6 w-6 shrink-0"
+          />
           {!isCollapsed && (
             <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-lg font-bold">LUNAA CRM</span>
+              <span className="truncate text-base font-bold">
+                Lunaa Women Care
+              </span>
             </div>
           )}
         </div>

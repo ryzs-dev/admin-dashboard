@@ -16,9 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LUNAA CRM - Customer Relationship Management',
-  description:
-    'Advanced CRM system for LUNAA with WhatsApp integration, customer management, and analytics',
+  title: 'Lunaa Women Care · Back Office',
+  description: 'Lunaa Women Care back office for orders, customers and shipping.',
   keywords: [
     'CRM',
     'Customer Management',
