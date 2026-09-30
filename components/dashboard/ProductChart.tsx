@@ -10,7 +10,7 @@ export const ProductChart = ({
   const data = Object.values(productCounts);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-card p-6 rounded-lg shadow-sm">
       <h2 className="text-lg font-semibold mb-4">Product Distribution</h2>
       <Bar
         data={{

@@ -230,7 +230,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-[#fff8f3] px-6">
+          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-background px-6">
             {/* Search Bar */}
             <SidebarTrigger className="shrink-0" />
             <div className="flex-1">

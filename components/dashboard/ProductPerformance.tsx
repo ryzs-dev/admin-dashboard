@@ -118,7 +118,7 @@ export function ProductPerformanceInsights({
             {products.map((product) => (
               <div
                 key={product.product_id}
-                className="rounded-lg border bg-white p-4 space-y-3"
+                className="rounded-lg border bg-card p-4 space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>

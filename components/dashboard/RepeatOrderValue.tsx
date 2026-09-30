@@ -74,7 +74,7 @@ function Segment({
         </p>
       </div>
 
-      <dl className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-white/80 py-3 text-center">
+      <dl className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-background/70 py-3 text-center">
         <div className="px-2">
           <dt className="text-xs text-muted-foreground">{averageLabel}</dt>
           <dd className="mt-1 font-semibold">{formatCurrency(average)}</dd>

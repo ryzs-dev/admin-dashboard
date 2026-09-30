@@ -45,18 +45,18 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --background: oklch(0.955 0.018 62);
+  --foreground: oklch(0.28 0.02 50);
+  --card: oklch(0.978 0.012 70);
+  --card-foreground: oklch(0.28 0.02 50);
+  --popover: oklch(0.978 0.012 70);
+  --popover-foreground: oklch(0.28 0.02 50);
   /* LUNAA brand purple (#662d91) and cream (#fff8f3) */
   --primary: oklch(0.426 0.16 307);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.953 0.018 314.7);
   --secondary-foreground: oklch(0.375 0.141 306.9);
-  --muted: oklch(0.97 0.004 58);
+  --muted: oklch(0.945 0.016 62);
   --muted-foreground: oklch(0.5 0.02 307);
   --accent: oklch(0.953 0.018 314.7);
   --accent-foreground: oklch(0.375 0.141 306.9);
@@ -69,7 +69,7 @@
   --chart-3: oklch(0.646 0.222 41.116);
   --chart-4: oklch(0.769 0.188 70.08);
   --chart-5: oklch(0.828 0.189 84.429);
-  --sidebar: oklch(0.983 0.01 58.2);
+  --sidebar: oklch(0.955 0.018 62);
   --sidebar-foreground: oklch(0.28 0.03 307);
   --sidebar-primary: oklch(0.426 0.16 307);
   --sidebar-primary-foreground: oklch(0.985 0 0);

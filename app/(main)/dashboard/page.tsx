@@ -75,7 +75,7 @@ const CRMDashboard = () => {
   }, [defaultProductId, selectedProductId]);
 
   return (
-    <div className="min-h-screen bg-[#fff8f3] p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="w-full mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-3">

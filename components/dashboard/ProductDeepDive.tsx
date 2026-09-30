@@ -206,7 +206,7 @@ export function ProductDeepDive({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="rounded-lg border bg-card p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-lg font-semibold mt-1">{value}</p>
     </div>
@@ -221,7 +221,7 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="rounded-lg border bg-card p-4">
       <h3 className="font-medium mb-4">{title}</h3>
       {children}
     </div>
