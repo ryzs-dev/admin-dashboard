@@ -201,86 +201,15 @@ function CRMSidebar() {
 }
 
 export default function CRMLayout({ children }: CRMLayoutProps) {
-  const pathName = usePathname();
-  // Capitalize the header for better readability
-  const header = pathName
-    .trimStart()
-    .split('/')[1]
-    ?.replace(/^\w/, (c) => c.toUpperCase());
-
   return (
-    <SidebarProvider>
+    <SidebarProvider open onOpenChange={() => {}}>
       <div className="flex w-full">
         <CRMSidebar />
 
-        {/* Main Content Area */}
-        <div className="flex flex-1 flex-col">
-          {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-background/85 px-6 backdrop-blur">
-            {/* Search Bar */}
-            <SidebarTrigger className="shrink-0" />
-            <div className="flex-1">
-              <h1 className="text-lg font-bold text-gray-800">{header}</h1>
-            </div>
-
-            {/* Header Actions */}
-            <div className="flex items-center gap-2">
-              {/* User Menu */}
-              {/* <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 gap-2 px-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="" alt={user?.email || 'User'} />
-                      <AvatarFallback>
-                        {user?.email ? getInitials(user.email) : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden flex-col items-start text-left text-sm md:flex">
-                      <span className="font-medium">
-                        {user?.email?.split('@')[0] || 'User'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Admin
-                      </span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">
-                        {user?.email?.split('@')[0] || 'User'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.email || 'user@example.com'}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {}} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu> */}
-            </div>
-          </header>
-
-          {/* Main Content */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-12 items-center px-3 md:hidden">
+            <SidebarTrigger />
+          </div>
           <main>{children}</main>
         </div>
       </div>

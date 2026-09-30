@@ -298,7 +298,7 @@ export default function WhatsAppInbox() {
   };
 
   return (
-    <div className="flex h-[calc(100svh-4rem)] overflow-hidden bg-background">
+    <div className="flex h-[calc(100svh-3rem)] overflow-hidden md:h-svh bg-background">
       {/* Conversation list */}
       <aside className="flex w-full max-w-[340px] shrink-0 flex-col border-r bg-card">
         <div className="space-y-3 border-b px-4 pb-3 pt-4">
