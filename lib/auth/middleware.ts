@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
   );
 
   // If user is logged in and trying to access auth routes, redirect to dashboard
-  if (user && isAuthRoute) {
+  if (user && (isAuthRoute || pathname === '/')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
 
