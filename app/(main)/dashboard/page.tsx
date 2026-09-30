@@ -108,7 +108,11 @@ const CRMDashboard = () => {
 
         <StatsCards stats={stats} />
 
-        <RepeatOrderValueCard data={repeatOrderValue} isLoading={statsLoading} />
+        <RepeatOrderValueCard
+          data={repeatOrderValue}
+          isLoading={statsLoading}
+          periodLabel={format(currentDate, 'MMMM yyyy')}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
