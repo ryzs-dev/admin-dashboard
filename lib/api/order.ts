@@ -3,6 +3,7 @@ import { OrderTrackingInput } from '@/components/modules/tracking/types';
 import { OrderInput, UpdateLineItemsInput } from '@/types/order';
 import { Order } from '@/components/modules/order/types';
 import axios from 'axios';
+import { format } from 'date-fns';
 import { UUID } from 'crypto';
 
 const API_BASE_URL =
@@ -20,6 +21,8 @@ export async function getAllOrders(params?: Query) {
 
   const queryParams: Record<string, any> = {
     ...params,
+    dateFrom: params?.dateFrom && format(params.dateFrom, 'yyyy-MM-dd'),
+    dateTo: params?.dateTo && format(params.dateTo, 'yyyy-MM-dd'),
     limit: params?.limit ?? 10,
     offset: offset ?? 0,
   };
