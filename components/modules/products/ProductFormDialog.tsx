@@ -15,14 +15,18 @@ type ProductFormProps = {
   onClose: () => void;
   onSubmit: (data: ProductInput) => void;
   initialData?: Product;
+  existingProducts?: Product[];
   trigger?: React.ReactNode;
 };
 
-export default function ProductForm({ onSubmit, onClose, isOpen, initialData, trigger }: ProductFormProps) {
-  const [formData, setFormData] = useState<ProductInput>(initialData || {
-    name: "",
-    price: 0
-  });
+// Must match the WhatsApp extractor, which reads "<qty><code>" (e.g. "2w1s")
+// from the order's last line using /(\d+)([a-z]+(?:\d+ml)?)/.
+const CODE_PATTERN = /^[a-z]+(\d+ml)?$/;
+
+const EMPTY_FORM: ProductInput = { name: "", price: 0, code: "" };
+
+export default function ProductForm({ onSubmit, onClose, isOpen, initialData, existingProducts = [], trigger }: ProductFormProps) {
+  const [formData, setFormData] = useState<ProductInput>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,7 +34,8 @@ export default function ProductForm({ onSubmit, onClose, isOpen, initialData, tr
       if (initialData) {
         setFormData({
             name: initialData.name,
-            price: initialData.price
+            price: initialData.price,
+            code: initialData.code ?? "",
         });
       } else {
         resetForm();
@@ -38,21 +43,30 @@ export default function ProductForm({ onSubmit, onClose, isOpen, initialData, tr
   }, [initialData, isOpen]);
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      price: 0
-    });
+    setFormData(EMPTY_FORM);
     setErrors({});
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const code = formData.code.trim().toLowerCase();
 
     if (!formData.name) {
       newErrors.name = 'Product name is required';
     }
     if (formData.price < 0) {
       newErrors.price = 'Price must be greater than 0';
+    }
+    if (!code) {
+      newErrors.code = 'Code is required so WhatsApp orders can detect this product';
+    } else if (!CODE_PATTERN.test(code)) {
+      newErrors.code = 'Use letters only, optionally ending in a size like 30ml (e.g. w, rose, w30ml)';
+    } else if (
+      existingProducts.some(
+        (product) => product.id !== initialData?.id && product.code?.toLowerCase() === code
+      )
+    ) {
+      newErrors.code = 'Another product already uses this code';
     }
 
     setErrors(newErrors);
@@ -67,7 +81,7 @@ export default function ProductForm({ onSubmit, onClose, isOpen, initialData, tr
         return;
       }
       setIsSubmitting(true);
-      onSubmit(formData);
+      onSubmit({ ...formData, code: formData.code.trim().toLowerCase() });
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -123,6 +137,31 @@ export default function ProductForm({ onSubmit, onClose, isOpen, initialData, tr
                         {errors.price && <p className="text-sm text-red-600">{errors.price}</p>}
                         </div>
                     </div>
+                </div>
+
+                {/* WhatsApp order code */}
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="product_code">WhatsApp code*</Label>
+                    <Input
+                        id="product_code"
+                        type="text"
+                        placeholder="e.g. w"
+                        autoCapitalize="none"
+                        autoComplete="off"
+                        value={formData.code}
+                        onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                        className="font-mono"
+                    />
+                    {errors.code ? (
+                        <p className="text-sm text-red-600">{errors.code}</p>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">
+                            Staff type the quantity then this code on the last line of a WhatsApp order.
+                            {formData.code.trim() && (
+                                <> For example <span className="font-mono font-medium text-foreground">2{formData.code.trim().toLowerCase()}</span> means 2 × {formData.name || 'this product'}.</>
+                            )}
+                        </p>
+                    )}
                 </div>
             </form>
 

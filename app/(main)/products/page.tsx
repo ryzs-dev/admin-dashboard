@@ -104,6 +104,7 @@ export default function ProductsPage() {
         }}
         onSubmit={handleCreate}
         initialData={editingProduct || undefined}
+        existingProducts={products ?? []}
       />
 
       <Card>

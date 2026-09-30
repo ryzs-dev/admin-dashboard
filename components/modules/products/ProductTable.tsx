@@ -25,6 +25,7 @@ export default function ProductTable({
       <TableHeader>
         <TableRow className="border-b text-center text-lg font-bold">
           <TableCell className="text-left">Product</TableCell>
+          <TableCell>WhatsApp code</TableCell>
           <TableCell>Price</TableCell>
           <TableCell>Actions</TableCell>
         </TableRow>
@@ -36,6 +37,17 @@ export default function ProductTable({
             className="border-b font-medium text-center"
           >
             <TableCell className="text-left">{product.name}</TableCell>
+            <TableCell>
+              {product.code ? (
+                <span className="rounded bg-muted px-2 py-0.5 font-mono text-sm">
+                  {product.code}
+                </span>
+              ) : (
+                <span className="text-sm font-normal text-amber-700">
+                  Missing – won&apos;t be detected
+                </span>
+              )}
+            </TableCell>
             <TableCell>MYR {product.price}</TableCell>
             <TableCell>
               <div className="flex justify-center gap-2">
