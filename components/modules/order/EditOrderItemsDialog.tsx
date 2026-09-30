@@ -39,10 +39,6 @@ const EditOrderDialog = ({
   const { products } = useProducts();
   const [lineItems, setLineItems] = useState(order.order_items);
 
-  if (!products) {
-    return null;
-  }
-
   const uniqueProducts = React.useMemo(() => {
     const seen = new Set<string>();
     return (products ?? []).filter((product: Product) => {
@@ -51,6 +47,10 @@ const EditOrderDialog = ({
       return true;
     });
   }, [products]);
+
+  if (!products) {
+    return null;
+  }
 
   const handleQuantityChange = (id: string, quantity: number) => {
     const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;

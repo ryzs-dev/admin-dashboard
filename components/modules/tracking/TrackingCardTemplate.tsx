@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateTrackingDialog } from './CreateTrackingDialog';
 import { createOrderTrackingByOrderId } from '@/lib/api/order';
+import { OrderTrackingInput } from './types';
 
 interface TrackingCardTemplateProps {
   orderId: UUID;
@@ -21,7 +22,7 @@ export default function TrackingCardTemplate({
     useOrderTracking(orderId);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const handleCreate = async (payload: any) => {
+  const handleCreate = async (payload: OrderTrackingInput) => {
     await createOrderTrackingByOrderId(orderId, payload);
     await refreshOrderTracking(); // refresh list
   };
@@ -30,16 +31,16 @@ export default function TrackingCardTemplate({
     <Card id="tracking-card">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2 text-gray-800">
-            <Truck className="h-4 w-4 text-gray-500" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Truck className="h-4 w-4 text-muted-foreground" />
             Shipping
           </CardTitle>
 
           {!tracking ||
             (tracking.length === 0 && (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Tracking
+              <Button size="sm" variant="outline" className="gap-1.5 bg-background" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add tracking
               </Button>
             ))}
         </div>
@@ -52,11 +53,9 @@ export default function TrackingCardTemplate({
             onUpdateTracking={updateTracking}
           />
         ) : (
-          <div className="text-center py-6">
-            <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-500 mb-3">
-              No tracking information
-            </p>
+          <div className="py-6 text-center">
+            <Package className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">No tracking yet</p>
           </div>
         )}
       </CardContent>

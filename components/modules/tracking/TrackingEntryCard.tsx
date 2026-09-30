@@ -1,61 +1,60 @@
 'use client';
 
-import { Package, Calendar, Hash, RefreshCcw, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { OrderTracking } from './types';
 import { formatDateUTC8 } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
+import { COURIER_SERVICES } from '../parcel-daily/constants';
+
+const COURIER_LABELS: Record<string, string> = Object.fromEntries(
+  [...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map((courier) => [
+    courier.value,
+    courier.label,
+  ])
+);
 
 interface TrackingEntryCardProps {
   tracking: OrderTracking;
   onEdit?: () => void;
 }
 
-export function TrackingEntryCard({
-  tracking,
-  onEdit,
-}: TrackingEntryCardProps) {
+export function TrackingEntryCard({ tracking, onEdit }: TrackingEntryCardProps) {
   return (
-    <div className="rounded-xl border p-4 text-sm text-gray-700 space-y-3 relative">
-      {/* Edit button (only if editable) */}
-      {onEdit && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onEdit}
-          className="absolute top-3 right-3 h-8 w-8 text-gray-500 hover:text-gray-700"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      )}
-
-      {/* Courier & Tracking Number */}
-      <div className="flex items-center justify-between pr-8">
-        <div className="flex items-center gap-2 font-medium">
-          <span>{tracking.courier}</span>
+    <div className="rounded-xl border bg-background p-4 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium">
+            {(tracking.courier && COURIER_LABELS[tracking.courier]) || tracking.courier || 'Courier'}
+          </p>
+          <p className="mt-0.5 font-mono text-muted-foreground">{tracking.tracking_number}</p>
         </div>
-        <div className="flex items-center gap-1 text-gray-500">
-          <Hash className="h-4 w-4" />
-          <span>{tracking.tracking_number}</span>
-        </div>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onEdit}
+            aria-label="Edit tracking"
+            className="h-8 w-8 shrink-0 text-muted-foreground"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* Status */}
-      <div className="flex items-center gap-2">
-        <Package className="h-4 w-4 text-gray-500" />
-        <span className="capitalize">{tracking.status}</span>
-      </div>
-
-      {/* Dates */}
-      <div className="flex flex-col gap-4 text-sm text-gray-500">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          <span>Created: {formatDateUTC8(tracking.created_at)}</span>
+      <dl className="mt-3 space-y-1.5 border-t pt-3 text-muted-foreground">
+        <div className="flex justify-between gap-4">
+          <dt>Status</dt>
+          <dd className="capitalize text-foreground">{tracking.status}</dd>
         </div>
-        <div className="flex items-center gap-2">
-          <RefreshCcw className="h-4 w-4" />
-          <span>Updated: {formatDateUTC8(tracking.updated_at)}</span>
+        <div className="flex justify-between gap-4">
+          <dt>Created</dt>
+          <dd>{formatDateUTC8(tracking.created_at)}</dd>
         </div>
-      </div>
+        <div className="flex justify-between gap-4">
+          <dt>Updated</dt>
+          <dd>{formatDateUTC8(tracking.updated_at)}</dd>
+        </div>
+      </dl>
     </div>
   );
 }

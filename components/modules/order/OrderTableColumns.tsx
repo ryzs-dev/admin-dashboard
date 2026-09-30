@@ -98,9 +98,14 @@ const STATUS_STYLES = {
   },
 } as const;
 
-function getStatusStyle(order: Order) {
-  const raw = order.order_tracking?.status as string | undefined;
-  if (!order.order_tracking) return { ...STATUS_STYLES.needs_shipment, raw };
+export function getOrderShipmentStatus(order: {
+  order_tracking?: { status?: string | null } | { status?: string | null }[] | null;
+}) {
+  const tracking = Array.isArray(order.order_tracking)
+    ? order.order_tracking[0]
+    : order.order_tracking ?? undefined;
+  const raw = tracking?.status as string | undefined;
+  if (!tracking) return { ...STATUS_STYLES.needs_shipment, raw };
 
   const value = (raw ?? '').toLowerCase();
   const group = (Object.keys(STATUS_GROUPS) as (keyof typeof STATUS_GROUPS)[]).find(
@@ -108,6 +113,10 @@ function getStatusStyle(order: Order) {
   );
 
   return { ...STATUS_STYLES[group ?? 'awaiting_pickup'], raw };
+}
+
+function getStatusStyle(order: Order) {
+  return getOrderShipmentStatus(order);
 }
 
 const COURIER_LABELS: Record<string, string> = Object.fromEntries(
