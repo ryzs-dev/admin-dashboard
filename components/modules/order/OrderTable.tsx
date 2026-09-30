@@ -1,16 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -27,15 +20,8 @@ import {
   RowSelectionState,
 } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  Filter,
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-  Plus,
-  Send,
-} from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Loader2, Plus, Search, Send, X } from 'lucide-react';
 import { createColumns } from './OrderTableColumns';
 import { toast } from 'sonner';
 import { useMessage } from '@/hooks/useMessage';
@@ -47,12 +33,13 @@ import { UUID } from 'crypto';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
 import { cn } from '@/lib/utils';
-import { createBulkOrder } from '@/lib/api/order';
+import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
 import { COURIER_SERVICES } from '../parcel-daily/constants';
 import OrderFormDialog from './OrderFormDialog';
 import { useCustomer } from '@/hooks/useCustomer';
 import { useProducts } from '@/hooks/useProducts';
 import { OrderInput } from '@/types/order';
+
 interface OrdersResponse {
   rows: Order[];
   pagination: {
@@ -61,6 +48,19 @@ interface OrdersResponse {
     total: number;
   };
 }
+
+type StatusTab = 'all' | OrderStatusGroup;
+
+const STATUS_TABS: { value: StatusTab; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'needs_shipment', label: 'Needs shipment' },
+  { value: 'awaiting_pickup', label: 'Awaiting pickup' },
+  { value: 'in_transit', label: 'In transit' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'problem', label: 'Problem' },
+];
+
+const PAGE_SIZES = [10, 20, 50, 100];
 
 export function OrderTable() {
   const router = useRouter();
@@ -71,24 +71,23 @@ export function OrderTable() {
   const { sendTrackingInfo } = useMessage();
   const searchParams = useSearchParams();
 
-  const pageFromUrl = searchParams.get('page');
-  const pageSizeFromUrl = searchParams.get('pageSize');
-
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: pageFromUrl ? Number(pageFromUrl) - 1 : 0,
-    pageSize: pageSizeFromUrl ? Number(pageSizeFromUrl) : 10,
-  });
-  const [filters, setFilters] = useState({
-    search: '',
-    status: 'all',
-    dateFrom: '',
-    dateTo: '',
-    tracking: 'all',
-    location: 'all',
-  });
-  const [localFilters, setLocalFilters] = useState({ ...filters });
+  const [pagination, setPagination] = useState<PaginationState>(() => ({
+    pageIndex: Math.max(Number(searchParams.get('page') || 1) - 1, 0),
+    pageSize: PAGE_SIZES.includes(Number(searchParams.get('pageSize')))
+      ? Number(searchParams.get('pageSize'))
+      : 20,
+  }));
+  const [status, setStatus] = useState<StatusTab>(
+    () => (searchParams.get('status') as StatusTab) || 'all'
+  );
+  const [location, setLocation] = useState(
+    () => searchParams.get('location') || 'all'
+  );
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
 
   const [deleteTargetId, setDeleteTargetId] = useState<UUID | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -101,89 +100,83 @@ export function OrderTable() {
     'pickup'
   );
 
-  const handleCreateOrder = async (data: OrderInput) => {
+  useEffect(() => {
+    const handler = setTimeout(() => setSearch(searchInput.trim()), 400);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  const isFirstFilterRun = useRef(true);
+  useEffect(() => {
+    if (isFirstFilterRun.current) {
+      isFirstFilterRun.current = false;
+      return;
+    }
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [search, status, location, dateRange, sorting]);
+
+  useEffect(() => {
+    setRowSelection({});
+  }, [pagination, search, status, location, dateRange, sorting]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('page', String(pagination.pageIndex + 1));
+    params.set('pageSize', String(pagination.pageSize));
+    if (status !== 'all') params.set('status', status);
+    if (location !== 'all') params.set('location', location);
+    router.replace(`/orders?${params.toString()}`, { scroll: false });
+  }, [pagination, status, location, router]);
+
+  const refreshOrders = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['orders'] }),
+      queryClient.invalidateQueries({ queryKey: ['orders-summary'] }),
+    ]);
+  }, [queryClient]);
+
+  const { data: summary } = useQuery({
+    queryKey: ['orders-summary'],
+    queryFn: getOrderSummary,
+    staleTime: 60_000,
+  });
+
+  const { data, isLoading, isFetching } = useQuery<OrdersResponse, Error>({
+    queryKey: ['orders', pagination, sorting, status, location, search, dateRange],
+    queryFn: () =>
+      fetchOrders({
+        pagination,
+        sorting,
+        filters: {
+          search,
+          status,
+          location,
+          dateFrom: dateRange.from ? new Date(dateRange.from) : undefined,
+          dateTo: dateRange.to ? new Date(dateRange.to) : undefined,
+        },
+      }),
+    keepPreviousData: true,
+  } as UseQueryOptions<OrdersResponse, Error>);
+
+  const handleCreateOrder = async (input: OrderInput) => {
     setIsCreating(true);
     try {
-      const result = await createOrder(data);
+      const result = await createOrder(input);
       toast.success(
         result?.order?.order_number
           ? `Order ${result.order.order_number} created`
           : 'Order created successfully'
       );
       setIsCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await refreshOrders();
       if (result?.order?.id) {
         router.push(`/orders/${result.order.id}`);
       }
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to create order';
-      toast.error(message);
+      toast.error(error instanceof Error ? error.message : 'Failed to create order');
     } finally {
       setIsCreating(false);
     }
   };
-
-  const { data, isFetching } = useQuery<OrdersResponse, Error>({
-    queryKey: ['orders', pagination, sorting, JSON.stringify(filters)],
-    queryFn: () =>
-      fetchOrders({
-        pagination,
-        sorting,
-        filters: {
-          search: filters.search,
-          status: filters.status,
-          tracking: filters.tracking,
-          location: filters.location,
-          dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
-          dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
-        },
-      }),
-    keepPreviousData: true,
-  } as UseQueryOptions<OrdersResponse, Error>);
-
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', (pagination.pageIndex + 1).toString());
-    params.set('pageSize', pagination.pageSize.toString());
-
-    if (filters.location && filters.location !== 'all') {
-      params.set('location', filters.location);
-    } else {
-      params.delete('location');
-    }
-
-    if (filters.tracking && filters.tracking !== 'all') {
-      params.set('tracking', filters.tracking);
-    } else {
-      params.delete('tracking');
-    }
-
-    router.replace(`/orders?${params.toString()}`);
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    filters,
-    router,
-    searchParams,
-  ]);
-
-  useEffect(() => {
-    const location = searchParams.get('location') || 'all';
-    const tracking = searchParams.get('tracking') || 'all';
-
-    setFilters((prev) => ({
-      ...prev,
-      location,
-      tracking,
-    }));
-
-    setLocalFilters((prev) => ({
-      ...prev,
-      location,
-      tracking,
-    }));
-  }, [searchParams]);
 
   const handleSendTracking = useCallback(
     async (selectedIds: string[]) => {
@@ -192,7 +185,13 @@ export function OrderTable() {
         return;
       }
 
-      const payload: any[] = [];
+      const payload: {
+        orderTrackingId: string;
+        name: string;
+        phone: string;
+        courier: string;
+        tracking: string;
+      }[] = [];
 
       for (const id of selectedIds) {
         const order = data?.rows.find((o) => o.id === id);
@@ -217,7 +216,7 @@ export function OrderTable() {
           return;
         }
 
-        payload.push({ orderTrackingId, name, phone, courier, tracking });
+        payload.push({ orderTrackingId: orderTrackingId!, name, phone, courier, tracking });
       }
 
       if (!payload.length) {
@@ -227,7 +226,7 @@ export function OrderTable() {
 
       try {
         await sendTrackingInfo(payload);
-        toast.success(`📦 ${payload.length} tracking job(s) queued`);
+        toast.success(`${payload.length} tracking message(s) queued`);
       } catch (err) {
         console.error(err);
         toast.error('Failed to enqueue tracking jobs');
@@ -235,6 +234,60 @@ export function OrderTable() {
     },
     [data, sendTrackingInfo]
   );
+
+  const onDeleteOrder = async () => {
+    if (!deleteTargetId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteOrder(deleteTargetId);
+      toast.success('Order deleted');
+      await refreshOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete order');
+    } finally {
+      setIsDeleting(false);
+      setOpen(false);
+      setDeleteTargetId(null);
+    }
+  };
+
+  const columns = useMemo(
+    () =>
+      createColumns({
+        onViewDetails: (orderId) => router.push(`/orders/${orderId}`),
+        onDeleteOrder: (orderId) => {
+          setDeleteTargetId(orderId);
+          setOpen(true);
+        },
+        onSendTracking: (orderId) => handleSendTracking([orderId]),
+        onCopy: (value, label) => {
+          navigator.clipboard.writeText(value);
+          toast.success(`${label} copied`);
+        },
+      }),
+    [router, handleSendTracking]
+  );
+
+  const total = data?.pagination?.total ?? 0;
+
+  const table = useReactTable({
+    data: data?.rows ?? [],
+    columns,
+    getRowId: (row) => row.id,
+    state: { pagination, sorting, rowSelection },
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: Math.max(1, Math.ceil(total / pagination.pageSize)),
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  const selectedRows = table.getSelectedRowModel().rows;
+  const hasSelection = selectedRows.length > 0;
 
   const handleCreateBulkShipments = async () => {
     const ids = selectedRows.map((r) => r.original.id);
@@ -251,7 +304,7 @@ export function OrderTable() {
         serviceProvider: bulkCourier,
       });
       table.resetRowSelection();
-      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await refreshOrders();
 
       if (result.succeeded === result.results.length) {
         toast.success(result.message);
@@ -263,84 +316,26 @@ export function OrderTable() {
           .map((r) => r.error ?? 'Unknown error')
           .join('; ');
         toast.warning(
-          failed.length > 3
-            ? `${preview} (+${failed.length - 3} more)`
-            : preview
+          failed.length > 3 ? `${preview} (+${failed.length - 3} more)` : preview
         );
       } else {
-        const firstError =
-          result.results[0]?.error ?? 'No shipments were created';
-        toast.error(firstError);
+        toast.error(result.results[0]?.error ?? 'No shipments were created');
       }
     } catch (error: unknown) {
       console.error(error);
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong'
-      );
+      toast.error(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setIsBulkShipping(false);
     }
   };
 
-  // Delete order
-  const onDeleteOrder = async () => {
-    if (!deleteTargetId) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteOrder(deleteTargetId);
-      toast.success('Order deleted');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete order');
-    } finally {
-      setIsDeleting(false);
-      setOpen(false);
-      setDeleteTargetId(null);
-    }
-  };
-
-  // Table columns
-  const columns = useMemo(
-    () =>
-      createColumns({
-        onViewDetails: (orderId) => router.push(`/orders/${orderId}`),
-        onDeleteOrder: (orderId) => {
-          setDeleteTargetId(orderId);
-          setOpen(true);
-        },
-        onTrackShipment: (id) => handleSendTracking([id]),
-        onCreateShipment: (orderId: string) => {
-          console.log('Create shipment for', orderId);
-        },
-        onCopyOrderId: (orderId: string) => {
-          navigator.clipboard.writeText(orderId);
-          toast.success('Order ID copied to clipboard');
-        },
-      }),
-    [router, handleSendTracking]
-  );
-
-  // React Table
-  const table = useReactTable({
-    data: data?.rows ?? [],
-    columns,
-    state: { pagination, sorting, rowSelection },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onRowSelectionChange: setRowSelection,
-    manualPagination: true,
-    pageCount: data?.pagination?.total
-      ? Math.ceil(data.pagination.total / pagination.pageSize)
-      : 0,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  const selectedRows = table.getSelectedRowModel().rows;
-  const hasSelection = selectedRows.length > 0;
+  const hasFilters =
+    !!searchInput || !!dateRange.from || location !== 'all';
+  const firstRow = total === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
+  const lastRow = Math.min((pagination.pageIndex + 1) * pagination.pageSize, total);
 
   return (
-    <div className="m-4">
+    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <OrderFormDialog
         isOpen={isCreateOpen}
         onClose={() => !isCreating && setIsCreateOpen(false)}
@@ -350,285 +345,251 @@ export function OrderTable() {
         isSubmitting={isCreating}
       />
 
-      <Card>
-        <CardHeader className="space-y-6">
-          {/* Filters Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-700">Filters</h2>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => setIsCreateOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Order
-                </Button>
-                {(localFilters.search ||
-                  localFilters.dateFrom ||
-                  localFilters.dateTo ||
-                  localFilters.status !== 'all' ||
-                  localFilters.tracking !== 'all' ||
-                  localFilters.location !== 'all') && (
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track every order from payment to delivery.
+            </p>
+          </div>
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            New order
+          </Button>
+        </div>
+
+        <Card className="gap-0 overflow-hidden py-0">
+          <div className="overflow-x-auto border-b">
+            <div className="flex min-w-max gap-1 px-4 pt-3">
+              {STATUS_TABS.map((tab) => {
+                const isActive = status === tab.value;
+                const count = summary?.[tab.value];
+
+                return (
                   <button
-                    onClick={() => {
-                      setLocalFilters({
-                        search: '',
-                        dateFrom: '',
-                        dateTo: '',
-                        status: 'all',
-                        tracking: 'all',
-                        location: 'all',
-                      });
-                      setFilters({
-                        search: '',
-                        dateFrom: '',
-                        dateTo: '',
-                        status: 'all',
-                        tracking: 'all',
-                        location: 'all',
-                      });
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setStatus(tab.value)}
+                    className={cn(
+                      '-mb-px flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'border-blue-600 text-blue-700'
+                        : 'border-transparent text-gray-500 hover:text-gray-800'
+                    )}
                   >
-                    Clear all
+                    {tab.label}
+                    {count !== undefined && (
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-xs tabular-nums',
+                          isActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                        )}
+                      >
+                        {count.toLocaleString()}
+                      </span>
+                    )}
                   </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 w-full">
-              <div className="max-w-4xl w-full flex gap-3">
-                <div className="w-full flex-3">
-                  <Input
-                    placeholder="Search by order ID, name, phone, or email..."
-                    value={localFilters.search}
-                    onChange={(e) =>
-                      setLocalFilters((prev) => ({
-                        ...prev,
-                        search: e.target.value,
-                      }))
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <DatePicker
-                    value={
-                      localFilters.dateFrom || localFilters.dateTo
-                        ? {
-                            from: localFilters.dateFrom
-                              ? new Date(localFilters.dateFrom)
-                              : undefined,
-                            to: localFilters.dateTo
-                              ? new Date(localFilters.dateTo)
-                              : undefined,
-                          }
-                        : undefined
-                    }
-                    onChange={(range) => {
-                      const from = formatDateToYYYYMMDD(range?.from);
-                      const to = range?.to
-                        ? formatDateToYYYYMMDD(range?.to)
-                        : formatDateToYYYYMMDD(range?.from);
-
-                      setLocalFilters((prev) => ({
-                        ...prev,
-                        dateFrom: from,
-                        dateTo: to,
-                      }));
-                    }}
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <Select
-                    value={localFilters.status}
-                    onValueChange={(value) =>
-                      setLocalFilters((prev) => ({ ...prev, status: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <Filter className="h-4 w-4 text-gray-500 mr-2" />
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="In Transit">In Transit</SelectItem>
-                      <SelectItem value="Delivering">Delivering</SelectItem>
-                      <SelectItem value="Delivered">Delivered</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex-1">
-                  <Select
-                    value={localFilters.tracking}
-                    onValueChange={(value) =>
-                      setLocalFilters((prev) => ({ ...prev, tracking: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Tracking" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Orders</SelectItem>
-                      <SelectItem value="with">With Tracking</SelectItem>
-                      <SelectItem value="without">No Tracking</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1">
-                  <Select
-                    value={localFilters.location}
-                    onValueChange={(value) =>
-                      setLocalFilters((prev) => ({ ...prev, location: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Location</SelectItem>
-                      <SelectItem value="east">East Malaysia</SelectItem>
-                      <SelectItem value="west">West Malaysia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="justify-end flex">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setFilters({ ...localFilters });
-                    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                  }}
-                  className="min-w-[120px]"
-                >
-                  Apply Filters
-                </Button>
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Pagination Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Show</span>
-              <Select
-                value={table.getState().pagination.pageSize.toString()}
-                onValueChange={(value) => table.setPageSize(Number(value))}
+          <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
+            <div className="relative lg:w-96">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search order number, name, phone or email"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="h-10 pl-9"
+              />
+            </div>
+
+            <DatePicker
+              value={
+                dateRange.from
+                  ? {
+                      from: new Date(dateRange.from),
+                      to: dateRange.to ? new Date(dateRange.to) : undefined,
+                    }
+                  : undefined
+              }
+              onChange={(range) =>
+                setDateRange({
+                  from: formatDateToYYYYMMDD(range?.from),
+                  to: formatDateToYYYYMMDD(range?.to ?? range?.from),
+                })
+              }
+            />
+
+            <Select value={location} onValueChange={setLocation}>
+              <SelectTrigger className="h-10 lg:w-[180px]">
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All locations</SelectItem>
+                <SelectItem value="west">West Malaysia</SelectItem>
+                <SelectItem value="east">East Malaysia</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-muted-foreground"
+                onClick={() => {
+                  setSearchInput('');
+                  setDateRange({ from: '', to: '' });
+                  setLocation('all');
+                }}
               >
-                <SelectTrigger className="w-20">
-                  <SelectValue>
-                    {table.getState().pagination.pageSize}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 10, 20, 50].map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-gray-600">entries</span>
-              {isFetching && (
-                <Loader2 className="w-4 h-4 text-gray-400 animate-spin ml-2" />
-              )}
+                <X className="h-4 w-4" />
+                Clear filters
+              </Button>
+            )}
+
+            {isFetching && !isLoading && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground lg:ml-auto" />
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px]">
+              <thead className="border-b bg-gray-50/80">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className={cn(
+                          'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
+                          header.column.id === 'select' && 'w-12 pl-6',
+                          header.column.id === 'actions' && 'w-12 pr-6'
+                        )}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody
+                className={cn(
+                  'divide-y transition-opacity',
+                  isFetching && !isLoading && 'opacity-60'
+                )}
+              >
+                {isLoading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="py-4 pl-6 pr-4">
+                        <Skeleton className="h-4 w-4" />
+                      </td>
+                      {Array.from({ length: columns.length - 1 }).map((__, j) => (
+                        <td key={j} className="px-4 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <tr
+                      key={row.id}
+                      onClick={() => router.push(`/orders/${row.original.id}`)}
+                      className={cn(
+                        'cursor-pointer transition-colors',
+                        row.getIsSelected() ? 'bg-blue-50/60' : 'hover:bg-gray-50'
+                      )}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            'px-4 py-3.5 align-middle',
+                            cell.column.id === 'select' && 'pl-6',
+                            cell.column.id === 'actions' && 'pr-6'
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={columns.length} className="px-6 py-16 text-center">
+                      <p className="text-sm font-medium text-gray-900">No orders found</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Try a different status, date range or search.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                {isLoading
+                  ? 'Loading orders…'
+                  : `Showing ${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${total.toLocaleString()}`}
+              </span>
+              <span className="hidden sm:inline">·</span>
+              <div className="flex items-center gap-2">
+                <span>Rows</span>
+                <Select
+                  value={String(pagination.pageSize)}
+                  onValueChange={(value) =>
+                    setPagination({ pageIndex: 0, pageSize: Number(value) })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[72px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                Page {pagination.pageIndex + 1} of {table.getPageCount()}
+              </span>
               <Button
+                variant="outline"
+                size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                size="sm"
-                variant="outline"
-                className="px-3"
               >
                 <ChevronLeft className="h-4 w-4" />
+                Previous
               </Button>
-
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Page</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {table.getState().pagination.pageIndex + 1}
-                </span>
-                <span className="text-sm text-gray-400">/</span>
-                <span className="text-sm text-gray-600">
-                  {table.getPageCount()}
-                </span>
-              </div>
-
               <Button
+                variant="outline"
+                size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                size="sm"
-                variant="outline"
-                className="px-3"
               >
+                Next
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {/* Table */}
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      'transition-colors duration-200', // smooth color changes
-                      row.getIsSelected()
-                        ? 'bg-indigo-50' // subtle background when selected
-                        : 'hover:bg-gray-50' // hover effect when not selected
-                    )}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-40 text-center"
-                  >
-                    <p>No orders found</p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       <DeleteDialog
         open={open}
@@ -636,22 +597,21 @@ export function OrderTable() {
         isLoading={isDeleting}
         onConfirm={onDeleteOrder}
         title="Delete order?"
-        description="This action cannot be undone. The order will be permanently removed."
+        description="The order will be removed from the list and excluded from totals and analytics."
       />
 
       {hasSelection && (
         <div
           className={cn(
-            'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-            'w-[90%] max-w-2xl',
-            'bg-indigo-100 border border-gray-200 rounded-2xl',
-            'px-4 py-3 shadow-xl shadow-black/10',
-            'flex items-center justify-between gap-4',
-            'animate-in slide-in-from-bottom-4 fade-in duration-200'
+            'fixed bottom-6 left-1/2 z-50 -translate-x-1/2',
+            'w-[calc(100%-2rem)] max-w-3xl',
+            'rounded-xl border bg-white px-4 py-3 shadow-xl shadow-black/10',
+            'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+            'animate-in fade-in slide-in-from-bottom-4 duration-200'
           )}
         >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center justify-center h-7 px-2.5 bg-indigo-600 text-white text-xs font-bold rounded-lg tabular-nums">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-blue-600 px-2 text-xs font-semibold tabular-nums text-white">
               {selectedRows.length}
             </span>
             <p className="text-sm font-medium text-gray-700">
@@ -659,36 +619,27 @@ export function OrderTable() {
             </p>
           </div>
 
-          <div className="flex items-center gap-1">
-            <Select
-              value={bulkCourier}
-              onValueChange={setBulkCourier}
-              disabled={isBulkShipping}
-            >
-              <SelectTrigger className="h-8 w-[150px] text-xs bg-white">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={bulkCourier} onValueChange={setBulkCourier} disabled={isBulkShipping}>
+              <SelectTrigger className="h-8 w-[150px] text-xs">
                 <SelectValue placeholder="Courier" />
               </SelectTrigger>
               <SelectContent>
-                {COURIER_SERVICES.Malaysia.map((courier) => (
-                  <SelectItem key={courier.value} value={courier.value}>
-                    {courier.label}
-                  </SelectItem>
-                ))}
-                {COURIER_SERVICES.Singapore.map((courier) => (
-                  <SelectItem key={courier.value} value={courier.value}>
-                    {courier.label}
-                  </SelectItem>
-                ))}
+                {[...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map(
+                  (courier) => (
+                    <SelectItem key={courier.value} value={courier.value}>
+                      {courier.label}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
             <Select
               value={bulkDeliveryType}
-              onValueChange={(value: 'pickup' | 'dropoff') =>
-                setBulkDeliveryType(value)
-              }
+              onValueChange={(value: 'pickup' | 'dropoff') => setBulkDeliveryType(value)}
               disabled={isBulkShipping}
             >
-              <SelectTrigger className="h-8 w-[110px] text-xs bg-white">
+              <SelectTrigger className="h-8 w-[110px] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -698,26 +649,25 @@ export function OrderTable() {
             </Select>
             <Button
               size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
-              onClick={() =>
-                handleSendTracking(selectedRows.map((r) => r.original.id))
-              }
-            >
-              <Send className="h-3.5 w-3.5 mr-1.5" />
-              Send Tracking
-            </Button>
-            <Button
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm h-8 px-3 text-xs font-semibold"
+              className="h-8"
               onClick={handleCreateBulkShipments}
               disabled={isBulkShipping}
             >
-              {isBulkShipping ? 'Creating…' : 'Create Bulk Shipments'}
+              {isBulkShipping ? 'Creating…' : 'Create shipments'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5"
+              onClick={() => handleSendTracking(selectedRows.map((r) => r.original.id))}
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send tracking
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-gray-600 h-8 px-2 text-xs"
+              className="h-8 text-muted-foreground"
               onClick={() => table.resetRowSelection()}
               disabled={isBulkShipping}
             >

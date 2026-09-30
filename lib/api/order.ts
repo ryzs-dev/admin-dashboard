@@ -33,6 +33,18 @@ export async function getAllOrders(params?: Query) {
   };
 }
 
+export type OrderStatusGroup =
+  | 'needs_shipment'
+  | 'awaiting_pickup'
+  | 'in_transit'
+  | 'delivered'
+  | 'problem';
+
+export async function getOrderSummary() {
+  const { data } = await api.get('/summary');
+  return data as Record<'all' | OrderStatusGroup, number>;
+}
+
 export async function getOrderById(id: UUID) {
   const { data } = await api.get(`/${id}`);
   return data;

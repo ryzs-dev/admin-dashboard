@@ -69,7 +69,7 @@ export function useOrders() {
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
         sortBy: sorting?.[0]?.id,
-        sortOrder: sorting?.[0]?.desc ? 'asc' : 'desc',
+        sortOrder: sorting?.[0] && !sorting[0].desc ? 'asc' : 'desc',
       });
 
       return {

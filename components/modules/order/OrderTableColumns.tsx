@@ -1,22 +1,22 @@
 'use client';
 
-import { ColumnDef } from '@tanstack/react-table';
+import { Column, ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   ArrowUpDown,
-  CheckCircle,
+  CheckCircle2,
   Clock,
-  Package,
-  Truck,
-  XCircle,
-  MoreHorizontal,
-  Eye,
   Copy,
-  ExternalLink,
+  Eye,
+  MoreHorizontal,
+  PackageOpen,
   Send,
-  Trash2Icon,
+  Trash2,
+  Truck,
 } from 'lucide-react';
 import { Order } from './types';
 import {
@@ -24,384 +24,331 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { UUID } from 'crypto';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils/currency';
+import { COURIER_SERVICES } from '../parcel-daily/constants';
 
 interface ColumnActions {
   onViewDetails: (orderId: string) => void;
   onDeleteOrder: (orderId: UUID) => void;
-  onCreateShipment: (orderId: string) => void;
-  onCopyOrderId: (orderId: string) => void;
-  onTrackShipment?: (trackingNumber: string) => void;
-  sendTrackingNumber?: (trackingNumber: string) => void;
+  onCopy: (value: string, label: string) => void;
+  onSendTracking: (orderId: string) => void;
 }
 
-// Status configuration for better visual feedback
-const STATUS_CONFIG = {
-  pending: {
-    label: 'Pending',
-    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+// Mirrors ORDER_STATUS_GROUPS in lunaa-agent's orders module.
+const STATUS_GROUPS = {
+  awaiting_pickup: ['pending', 'pending pickup', 'sent', 'read'],
+  in_transit: [
+    'in transit',
+    'delivering',
+    'shipped',
+    'parcel has been received',
+    'shipment collected',
+    'mainwaybill pickup',
+  ],
+  delivered: ['delivered', 'successfully delivered'],
+  problem: ['undelivered', 'returned'],
+};
+
+const STATUS_STYLES = {
+  needs_shipment: {
+    label: 'Needs shipment',
+    className: 'bg-amber-50 text-amber-700 ring-amber-600/20',
+    icon: PackageOpen,
+  },
+  awaiting_pickup: {
+    label: 'Awaiting pickup',
+    className: 'bg-gray-100 text-gray-700 ring-gray-500/20',
     icon: Clock,
   },
-  'in transit': {
-    label: 'In Transit',
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
-    icon: Package,
-  },
-  shipped: {
-    label: 'Shipped',
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    icon: Truck,
-  },
-  delivering: {
-    label: 'Delivering',
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
+  in_transit: {
+    label: 'In transit',
+    className: 'bg-blue-50 text-blue-700 ring-blue-600/20',
     icon: Truck,
   },
   delivered: {
     label: 'Delivered',
-    color: 'bg-green-100 text-green-800 border-green-200',
-    icon: CheckCircle,
+    className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+    icon: CheckCircle2,
   },
-  cancelled: {
-    label: 'Cancelled',
-    color: 'bg-red-100 text-red-800 border-red-200',
-    icon: XCircle,
+  problem: {
+    label: 'Problem',
+    className: 'bg-red-50 text-red-700 ring-red-600/20',
+    icon: AlertTriangle,
   },
 } as const;
+
+function getStatusStyle(order: Order) {
+  const raw = order.order_tracking?.status as string | undefined;
+  if (!order.order_tracking) return { ...STATUS_STYLES.needs_shipment, raw };
+
+  const value = (raw ?? '').toLowerCase();
+  const group = (Object.keys(STATUS_GROUPS) as (keyof typeof STATUS_GROUPS)[]).find(
+    (key) => STATUS_GROUPS[key].includes(value)
+  );
+
+  return { ...STATUS_STYLES[group ?? 'awaiting_pickup'], raw };
+}
+
+const COURIER_LABELS: Record<string, string> = Object.fromEntries(
+  [...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map((c) => [
+    c.value,
+    c.label,
+  ])
+);
+
+function initials(name?: string) {
+  const parts = (name ?? '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+function SortableHeader({
+  column,
+  label,
+  align = 'left',
+}: {
+  column: Column<Order>;
+  label: string;
+  align?: 'left' | 'right';
+}) {
+  const sorted = column.getIsSorted();
+  const Icon = sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ArrowUpDown;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!sorted) column.toggleSorting(true);
+        else if (sorted === 'desc') column.toggleSorting(false);
+        else column.clearSorting();
+      }}
+      className={cn(
+        'inline-flex items-center gap-1.5 transition-colors hover:text-gray-900',
+        sorted ? 'text-gray-900' : 'text-gray-500',
+        align === 'right' && 'ml-auto'
+      )}
+    >
+      {label}
+      <Icon className={cn('h-3.5 w-3.5', !sorted && 'opacity-40')} />
+    </button>
+  );
+}
+
+const stopRowClick = (e: React.MouseEvent) => e.stopPropagation();
 
 export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
   {
     id: 'select',
     header: ({ table }) => (
-      <div className="flex items-center">
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
-          aria-label="Select all orders"
-          className={cn(
-            'h-5 w-5 rounded-sm border border-gray-300',
-            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600',
-            'hover:border-indigo-400',
-            'focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 focus-visible:outline-none',
-            'transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
-          )}
-        />
-      </div>
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
+        aria-label="Select all orders on this page"
+      />
     ),
     cell: ({ row }) => (
-      <div className="flex items-center">
+      <div onClick={stopRowClick}>
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(val) => row.toggleSelected(!!val)}
           aria-label={`Select order ${row.original.order_number || row.original.id}`}
-          className={cn(
-            'h-5 w-5 rounded-sm border border-gray-300',
-            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600',
-            'hover:border-indigo-400',
-            'focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 focus-visible:outline-none',
-            'transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
-          )}
         />
       </div>
     ),
     enableSorting: false,
-    enableHiding: false,
     size: 40,
   },
-
   {
-    accessorKey: 'id',
-    header: ({ column }) => (
-      <div
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="h-auto p-0 hover:bg-transparent font-semibold flex items-center cursor-pointer"
-      >
-        Order ID
-        <ArrowUpDown className="ml-2 h-3.5 w-3.5 opacity-50" />
-      </div>
-    ),
+    id: 'created_at',
+    header: ({ column }) => <SortableHeader column={column} label="Order" />,
     cell: ({ row }) => {
+      const order = row.original;
       const orderNumber =
-        row.original.order_number ||
-        `ORD-${row.original.id.slice(0, 8).toUpperCase()}`;
-
-      // DISPLAY date (day month year)
-      const orderDate = new Date(row.original.order_date);
-
-      // LOGIC date (recent check)
-      const createdAt = new Date(row.original.created_at);
-      const isRecent = Date.now() - createdAt.getTime() < 24 * 60 * 60 * 1000;
+        order.order_number || `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+      const isRecent =
+        Date.now() - new Date(order.created_at).getTime() < 24 * 60 * 60 * 1000;
 
       return (
-        <div className="flex flex-col gap-1 py-1">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      actions.onCopyOrderId(row.original.id);
-                    }}
-                    className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors font-mono group flex items-center gap-1"
-                  >
-                    {orderNumber}
-                    <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Click to copy order ID</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span className="font-mono text-sm font-medium text-gray-900">
+              {orderNumber}
+            </span>
             {isRecent && (
-              <Badge
-                variant="outline"
-                className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200"
-              >
+              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
                 New
-              </Badge>
+              </span>
             )}
           </div>
-          <span className="text-xs text-gray-500">
-            {orderDate.toLocaleDateString('en-MY', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </span>
+          <p className="text-xs text-muted-foreground">
+            {new Date(order.order_date ?? order.created_at).toLocaleDateString(
+              'en-MY',
+              { day: 'numeric', month: 'short', year: 'numeric' }
+            )}
+          </p>
         </div>
       );
     },
-    size: 180,
   },
-
-  // Customer column with avatar placeholder
   {
-    accessorKey: 'customers.name',
+    id: 'customer',
     header: 'Customer',
     cell: ({ row }) => {
       const customer = row.original.customers;
-      const initials =
-        customer?.name
-          ?.split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2) || 'G';
 
       return (
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-            {initials}
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
+            {initials(customer?.name)}
           </div>
-
-          {/* Customer info */}
-          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-sm font-medium text-gray-900 truncate cursor-default">
-                    {customer?.name || 'Guest Customer'}
-                  </span>
-                </TooltipTrigger>
-                {customer?.name && (
-                  <TooltipContent>
-                    <p>{customer.name}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-xs text-gray-500 truncate cursor-default">
-                    {customer?.email || '-'}
-                  </span>
-                </TooltipTrigger>
-                {customer?.email && (
-                  <TooltipContent>
-                    <p>{customer.email}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+          <div className="min-w-0">
+            <p className="max-w-[200px] truncate text-sm font-medium text-gray-900">
+              {customer?.name || 'Guest customer'}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {customer?.phone_number || '—'}
+            </p>
           </div>
         </div>
       );
     },
-    size: 220,
   },
-
-  // Status column with visual badges
   {
-    accessorKey: 'status',
-    header: 'Delivery Status',
+    id: 'items',
+    header: 'Items',
     cell: ({ row }) => {
-      const status =
-        row.original.order_tracking?.status.toLowerCase() as keyof typeof STATUS_CONFIG;
-      const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-      const Icon = config.icon;
-
-      return (
-        <Badge
-          variant="outline"
-          className={`${config.color} border font-medium flex items-center gap-1.5 w-fit`}
-        >
-          <Icon className="h-3 w-3" />
-          {config.label}
-        </Badge>
-      );
-    },
-    size: 120,
-  },
-
-  // Tracking column with interactive elements
-  {
-    accessorKey: 'order_tracking',
-    header: 'Tracking Number',
-    cell: ({ row }) => {
-      const tracking = row.original.order_tracking;
-
-      const isSent = tracking?.message_status === 'sent';
-
-      if (!tracking) {
-        return (
-          <div className="flex items-center gap-2 text-gray-400">
-            <Package className="h-4 w-4" />
-            <span className="text-sm">No tracking</span>
-          </div>
-        );
+      const items = row.original.order_items ?? [];
+      if (!items.length) {
+        return <span className="text-sm text-muted-foreground">—</span>;
       }
 
+      const summary = items
+        .map((item) => `${item.products?.name ?? 'Item'} × ${item.quantity}`)
+        .join(', ');
+
       return (
-        <div className="flex items-center gap-2">
-          <div className="flex-shrink-0">
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                isSent ? 'bg-green-100' : 'bg-blue-100'
-              }`}
-            >
-              <Truck
-                className={`w-4 h-4 ${
-                  isSent ? 'text-green-600' : 'text-blue-600'
-                }`}
-              />
-            </div>
-          </div>
+        <p className="max-w-[220px] truncate text-sm text-gray-700" title={summary}>
+          {summary}
+        </p>
+      );
+    },
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const style = getStatusStyle(row.original);
+      const Icon = style.icon;
+      const showRaw =
+        style.raw && style.raw.toLowerCase() !== style.label.toLowerCase();
 
-          <div className="flex flex-col gap-0.5 min-w-0 ">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      actions.onTrackShipment?.(row.original.id);
-                    }}
-                    className="text-sm font-medium text-gray-900 font-mono truncate hover:text-blue-600 transition-colors text-left group flex items-center gap-1 hover:cursor-pointer"
-                  >
-                    {tracking.tracking_number}
-                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Click to Send Tracking</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+      return (
+        <span
+          title={showRaw ? `Courier status: ${style.raw}` : undefined}
+          className={cn(
+            'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
+            style.className
+          )}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {style.label}
+        </span>
+      );
+    },
+  },
+  {
+    id: 'tracking',
+    header: 'Tracking',
+    cell: ({ row }) => {
+      const tracking = row.original.order_tracking;
+      if (!tracking?.tracking_number) {
+        return <span className="text-sm text-muted-foreground">—</span>;
+      }
 
-            <span className="text-xs text-gray-500 font-medium">
-              {tracking.courier}
-            </span>
-          </div>
+      const courier = tracking.courier as string | undefined;
+
+      return (
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              actions.onCopy(tracking.tracking_number, 'Tracking number');
+            }}
+            title="Copy tracking number"
+            className="group flex items-center gap-1 font-mono text-sm text-gray-900 transition-colors hover:text-blue-600"
+          >
+            {tracking.tracking_number}
+            <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
+          <p className="text-xs text-muted-foreground">
+            {(courier && COURIER_LABELS[courier]) || courier || '—'}
+            {tracking.message_status === 'sent' && ' · Tracking sent'}
+          </p>
         </div>
       );
     },
-    size: 200,
   },
-
-  // Total amount column with better formatting
   {
     accessorKey: 'total_amount',
     header: ({ column }) => (
-      <div className="flex justify-center">
-        <div
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="h-auto p-0 hover:bg-transparent font-semibold flex items-center cursor-pointer"
-        >
-          Amount
-          <ArrowUpDown className="ml-2 h-3.5 w-3.5 opacity-50" />
-        </div>
+      <div className="flex">
+        <SortableHeader column={column} label="Amount" align="right" />
       </div>
     ),
-    cell: ({ row }) => {
-      const amount = row.original.total_amount;
-
-      return (
-        <div className="text-center">
-          <div className={`text-sm font-semibold text-gray-700`}>
-            RM{' '}
-            {amount.toLocaleString('en-MY', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-      );
-    },
-    size: 140,
+    cell: ({ row }) => (
+      <p className="text-right text-sm font-medium text-gray-900">
+        {formatCurrency(Number(row.original.total_amount ?? 0))}
+      </p>
+    ),
   },
-
-  // Actions column with enhanced menu
   {
     id: 'actions',
-    enableHiding: false,
     cell: ({ row }) => {
       const order = row.original;
+      const hasTracking = !!order.order_tracking?.tracking_number;
+
       return (
-        <div className="flex justify-end">
+        <div className="flex justify-end" onClick={stopRowClick}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-8 w-8 p-0 hover:bg-gray-100 transition-colors"
-              >
-                <span className="sr-only">Open menu</span>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open order actions</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuLabel className="font-semibold">
-                Order Actions
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onClick={() => actions.onViewDetails(order.id)}
-                className="cursor-pointer"
-              >
+              <DropdownMenuItem onClick={() => actions.onViewDetails(order.id)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => actions.onDeleteOrder(order.id)}
-                className="cursor-pointer"
-                variant="destructive"
+                disabled={!hasTracking}
+                onClick={() => actions.onSendTracking(order.id)}
               >
-                <Trash2Icon className="mr-2 h-4 w-4 text-red-400" />
+                <Send className="mr-2 h-4 w-4" />
+                Send tracking to customer
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  actions.onCopy(order.order_number || order.id, 'Order number')
+                }
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy order number
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => actions.onDeleteOrder(order.id)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
                 Delete order
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -409,6 +356,6 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
         </div>
       );
     },
-    size: 60,
+    size: 48,
   },
 ];
