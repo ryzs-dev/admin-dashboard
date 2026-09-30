@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import CustomerTable from './CustomerTable';
-import { useCustomer } from '@/hooks/useCustomer';
-import { FilterType } from './types';
+import { useCustomerList } from '@/hooks/useCustomer';
+import { CustomerSortField, CustomerTypeFilter, FilterType } from './types';
 
 export default function CustomerResults({
   limit,
@@ -10,81 +10,84 @@ export default function CustomerResults({
   sortBy,
   sortOrder,
   filter,
+  type,
   setPage,
-  setSortBy,
-  setSortOrder,
+  onSortChange,
 }: {
   limit: number;
   page: number;
   search: string;
-  sortBy: 'name' | 'created_at';
+  sortBy: CustomerSortField;
   sortOrder: 'asc' | 'desc';
   filter: FilterType;
+  type: CustomerTypeFilter;
   setPage: (p: number) => void;
-  setSortBy: (s: 'name' | 'created_at') => void;
-  setSortOrder: (o: 'asc' | 'desc') => void;
+  onSortChange: (field: CustomerSortField) => void;
 }) {
-  const { customers, pagination, isLoading, isError } = useCustomer({
-    limit,
-    offset: (page - 1) * limit,
-    search,
-    sortBy,
-    sortOrder,
-    filter,
-  });
+  const { customers, total, isLoading, isRefreshing, isError } =
+    useCustomerList({
+      limit,
+      offset: (page - 1) * limit,
+      search,
+      sortBy,
+      sortOrder,
+      filter,
+      type,
+    });
 
-  if (isLoading) return <p>Loading...</p>;
-  if (isError) return <p>Error!</p>;
-  if (!customers?.length) return <p>No customers found</p>;
+  if (isError) {
+    return (
+      <p className="p-12 text-center text-sm text-red-600">
+        Couldn&apos;t load customers. Refresh the page to try again.
+      </p>
+    );
+  }
 
-  const totalPages = pagination ? Math.ceil(pagination.total / limit) : 1;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const firstRow = total === 0 ? 0 : (page - 1) * limit + 1;
+  const lastRow = Math.min(page * limit, total);
 
   return (
     <>
-      <div className="max-h-[80vh] overflow-auto">
-        <CustomerTable
-          sortedCustomers={customers}
-          search={search}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSortChange={(field) => {
-            if (sortBy === field) {
-              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-            } else {
-              setSortBy(field as 'name' | 'created_at');
-              setSortOrder('asc');
-            }
-          }}
-          onEdit={() => console.log('Edit customer')}
-          onDelete={() => console.log('Delete customer')}
-        />
-      </div>
+      <CustomerTable
+        customers={customers}
+        search={search}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={onSortChange}
+        isLoading={isLoading}
+        isRefreshing={isRefreshing}
+        pageSize={limit}
+      />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-gray-500">
+      <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {isLoading
+            ? 'Loading customers…'
+            : `Showing ${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${total.toLocaleString()}`}
+        </p>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
         </div>
-      )}
+      </div>
     </>
   );
 }

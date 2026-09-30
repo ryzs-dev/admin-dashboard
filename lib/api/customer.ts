@@ -21,6 +21,11 @@ export async function getCustomers(params?: Query) {
   };
 }
 
+export async function getCustomerSummary() {
+  const res = await api.get('/summary');
+  return res.data as { total: number; returning: number; new: number };
+}
+
 export async function getAllCustomerIds(params: {
   search?: string;
   filter?: 'all' | 'today' | 'week' | 'month';

@@ -4,6 +4,7 @@ import {
   deleteCustomer,
   getCustomerById,
   getCustomers,
+  getCustomerSummary,
   updateCustomer,
 } from '@/lib/api/customer';
 import { UUID } from 'crypto';
@@ -25,6 +26,30 @@ export function useCustomer(params?: Query) {
     deleteCustomer,
     updateCustomer,
   };
+}
+
+export function useCustomerList(params: Query) {
+  const { data, error, isLoading, isValidating } = useSWR(
+    ['customers', params],
+    () => getCustomers(params),
+    { keepPreviousData: true, revalidateOnFocus: false }
+  );
+
+  return {
+    customers: data?.data ?? [],
+    total: data?.pagination.total ?? 0,
+    isLoading,
+    isRefreshing: isValidating && !isLoading,
+    isError: error,
+  };
+}
+
+export function useCustomerSummary() {
+  const { data, isLoading } = useSWR('customer-summary', getCustomerSummary, {
+    revalidateOnFocus: false,
+  });
+
+  return { summary: data, isLoading };
 }
 
 export function useCustomerById(id: UUID) {

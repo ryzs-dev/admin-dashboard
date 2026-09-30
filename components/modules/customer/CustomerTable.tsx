@@ -1,229 +1,209 @@
-import { Customer } from './types';
-import { ArrowUpDown } from 'lucide-react';
-import { UUID } from 'crypto';
+import { Customer, CustomerSortField } from './types';
+import { ArrowDown, ArrowUp, ArrowUpDown, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/currency';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 type CustomerTableProps = {
-  sortedCustomers: Customer[];
+  customers: Customer[];
   search: string;
-  sortBy: keyof Customer;
+  sortBy: CustomerSortField;
   sortOrder: 'asc' | 'desc';
-  onSortChange: (field: keyof Customer) => void;
-  onEdit: (customerId: UUID) => void;
-  onDelete: (customerId: UUID) => void;
+  onSortChange: (field: CustomerSortField) => void;
+  isLoading?: boolean;
+  isRefreshing?: boolean;
+  pageSize: number;
 };
 
-export default function CustomerTable({
-  sortedCustomers,
-  search,
+function SortHeader({
+  label,
+  field,
   sortBy,
+  sortOrder,
   onSortChange,
-}: CustomerTableProps) {
-  const router = useRouter();
+  align = 'left',
+}: {
+  label: string;
+  field: CustomerSortField;
+  sortBy: CustomerSortField;
+  sortOrder: 'asc' | 'desc';
+  onSortChange: (field: CustomerSortField) => void;
+  align?: 'left' | 'right';
+}) {
+  const isActive = sortBy === field;
+  const Icon = !isActive ? ArrowUpDown : sortOrder === 'asc' ? ArrowUp : ArrowDown;
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white">
-      <div className="overflow-auto max-h-[75vh]">
-        <table className="w-full table-fixed">
-          <colgroup>
-            <col className="w-[200px]" />
-            <col className="w-[150px]" />
-            <col className="w-[200px]" />
-            <col className="w-[80px]" />
-            <col className="w-[150px]" />
-            <col className="w-[150px]" />
-            <col className="w-[150px]" />
-          </colgroup>
-          <thead className="bg-gray-50 border-b sticky top-0">
-            <tr>
-              <th
-                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
-                onClick={() => onSortChange('name')}
-              >
-                <div className="flex items-center gap-2">
-                  <span>Name</span>
-                  {sortBy === 'name' && <ArrowUpDown className="w-3 h-3" />}
-                </div>
-              </th>
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
-                Phone
-              </th>
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
-                Email
-              </th>
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4">
-                Type
-              </th>
-              <th
-                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
-                onClick={() => onSortChange('total_amount_spent')}
-              >
-                <div className="flex items-center gap-2">
-                  <span>Total Amount Spent</span>
-                  {sortBy === 'total_amount_spent' && (
-                    <ArrowUpDown className="w-3 h-3" />
-                  )}
-                </div>
-              </th>
-              <th
-                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
-                onClick={() => onSortChange('total_purchase_count')}
-              >
-                <div className="flex items-center gap-2">
-                  <span>Purchases Count</span>
-                  {sortBy === 'total_purchase_count' && (
-                    <ArrowUpDown className="w-3 h-3" />
-                  )}
-                </div>
-              </th>
-              <th
-                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
-                onClick={() => onSortChange('last_order_date')}
-              >
-                <div className="flex items-center gap-2">
-                  <span>Last Ordered</span>
-                  {sortBy === 'last_order_date' && (
-                    <ArrowUpDown className="w-3 h-3" />
-                  )}
-                </div>
-              </th>
-              {/* <th
-                className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider p-4 cursor-pointer hover:text-gray-700 transition-colors"
-                onClick={() => onSortChange('created_at')}
-              >
-                <div className="flex items-center gap-2">
-                  <span>Created</span>
-                  {sortBy === 'created_at' && (
-                    <ArrowUpDown className="w-3 h-3" />
-                  )}
-                </div>
-              </th> */}
-            </tr>
-          </thead>
-          <tbody className="divide-y overflow-y-auto">
-            {sortedCustomers.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-12 text-center">
-                  <div className="text-gray-400">
-                    {search.trim() ? (
-                      <>
-                        <div className="w-12 h-12 mx-auto mb-3">
-                          <svg
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                            />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-medium">
-                          No customers found
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Try adjusting your search terms
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 mx-auto mb-3">
-                          <svg
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                            />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-medium">
-                          No customers found
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Add your first customer to get started
-                        </p>
-                      </>
-                    )}
+    <th className={cn('px-6 py-3', align === 'right' && 'text-right')}>
+      <button
+        type="button"
+        onClick={() => onSortChange(field)}
+        className={cn(
+          'inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider transition-colors hover:text-gray-900',
+          isActive ? 'text-gray-900' : 'text-gray-500'
+        )}
+      >
+        {label}
+        <Icon className={cn('h-3.5 w-3.5', !isActive && 'opacity-40')} />
+      </button>
+    </th>
+  );
+}
+
+function initials(name: string) {
+  const parts = name.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+function formatDate(value?: string | Date) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-MY', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function TypeBadge({ customer }: { customer: Customer }) {
+  const isReturning = customer.repeat_customer === 'returning';
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+        isReturning
+          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
+          : 'bg-gray-100 text-gray-600'
+      )}
+    >
+      {isReturning ? 'Returning' : 'New'}
+    </span>
+  );
+}
+
+export default function CustomerTable({
+  customers,
+  search,
+  sortBy,
+  sortOrder,
+  onSortChange,
+  isLoading,
+  isRefreshing,
+  pageSize,
+}: CustomerTableProps) {
+  const router = useRouter();
+  const sortProps = { sortBy, sortOrder, onSortChange };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[900px]">
+        <thead className="border-b bg-gray-50/80">
+          <tr>
+            <SortHeader label="Customer" field="name" {...sortProps} />
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              Type
+            </th>
+            <SortHeader label="Orders" field="total_purchase_count" align="right" {...sortProps} />
+            <SortHeader label="Total spent" field="total_amount_spent" align="right" {...sortProps} />
+            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+              Avg order
+            </th>
+            <SortHeader label="Last order" field="last_order_date" align="right" {...sortProps} />
+          </tr>
+        </thead>
+        <tbody
+          className={cn(
+            'divide-y transition-opacity',
+            isRefreshing && 'opacity-60'
+          )}
+        >
+          {isLoading ? (
+            Array.from({ length: Math.min(pageSize, 10) }).map((_, i) => (
+              <tr key={i}>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
                   </div>
                 </td>
+                {Array.from({ length: 5 }).map((__, j) => (
+                  <td key={j} className="px-6 py-4">
+                    <Skeleton className="ml-auto h-4 w-16" />
+                  </td>
+                ))}
               </tr>
-            ) : (
-              sortedCustomers.map((c: Customer) => (
+            ))
+          ) : customers.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="px-6 py-16 text-center">
+                <Users className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                <p className="text-sm font-medium text-gray-900">
+                  No customers found
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {search.trim()
+                    ? 'Try a different name, phone number or email.'
+                    : 'Try a different filter.'}
+                </p>
+              </td>
+            </tr>
+          ) : (
+            customers.map((c) => {
+              const orders = c.total_purchase_count ?? 0;
+              const spent = c.total_amount_spent ?? 0;
+
+              return (
                 <tr
                   key={c.id}
-                  className="hover:bg-gray-50 transition-colors"
-                  onClick={(e) => {
-                    if ((e.target as HTMLInputElement).type !== 'checkbox') {
-                      router.push(`/customers/${c.id}`);
-                    }
-                  }}
+                  className="cursor-pointer transition-colors hover:bg-gray-50"
+                  onClick={() => router.push(`/customers/${c.id}`)}
                 >
-                  <td className="p-4">
-                    <span className="text-sm font-medium text-gray-900 truncate block">
-                      {c.name}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
+                        {initials(c.name || '')}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {c.name || 'Unnamed customer'}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {c.phone_number}
+                          {c.email ? ` · ${c.email}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <TypeBadge customer={c} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {orders}
+                    </span>
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      {orders === 1 ? 'order' : 'orders'}
                     </span>
                   </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-600 truncate block">
-                      {c.phone_number}
-                    </span>
+                  <td className="px-6 py-4 text-right text-sm text-gray-900">
+                    {formatCurrency(spent)}
                   </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-600 truncate block">
-                      {c.email || '—'}
-                    </span>
+                  <td className="px-6 py-4 text-right text-sm text-gray-600">
+                    {orders > 0 ? formatCurrency(spent / orders) : '—'}
                   </td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {c.repeat_customer}
-                    </span>
+                  <td className="px-6 py-4 text-right text-sm text-gray-600">
+                    {formatDate(c.last_order_date)}
                   </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-600 truncate block">
-                      {formatCurrency(c.total_amount_spent)}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-600 truncate block">
-                      {c.total_purchase_count}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-600 truncate block">
-                      {c.last_order_date
-                        ? new Date(c.last_order_date).toLocaleDateString(
-                            'en-US',
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }
-                          )
-                        : '—'}{' '}
-                      {/* fallback for no date */}
-                    </span>
-                  </td>
-
-                  {/* <td className="p-4">
-                    <span className="text-sm text-gray-600">
-
-                    </span>
-                  </td> */}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              );
+            })
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }

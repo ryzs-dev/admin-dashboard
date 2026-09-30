@@ -15,7 +15,17 @@ export interface Customer {
   repeat_customer: 'returning' | 'new';
 }
 
+export type CustomerTypeFilter = 'all' | 'returning' | 'new';
+
+export type CustomerSortField =
+  | 'name'
+  | 'created_at'
+  | 'total_amount_spent'
+  | 'total_purchase_count'
+  | 'last_order_date';
+
 export interface Query {
+  type?: CustomerTypeFilter;
   page?: number;
   limit?: number;
   offset?: number;
