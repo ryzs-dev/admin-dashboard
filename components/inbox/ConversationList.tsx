@@ -10,7 +10,6 @@ import {
 } from 'react';
 import Image from 'next/image';
 import {
-  AlertCircle,
   Check,
   CheckCheck,
   Clock,
@@ -18,6 +17,7 @@ import {
   Loader2,
   Search,
   SendHorizontal,
+  X,
 } from 'lucide-react';
 import { useConversations } from '@/hooks/useConversations';
 import { useConversationMessages } from '@/hooks/useConversationMessages';
@@ -102,7 +102,11 @@ function StatusIcon({ status }: { status: string | null }) {
     case 'sent':
       return <Check className="h-3.5 w-3.5" aria-label="Sent" />;
     case 'failed':
-      return <AlertCircle className="h-3.5 w-3.5 text-red-200" aria-label="Failed" />;
+      return (
+        <span title="Not delivered">
+          <X className="h-3.5 w-3.5 text-red-200" strokeWidth={2.5} aria-label="Not delivered" />
+        </span>
+      );
     default:
       return <Clock className="h-3 w-3" aria-label="Sending" />;
   }
@@ -118,8 +122,6 @@ function MessageBubble({
   const outbound = message.direction === 'outbound';
   const rendered = renderMessage(message);
   const sentAt = message.timestamp ? unixToDate(Number(message.timestamp)) : null;
-  const failed = outbound && message.status === 'failed';
-
   return (
     <div className={cn('flex', outbound ? 'justify-end' : 'justify-start')}>
       <div
@@ -127,8 +129,7 @@ function MessageBubble({
           'max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm lg:max-w-[60%]',
           outbound
             ? 'rounded-br-md bg-primary text-primary-foreground'
-            : 'rounded-bl-md border bg-card text-card-foreground',
-          failed && 'bg-red-700'
+            : 'rounded-bl-md border bg-card text-card-foreground'
         )}
       >
         {rendered.type === 'image' ? (
@@ -160,7 +161,6 @@ function MessageBubble({
             outbound ? 'text-primary-foreground/70' : 'text-muted-foreground'
           )}
         >
-          {failed && <span className="mr-1 font-medium">Not delivered</span>}
           {sentAt && <span>{formatMessageTime(sentAt)}</span>}
           {outbound && <StatusIcon status={message.status} />}
         </div>
