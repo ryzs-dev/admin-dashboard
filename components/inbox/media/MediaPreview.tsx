@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
 interface MediaPreviewProps {
   mediaId: string;
   onClose: () => void;
@@ -49,7 +52,7 @@ export default function MediaPreview({
         setLoading(true);
         setError(null);
         
-        const res = await fetch(`http://localhost:3001/api/whatsapp/media/${mediaId}`);
+        const res = await fetch(`${API_BASE_URL}/api/whatsapp/media/${mediaId}`);
         if (!res.ok) {
           throw new Error(`Failed to fetch media: ${res.status}`);
         }

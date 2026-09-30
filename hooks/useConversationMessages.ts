@@ -26,7 +26,7 @@ export function useConversationMessages(conversationId: string) {
         (current: any) => {
           console.log('📩 current SWR data:', current);
           const existing = current?.data ?? [];
-          return { ...current, data: [...existing, msg] };
+          return { ...current, data: [msg, ...existing] };
         },
         { revalidate: false }
       );

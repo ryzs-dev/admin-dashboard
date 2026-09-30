@@ -7,59 +7,74 @@ export function isWithin24HourWindow(lastInboundTimestamp: number): boolean {
   return hoursPassed <= 24;
 }
 
+const MALAYSIA_TZ = 'Asia/Kuala_Lumpur';
+
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: MALAYSIA_TZ });
+const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: MALAYSIA_TZ,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: MALAYSIA_TZ,
+  day: 'numeric',
+  month: 'short',
+});
+const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: MALAYSIA_TZ,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+function toDayKey(date: Date) {
+  return dayKeyFormatter.format(date);
+}
+
+function relativeDay(date: Date): 'today' | 'yesterday' | null {
+  const now = new Date();
+  const key = toDayKey(date);
+  if (key === toDayKey(now)) return 'today';
+  if (key === toDayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000))) {
+    return 'yesterday';
+  }
+  return null;
+}
+
+export function unixToDate(unixSeconds: number): Date {
+  return new Date(unixSeconds * 1000);
+}
+
 export function unixToGMT8(unixSeconds: number): string {
-  const date = new Date(unixSeconds * 1000);
+  const date = unixToDate(unixSeconds);
+  return `${toDayKey(date).replace(/-/g, '/')} ${timeFormatter.format(date)}`;
+}
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+export function formatMessageTime(date: Date): string {
+  return timeFormatter.format(date);
+}
 
-  return `${year}/${month}/${day} ${hours}:${minutes}`;
+export function messageDayKey(date: Date): string {
+  return toDayKey(date);
+}
+
+export function formatDayLabel(date: Date): string {
+  const relative = relativeDay(date);
+  if (relative === 'today') return 'Today';
+  if (relative === 'yesterday') return 'Yesterday';
+  return longDateFormatter.format(date);
 }
 
 export function formatChatTimestamp(isoString: string): string {
-  const messageDateUTC = new Date(isoString); // original UTC date
-  const messageDate = new Date(messageDateUTC.getTime() + 8 * 60 * 60 * 1000); // convert to GMT+8
-  const now = new Date();
-
-  // Start of today in GMT+8
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0,
-    0,
-    0,
-    0
-  );
-  const startOfYesterday = new Date(startOfToday);
-  startOfYesterday.setDate(startOfToday.getDate() - 1);
-
-  // Today
-  if (messageDate >= startOfToday) {
-    const hours = String(messageDate.getHours()).padStart(2, '0');
-    const minutes = String(messageDate.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+  const date = new Date(isoString);
+  const relative = relativeDay(date);
+  if (relative === 'today') return timeFormatter.format(date);
+  if (relative === 'yesterday') return 'Yesterday';
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    return toDayKey(date).split('-').reverse().join('/');
   }
-
-  // Yesterday
-  if (messageDate >= startOfYesterday) {
-    return 'Yesterday';
-  }
-
-  // Older messages → show date
-  const day = String(messageDate.getDate()).padStart(2, '0');
-  const month = String(messageDate.getMonth() + 1).padStart(2, '0');
-  const year = messageDate.getFullYear();
-
-  // Optional: show full date if not this year
-  if (year !== now.getFullYear()) {
-    return `${day}/${month}/${year}`;
-  }
-
-  return `${day}/${month}`;
+  return shortDateFormatter.format(date);
 }
 
 export function renderMessage(
