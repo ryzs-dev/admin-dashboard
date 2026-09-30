@@ -29,6 +29,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { createParcelDailyShipment } from '@/lib/api/parcel-daily';
+import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
 
 interface CreateShipmentDialogProps {
   order: Order;
@@ -77,9 +78,7 @@ export default function CreateShipmentDialog({
       serviceProvider: selectedCourier,
       clientAddress: {
         fullName: order.customers?.name || '',
-        countryCode: order.customers?.phone_number.startsWith('+65')
-          ? '+65'
-          : '+60',
+        countryCode: phoneCountryCode(order.customers?.phone_number),
         phone: order.customers?.phone_number || '',
         email: order.customers?.email || '',
         line1: order.addresses?.full_address || '',
@@ -157,7 +156,7 @@ export default function CreateShipmentDialog({
                   <p className="text-xs text-muted-foreground mb-1.5">
                     Phone Number
                   </p>
-                  <p className="font-medium">{order.customers?.phone_number}</p>
+                  <p className="font-medium">{formatPhone(order.customers?.phone_number)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">Email</p>

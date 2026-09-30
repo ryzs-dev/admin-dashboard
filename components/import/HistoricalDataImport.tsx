@@ -25,6 +25,7 @@ import {
   Database,
   TrendingUp,
 } from "lucide-react";
+import { formatPhone } from '@/lib/utils/phone';
 
 interface ImportSummary {
   totalProcessed: number;
@@ -442,7 +443,7 @@ export default function HistoricalDataImport() {
                           </div>
                           {order.order.phone_number && (
                             <div className="text-gray-500">
-                              {order.order.phone_number}
+                              {formatPhone(order.order.phone_number)}
                             </div>
                           )}
                         </div>

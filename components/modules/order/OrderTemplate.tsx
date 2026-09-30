@@ -30,6 +30,7 @@ import { getOrderShipmentStatus } from './OrderTableColumns';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatFriendlyDateTime } from '@/lib/utils/date';
+import { formatPhone } from '@/lib/utils/phone';
 
 function formatOrderDate(value?: string) {
   if (!value) return '';
@@ -344,7 +345,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   <div className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">Phone</dt>
                     <dd className="text-right">
-                      {order.customers?.phone_number || '—'}
+                      {formatPhone(order.customers?.phone_number) || '—'}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">

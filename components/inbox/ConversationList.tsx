@@ -33,6 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 import MediaPreview from './media/MediaPreview';
 import { MessageInput } from '@/types/message';
+import { formatPhone } from '@/lib/utils/phone';
 
 interface Conversation {
   id: number;
@@ -59,7 +60,7 @@ const PAGE_SIZE = 100;
 
 function displayName(conversation: Conversation) {
   const name = conversation.name?.trim();
-  return name || `+${conversation.phone_number}`;
+  return name || formatPhone(conversation.phone_number);
 }
 
 function initials(conversation: Conversation) {
@@ -68,10 +69,6 @@ function initials(conversation: Conversation) {
   const parts = name.replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(Boolean);
   const letters = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
   return (letters || name[0]).toUpperCase();
-}
-
-function formatPhone(phone: string) {
-  return phone.startsWith('+') ? phone : `+${phone}`;
 }
 
 function Avatar({

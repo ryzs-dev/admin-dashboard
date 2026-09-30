@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useOrders } from "@/hooks/useApi";
 import { Order } from "@/types";
+import { formatPhone } from '@/lib/utils/phone';
 
 export default function WhatsAppDashboard() {
   const { orders: initialOrders } = useOrders();
@@ -31,7 +32,7 @@ export default function WhatsAppDashboard() {
 
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Sent to ${order.phone}`);
+        toast.success(`Sent to ${formatPhone(order.phone)}`);
       } else {
         toast.error(data.message || "Failed to send.");
       }

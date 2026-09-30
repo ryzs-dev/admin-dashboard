@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { User, Mail, CopyCheck, Copy, Phone, MapPin } from 'lucide-react';
 import { Order } from '../types';
 import { useState } from 'react';
+import { formatPhone, toE164 } from '@/lib/utils/phone';
 
 interface CustomerCardTemplateProps {
   order?: Order;
@@ -50,14 +51,14 @@ export default function CustomerCardTemplate({
           <div className="flex items-center justify-between gap-2 text-sm text-gray-600 w-full">
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              <span>{order?.customers?.phone_number}</span>
+              <span>{formatPhone(order?.customers?.phone_number)}</span>
             </div>
             {copied === 'phone' ? (
               <CopyCheck className="h-4 w-4 text-green-500" />
             ) : (
               <Copy
                 className="h-4 w-4 text-gray-400 hover:cursor-pointer hover:text-gray-600 transition-colors"
-                onClick={handleCopy('phone', order?.customers?.phone_number)}
+                onClick={handleCopy('phone', toE164(order?.customers?.phone_number))}
               />
             )}
           </div>

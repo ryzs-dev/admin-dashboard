@@ -27,6 +27,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatPhone } from '@/lib/utils/phone';
 
 // ✅ FIXED: Updated Order interface to match normalized Supabase schema
 interface SupabaseOrder {
@@ -405,7 +406,7 @@ export default function SupabaseOrdersTable({
                   <TableCell className="px-4 py-3">
                     <div className="flex items-center gap-1 text-sm text-gray-900">
                       <Phone className="h-3 w-3" />
-                      {order.customers?.phone_number || "N/A"}
+                      {formatPhone(order.customers?.phone_number) || "N/A"}
                     </div>
                     {order.customers?.email && (
                       <div className="text-xs text-gray-500 mt-1">
@@ -574,7 +575,7 @@ export default function SupabaseOrdersTable({
                                 <span className="text-gray-500 block">
                                   Contact:
                                 </span>
-                                <span>{order.customers?.phone_number}</span>
+                                <span>{formatPhone(order.customers?.phone_number)}</span>
                                 {order.customers?.email && (
                                   <div className="text-gray-600">
                                     {order.customers.email}

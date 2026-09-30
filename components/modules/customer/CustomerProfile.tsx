@@ -33,6 +33,7 @@ import { formatCurrency } from '@/lib/utils/currency';
 import { CustomerInput } from '@/types/customer';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { formatPhone } from '@/lib/utils/phone';
 
 interface CustomerProfileProps {
   customer_id: UUID;
@@ -191,7 +192,7 @@ export default function CustomerProfile({
                         }
                       />
                     ) : (
-                      <p className="text-sm py-2">{customer.phone_number}</p>
+                      <p className="text-sm py-2">{formatPhone(customer.phone_number)}</p>
                     )}
                   </div>
 

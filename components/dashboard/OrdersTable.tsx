@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Filter, Calendar, DollarSign } from "lucide-react";
 import { Order } from "@/types";
+import { formatPhone } from '@/lib/utils/phone';
 
 interface Props {
   orders: Order[];
@@ -333,7 +334,7 @@ export default function OrdersTable({ orders = [] }: Props) {
                     {order.name}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600">
-                    {order.phone}
+                    {formatPhone(order.phone)}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600">
                     {order.package_type || "—"}

@@ -20,6 +20,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { removeUser } from '@/lib/api/audience';
 import { getAllCustomerIds } from '@/lib/api/customer'; // add this import
 import { toast } from 'sonner';
+import { formatPhone } from '@/lib/utils/phone';
 
 type FilterOption = 'all' | 'today' | 'week' | 'month';
 
@@ -229,7 +230,7 @@ export default function SegmentManagePage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{c.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {c.phone_number}
+                      {formatPhone(c.phone_number)}
                     </p>
                   </div>
                   <Button
@@ -267,7 +268,7 @@ export default function SegmentManagePage() {
           >
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{m.name}</p>
-              <p className="text-xs text-muted-foreground">{m.phone_number}</p>
+              <p className="text-xs text-muted-foreground">{formatPhone(m.phone_number)}</p>
             </div>
 
             <button

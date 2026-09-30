@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatPhone } from '@/lib/utils/phone';
 
 interface ValidationResult {
   isValid: boolean;
@@ -413,7 +414,7 @@ export default function FileImportModal({ isOpen, onClose, onImportComplete }: F
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-4 py-2">{item.rowNumber}</td>
                   <td className="px-4 py-2">{item.transformed.customer_name || 'N/A'}</td>
-                  <td className="px-4 py-2">{item.transformed.phone_number || 'N/A'}</td>
+                  <td className="px-4 py-2">{formatPhone(item.transformed.phone_number) || 'N/A'}</td>
                   <td className="px-4 py-2">
                     {item.transformed.currency || 'MYR'} {item.transformed.total_amount || '0.00'}
                   </td>

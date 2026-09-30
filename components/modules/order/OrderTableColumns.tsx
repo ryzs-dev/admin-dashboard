@@ -30,6 +30,7 @@ import { UUID } from 'crypto';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { COURIER_SERVICES } from '../parcel-daily/constants';
+import { formatPhone } from '@/lib/utils/phone';
 
 interface ColumnActions {
   onViewDetails: (orderId: string) => void;
@@ -238,7 +239,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               {customer?.name || 'Guest customer'}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {customer?.phone_number || '—'}
+              {formatPhone(customer?.phone_number) || '—'}
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { Order } from '@/components/modules/order/types';
 import { ShipmentInput } from '@/components/modules/parcel-daily/types';
+import { phoneCountryCode } from '@/lib/utils/phone';
 
 export function createBulkShipments(order: Order): ShipmentInput {
   console.log('Creating shipment for order:', order);
@@ -7,9 +8,7 @@ export function createBulkShipments(order: Order): ShipmentInput {
     serviceProvider: 'spx',
     clientAddress: {
       fullName: order.customers?.name || '',
-      countryCode: order.customers?.phone_number?.startsWith('+65')
-        ? '+65'
-        : '+60',
+      countryCode: phoneCountryCode(order.customers?.phone_number),
       phone: order.customers?.phone_number || '',
       email: order.customers?.email || 'test@gmail.com',
       line1: order.addresses?.full_address || '',

@@ -24,6 +24,7 @@ import { Order } from './types';
 import { OrderInput, OrderItemsInput } from '@/types/order';
 import { UUID } from 'crypto';
 import { Product } from '../products/types';
+import { formatPhone } from '@/lib/utils/phone';
 
 type OrderFormDialogProps = {
   isOpen: boolean;
@@ -213,7 +214,7 @@ export default function OrderFormDialog({
               <SelectContent>
                 {customers.map((customer) => (
                   <SelectItem key={customer.id} value={customer.id}>
-                    {customer.phone_number} - ( {customer.name} )
+                    {formatPhone(customer.phone_number)} - ( {customer.name} )
                   </SelectItem>
                 ))}
               </SelectContent>

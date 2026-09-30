@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/currency';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatPhone } from '@/lib/utils/phone';
 
 type CustomerTableProps = {
   customers: Customer[];
@@ -187,7 +188,7 @@ export default function CustomerTable({
                           )}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {c.phone_number}
+                          {formatPhone(c.phone_number)}
                           {c.email ? ` · ${c.email}` : ''}
                         </p>
                       </div>
