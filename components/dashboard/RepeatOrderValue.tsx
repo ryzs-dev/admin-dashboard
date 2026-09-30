@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 import { RepeatOrderValueDTO } from '@/types/stats';
-import { Repeat, UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface SegmentProps {
@@ -113,15 +113,12 @@ export function RepeatOrderValueCard({
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Repeat className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <CardTitle>Repeat vs First-time Customers</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Orders {periodLabel ? `in ${periodLabel}` : 'this month'}, split by
-              whether the customer had bought before
-            </p>
-          </div>
+        <div>
+          <CardTitle>Repeat vs First-time Customers</CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Orders {periodLabel ? `in ${periodLabel}` : 'this month'}, split by
+            whether the customer had bought before
+          </p>
         </div>
         {!isLoading && data.repeat_orders > 0 && data.new_orders > 0 && (
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
