@@ -230,7 +230,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
 
                     <Link
                       href={`/customers/${order.customers?.id}`}
-                      className="inline-flex items-center gap-1 font-semibold text-gray-900 hover:text-blue-600 transition-colors group"
+                      className="inline-flex items-center gap-1 font-semibold text-gray-900 hover:text-[#662d91] transition-colors group"
                     >
                       <ExternalLink className="w-3.5 h-3.5 " />
                       {order.customers?.name}

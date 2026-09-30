@@ -298,7 +298,7 @@ export default function CustomerProfile({
                               <td className="h-12 px-4 align-middle">
                                 <Link
                                   href={`/orders/${order.id}`}
-                                  className="font-medium text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+                                  className="font-medium text-gray-900 hover:text-[#662d91] hover:underline transition-colors"
                                 >
                                   {order.order_number}
                                 </Link>

@@ -115,25 +115,28 @@ function CRMSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
+        <div className="flex items-center gap-2.5 px-2 py-2">
           <Image
             src="/brand/lunaa-icon.png"
             alt="Lunaa"
             width={300}
             height={300}
-            className="h-6 w-6 shrink-0"
+            className="h-7 w-7 shrink-0 brightness-0 invert"
           />
           {!isCollapsed && (
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="truncate text-base font-bold">
+            <div className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="truncate text-[15px] font-semibold text-white">
                 Lunaa Women Care
+              </span>
+              <span className="truncate text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
+                Back Office
               </span>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <Separator className="my-2" />
+      <Separator className="my-2 bg-sidebar-border" />
 
       <SidebarContent>
         <SidebarGroup>
@@ -145,6 +148,7 @@ function CRMSidebar() {
                     asChild
                     isActive={isActive(item.href)}
                     tooltip={item.label}
+                    className="h-9 text-sidebar-foreground/75 hover:text-white data-[active=true]:text-white"
                   >
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
@@ -164,9 +168,9 @@ function CRMSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent h-16">
-                  <Avatar className="h-4 w-4">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src="" alt={user?.email || 'User'} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-white/15 text-xs font-medium text-white">
                       {user?.email ? getInitials(user.email) : 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -176,7 +180,7 @@ function CRMSidebar() {
                         <span className="truncate font-medium">
                           {user?.email?.split('@')[0] || 'User'}
                         </span>
-                        <span className="truncate text-xs text-muted-foreground">
+                        <span className="truncate text-xs text-sidebar-foreground/60">
                           {user?.email || 'user@example.com'}
                         </span>
                       </div>
@@ -230,7 +234,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-background px-6">
+          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-background/85 px-6 backdrop-blur">
             {/* Search Bar */}
             <SidebarTrigger className="shrink-0" />
             <div className="flex-1">

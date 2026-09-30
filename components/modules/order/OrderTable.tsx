@@ -385,7 +385,7 @@ export function OrderTable() {
                     className={cn(
                       '-mb-px flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors',
                       isActive
-                        ? 'border-blue-600 text-blue-700'
+                        ? 'border-[#662d91] text-[#662d91]'
                         : 'border-transparent text-gray-500 hover:text-gray-800'
                     )}
                   >
@@ -394,7 +394,7 @@ export function OrderTable() {
                       <span
                         className={cn(
                           'rounded-full px-2 py-0.5 text-xs tabular-nums',
-                          isActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                          isActive ? 'bg-[#662d91]/[0.08] text-[#662d91]' : 'bg-gray-100 text-gray-600'
                         )}
                       >
                         {count.toLocaleString()}
@@ -515,7 +515,7 @@ export function OrderTable() {
                       onClick={() => router.push(`/orders/${row.original.id}`)}
                       className={cn(
                         'cursor-pointer transition-colors',
-                        row.getIsSelected() ? 'bg-blue-50/60' : 'hover:bg-gray-50'
+                        row.getIsSelected() ? 'bg-[#662d91]/[0.05]' : 'hover:bg-gray-50'
                       )}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -623,7 +623,7 @@ export function OrderTable() {
           )}
         >
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-blue-600 px-2 text-xs font-semibold tabular-nums text-white">
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-[#662d91] px-2 text-xs font-semibold tabular-nums text-white">
               {selectedRows.length}
             </span>
             <p className="text-sm font-medium text-gray-700">

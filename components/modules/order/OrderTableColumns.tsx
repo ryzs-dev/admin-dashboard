@@ -198,7 +198,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               {orderNumber}
             </span>
             {isRecent && (
-              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+              <span className="rounded bg-[#662d91]/[0.08] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#662d91]">
                 New
               </span>
             )}
@@ -221,7 +221,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
 
       return (
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#662d91]/[0.08] text-xs font-semibold text-[#662d91]">
             {initials(customer?.name)}
           </div>
           <div className="min-w-0">
@@ -304,7 +304,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               actions.onCopy(tracking.tracking_number, 'Tracking number');
             }}
             title="Copy tracking number"
-            className="group flex max-w-full items-center gap-1 font-mono text-sm text-gray-900 transition-colors hover:text-blue-600"
+            className="group flex max-w-full items-center gap-1 font-mono text-sm text-gray-900 transition-colors hover:text-[#662d91]"
           >
             <span className="truncate">{tracking.tracking_number}</span>
             <Copy className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />

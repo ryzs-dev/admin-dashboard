@@ -43,7 +43,7 @@ function SummaryCard({
       <Card
         className={cn(
           'h-full w-full gap-0 py-0 transition-colors hover:border-gray-300',
-          active && 'border-blue-500 ring-1 ring-blue-500 hover:border-blue-500'
+          active && 'border-[#662d91] ring-1 ring-[#662d91] hover:border-[#662d91]'
         )}
       >
         <CardContent className="flex items-start justify-between gap-4 p-5">

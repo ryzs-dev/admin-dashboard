@@ -21,16 +21,16 @@ interface SegmentProps {
 
 const TONES = {
   repeat: {
-    panel: 'border-indigo-100 bg-indigo-50/60',
-    icon: 'bg-indigo-600 text-white',
-    dot: 'bg-indigo-600',
-    accent: 'text-indigo-700',
+    panel: 'border-[#662d91]/15 bg-[#662d91]/[0.05]',
+    icon: 'bg-[#662d91] text-white',
+    dot: 'bg-[#662d91]',
+    accent: 'text-[#662d91]',
   },
   new: {
-    panel: 'border-emerald-100 bg-emerald-50/60',
-    icon: 'bg-emerald-500 text-white',
-    dot: 'bg-emerald-500',
-    accent: 'text-emerald-700',
+    panel: 'border-[#d98b4a]/20 bg-[#d98b4a]/[0.07]',
+    icon: 'bg-[#d98b4a] text-white',
+    dot: 'bg-[#d98b4a]',
+    accent: 'text-[#a8612a]',
   },
 };
 
@@ -123,7 +123,7 @@ export function RepeatOrderValueCard({
         {!isLoading && data.repeat_orders > 0 && data.new_orders > 0 && (
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
             Repeat orders are{' '}
-            <span className={averageGap >= 0 ? 'text-indigo-700' : 'text-rose-600'}>
+            <span className={averageGap >= 0 ? 'text-[#662d91]' : 'text-rose-600'}>
               {Math.abs(averageGap).toFixed(1)}% {averageGap >= 0 ? 'larger' : 'smaller'}
             </span>{' '}
             on average
@@ -147,11 +147,11 @@ export function RepeatOrderValueCard({
                 {hasRevenue && (
                   <>
                     <div
-                      className="bg-indigo-600 transition-all"
+                      className="bg-[#662d91] transition-all"
                       style={{ width: `${repeatShare}%` }}
                     />
                     <div
-                      className="bg-emerald-500 transition-all"
+                      className="bg-[#d98b4a] transition-all"
                       style={{ width: `${100 - repeatShare}%` }}
                     />
                   </>
@@ -159,12 +159,12 @@ export function RepeatOrderValueCard({
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                  <span className="h-2 w-2 rounded-full bg-[#662d91]" />
                   Repeat {repeatShare.toFixed(1)}%
                 </span>
                 <span className="flex items-center gap-1.5">
                   First-time {hasRevenue ? (100 - repeatShare).toFixed(1) : '0.0'}%
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="h-2 w-2 rounded-full bg-[#d98b4a]" />
                 </span>
               </div>
             </div>
