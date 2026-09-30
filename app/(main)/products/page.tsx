@@ -3,6 +3,7 @@
 import ProductFormDialog from '@/components/modules/products/ProductFormDialog';
 import ProductTable from '@/components/modules/products/ProductTable';
 import { Product } from '@/components/modules/products/types';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -80,21 +81,17 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-4">Products</h1>
-          <p className="text-muted-foreground">
-            Manage your products and inventory
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleNewProduct}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Product
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        title="Products"
+        description="Manage your products and inventory."
+      >
+        <Button onClick={handleNewProduct} className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          New product
+        </Button>
+      </PageHeader>
 
       <ProductFormDialog
         isOpen={isDialogOpen}
@@ -120,6 +117,7 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

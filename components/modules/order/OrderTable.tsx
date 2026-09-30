@@ -1,5 +1,6 @@
 'use client';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -357,18 +358,15 @@ export function OrderTable() {
       />
 
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Track every order from payment to delivery.
-            </p>
-          </div>
+        <PageHeader
+          title="Orders"
+          description="Track every order from payment to delivery."
+        >
           <Button onClick={() => setIsCreateOpen(true)} className="gap-1.5">
             <Plus className="h-4 w-4" />
             New order
           </Button>
-        </div>
+        </PageHeader>
 
         <Card className="gap-0 overflow-hidden py-0">
           <div className="overflow-x-auto border-b">

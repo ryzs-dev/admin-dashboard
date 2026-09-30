@@ -301,14 +301,16 @@ export default function WhatsAppInbox() {
     <div className="flex h-[calc(100svh-3rem)] overflow-hidden md:h-svh bg-background">
       {/* Conversation list */}
       <aside className="flex w-full max-w-[340px] shrink-0 flex-col border-r bg-card">
-        <div className="space-y-3 border-b px-4 pb-3 pt-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-base font-semibold">Conversations</h2>
-            {!convLoading && (
-              <span className="text-xs text-muted-foreground">
-                {filteredConversations.length.toLocaleString()}
-              </span>
-            )}
+        <div className="space-y-4 border-b px-6 pb-4 pt-6 lg:px-8 lg:pt-8">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Inbox
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {convLoading
+                ? 'Loading conversations…'
+                : `${filteredConversations.length.toLocaleString()} conversations`}
+            </p>
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

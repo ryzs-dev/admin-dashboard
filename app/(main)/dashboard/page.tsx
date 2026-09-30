@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
@@ -75,36 +76,35 @@ const CRMDashboard = () => {
   }, [defaultProductId, selectedProductId]);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="w-full mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setSelectedMonth(format(addMonths(currentDate, -1), 'yyyy-MM'))
-              }
-            >
-              ←
-            </Button>
-
-            <Button variant="outline" size="sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              {format(currentDate, 'MMMM yyyy')}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setSelectedMonth(format(addMonths(currentDate, 1), 'yyyy-MM'))
-              }
-            >
-              →
-            </Button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="mx-auto w-full space-y-6">
+        <PageHeader
+          title="Dashboard"
+          description="Sales, repeat orders and products for the month."
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setSelectedMonth(format(addMonths(currentDate, -1), 'yyyy-MM'))
+            }
+          >
+            ←
+          </Button>
+          <Button variant="outline" size="sm">
+            <Calendar className="h-4 w-4" />
+            {format(currentDate, 'MMMM yyyy')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setSelectedMonth(format(addMonths(currentDate, 1), 'yyyy-MM'))
+            }
+          >
+            →
+          </Button>
+        </PageHeader>
 
         <StatsCards stats={stats} />
 

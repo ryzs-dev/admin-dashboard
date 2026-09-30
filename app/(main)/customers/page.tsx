@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerSummary } from '@/hooks/useCustomer';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { Repeat, Search, UserPlus, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -99,12 +100,10 @@ export default function CustomersPage() {
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            See who buys again and how many times they have ordered.
-          </p>
-        </div>
+        <PageHeader
+          title="Customers"
+          description="See who buys again and how many times they have ordered."
+        />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <SummaryCard
