@@ -39,10 +39,10 @@ function SummaryCard({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="text-left">
+    <button type="button" onClick={onClick} className="flex h-full w-full text-left">
       <Card
         className={cn(
-          'gap-0 py-0 transition-colors hover:border-gray-300',
+          'h-full w-full gap-0 py-0 transition-colors hover:border-gray-300',
           active && 'border-blue-500 ring-1 ring-blue-500 hover:border-blue-500'
         )}
       >
@@ -52,7 +52,7 @@ function SummaryCard({
             <p className="text-2xl font-semibold">
               {value === undefined ? '—' : value.toLocaleString()}
             </p>
-            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+            <p className="text-xs text-muted-foreground">{hint ?? '\u00A0'}</p>
           </div>
           <div className="rounded-lg bg-gray-100 p-2">
             <Icon className="h-5 w-5 text-gray-600" />
@@ -110,6 +110,7 @@ export default function CustomersPage() {
           <SummaryCard
             label="All customers"
             value={summary?.total}
+            hint="All time"
             icon={Users}
             active={customerType === 'all'}
             onClick={() => selectType('all')}
