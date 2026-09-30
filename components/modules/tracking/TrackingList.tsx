@@ -31,7 +31,7 @@ export function TrackingList({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-6 divide-y [&>*:not(:first-child)]:pt-6">
         {trackings.map((tracking) => (
           <TrackingEntryCard
             key={tracking.id}

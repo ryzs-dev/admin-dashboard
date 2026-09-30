@@ -15,6 +15,25 @@ export function formatDateUTC8(dateInput: string | Date) {
   });
 }
 
+export function formatFriendlyDateTime(dateInput: string | Date) {
+  // Supabase `timestamp` columns come back without an offset but are stored in UTC.
+  const date =
+    typeof dateInput === 'string'
+      ? new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(dateInput) ? dateInput : `${dateInput}Z`)
+      : dateInput;
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleString('en-MY', {
+    timeZone: APP_TIMEZONE,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 export function formatDateToYYYYMMDD(date?: Date) {
   if (!date) return '';
   const y = date.getFullYear();
