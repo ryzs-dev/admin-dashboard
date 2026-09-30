@@ -225,7 +225,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
             {initials(customer?.name)}
           </div>
           <div className="min-w-0">
-            <p className="max-w-[200px] truncate text-sm font-medium text-gray-900">
+            <p className="truncate text-sm font-medium text-gray-900">
               {customer?.name || 'Guest customer'}
             </p>
             <p className="truncate text-xs text-muted-foreground">
@@ -245,14 +245,19 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
         return <span className="text-sm text-muted-foreground">—</span>;
       }
 
-      const summary = items
-        .map((item) => `${item.products?.name ?? 'Item'} × ${item.quantity}`)
-        .join(', ');
+      const labels = items.map(
+        (item) => `${item.products?.name ?? 'Item'} × ${item.quantity}`
+      );
 
       return (
-        <p className="max-w-[220px] truncate text-sm text-gray-700" title={summary}>
-          {summary}
-        </p>
+        <div className="flex min-w-0 items-center gap-1.5" title={labels.join('\n')}>
+          <span className="truncate text-sm text-gray-700">{labels[0]}</span>
+          {labels.length > 1 && (
+            <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+              +{labels.length - 1}
+            </span>
+          )}
+        </div>
       );
     },
   },
@@ -299,12 +304,12 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               actions.onCopy(tracking.tracking_number, 'Tracking number');
             }}
             title="Copy tracking number"
-            className="group flex items-center gap-1 font-mono text-sm text-gray-900 transition-colors hover:text-blue-600"
+            className="group flex max-w-full items-center gap-1 font-mono text-sm text-gray-900 transition-colors hover:text-blue-600"
           >
-            {tracking.tracking_number}
-            <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="truncate">{tracking.tracking_number}</span>
+            <Copy className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
-          <p className="text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             {(courier && COURIER_LABELS[courier]) || courier || '—'}
             {tracking.message_status === 'sent' && ' · Tracking sent'}
           </p>

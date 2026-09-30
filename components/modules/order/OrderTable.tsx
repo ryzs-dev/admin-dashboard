@@ -62,6 +62,17 @@ const STATUS_TABS: { value: StatusTab; label: string }[] = [
 
 const PAGE_SIZES = [10, 20, 50, 100];
 
+// Customer has no fixed width so it absorbs any extra space.
+const COLUMN_WIDTHS: Record<string, string> = {
+  select: 'w-14',
+  created_at: 'w-[170px]',
+  items: 'w-[170px]',
+  status: 'w-[160px]',
+  tracking: 'w-[210px]',
+  total_amount: 'w-[120px]',
+  actions: 'w-16',
+};
+
 export function OrderTable() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -345,7 +356,7 @@ export function OrderTable() {
         isSubmitting={isCreating}
       />
 
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-[1600px] space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
@@ -456,7 +467,7 @@ export function OrderTable() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[1100px] table-fixed">
               <thead className="border-b bg-gray-50/80">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
@@ -464,9 +475,10 @@ export function OrderTable() {
                       <th
                         key={header.id}
                         className={cn(
-                          'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
-                          header.column.id === 'select' && 'w-12 pl-6',
-                          header.column.id === 'actions' && 'w-12 pr-6'
+                          'whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
+                          COLUMN_WIDTHS[header.column.id],
+                          header.column.id === 'select' && 'pl-6',
+                          header.column.id === 'actions' && 'pr-6'
                         )}
                       >
                         {header.isPlaceholder
@@ -510,7 +522,7 @@ export function OrderTable() {
                         <td
                           key={cell.id}
                           className={cn(
-                            'px-4 py-3.5 align-middle',
+                            'px-4 py-4 align-middle',
                             cell.column.id === 'select' && 'pl-6',
                             cell.column.id === 'actions' && 'pr-6'
                           )}
