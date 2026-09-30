@@ -1,4 +1,4 @@
-import { Customer, CustomerSortField } from './types';
+import { COUNTRY_LABELS, Customer, CustomerSortField } from './types';
 import { ArrowDown, ArrowUp, ArrowUpDown, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -168,8 +168,23 @@ export default function CustomerTable({
                         {initials(c.name || '')}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-gray-900">
-                          {c.name || 'Unnamed customer'}
+                        <p className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span className="truncate">
+                            {c.name || 'Unnamed customer'}
+                          </span>
+                          {c.country && (
+                            <span
+                              title={COUNTRY_LABELS[c.country]}
+                              className={cn(
+                                'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide',
+                                c.country === 'SG'
+                                  ? 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20'
+                                  : 'bg-gray-100 text-gray-500'
+                              )}
+                            >
+                              {c.country}
+                            </span>
+                          )}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {c.phone_number}

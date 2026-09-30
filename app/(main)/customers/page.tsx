@@ -2,6 +2,9 @@
 
 import CustomerResults from '@/components/modules/customer/CustomerResults';
 import {
+  COUNTRY_LABELS,
+  CountryCode,
+  CountryFilter,
   CustomerSortField,
   CustomerTypeFilter,
   FilterType,
@@ -72,6 +75,7 @@ export default function CustomersPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [customerType, setCustomerType] = useState<CustomerTypeFilter>('all');
+  const [country, setCountry] = useState<CountryFilter>('all');
 
   const { summary } = useCustomerSummary();
 
@@ -82,7 +86,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, activeFilter, customerType, sortBy, sortOrder]);
+  }, [debouncedSearch, activeFilter, customerType, country, sortBy, sortOrder]);
 
   const selectType = (type: CustomerTypeFilter) => {
     setCustomerType(type);
@@ -157,6 +161,28 @@ export default function CustomersPage() {
               </div>
 
               <Select
+                value={country}
+                onValueChange={(value) => setCountry(value as CountryFilter)}
+              >
+                <SelectTrigger className="h-10 sm:w-[170px]">
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All countries</SelectItem>
+                  {(Object.keys(COUNTRY_LABELS) as CountryCode[]).map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {COUNTRY_LABELS[code]}
+                      {summary?.countries && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({summary.countries[code].toLocaleString()})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
                 value={activeFilter}
                 onValueChange={(value) => setActiveFilter(value as FilterType)}
               >
@@ -181,6 +207,7 @@ export default function CustomersPage() {
             sortOrder={sortOrder}
             filter={activeFilter}
             type={customerType}
+            country={country}
             setPage={setPage}
             onSortChange={(field) => {
               if (sortBy === field) {

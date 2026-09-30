@@ -1,4 +1,8 @@
-import { Customer, Query } from '@/components/modules/customer/types';
+import {
+  CountryCode,
+  Customer,
+  Query,
+} from '@/components/modules/customer/types';
 import { CustomerInput } from '@/types/customer';
 import axios from 'axios';
 import { UUID } from 'crypto';
@@ -23,7 +27,12 @@ export async function getCustomers(params?: Query) {
 
 export async function getCustomerSummary() {
   const res = await api.get('/summary');
-  return res.data as { total: number; returning: number; new: number };
+  return res.data as {
+    total: number;
+    returning: number;
+    new: number;
+    countries?: Record<CountryCode, number>;
+  };
 }
 
 export async function getAllCustomerIds(params: {

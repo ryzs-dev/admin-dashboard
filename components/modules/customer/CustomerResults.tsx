@@ -1,7 +1,12 @@
 import { Button } from '@/components/ui/button';
 import CustomerTable from './CustomerTable';
 import { useCustomerList } from '@/hooks/useCustomer';
-import { CustomerSortField, CustomerTypeFilter, FilterType } from './types';
+import {
+  CountryFilter,
+  CustomerSortField,
+  CustomerTypeFilter,
+  FilterType,
+} from './types';
 
 export default function CustomerResults({
   limit,
@@ -11,6 +16,7 @@ export default function CustomerResults({
   sortOrder,
   filter,
   type,
+  country,
   setPage,
   onSortChange,
 }: {
@@ -21,6 +27,7 @@ export default function CustomerResults({
   sortOrder: 'asc' | 'desc';
   filter: FilterType;
   type: CustomerTypeFilter;
+  country: CountryFilter;
   setPage: (p: number) => void;
   onSortChange: (field: CustomerSortField) => void;
 }) {
@@ -33,6 +40,7 @@ export default function CustomerResults({
       sortOrder,
       filter,
       type,
+      country: country === 'all' ? undefined : country,
     });
 
   if (isError) {

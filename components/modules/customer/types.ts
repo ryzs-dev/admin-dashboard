@@ -13,9 +13,19 @@ export interface Customer {
   has_recent_purchase: boolean;
   last_order_date?: string | Date;
   repeat_customer: 'returning' | 'new';
+  country?: CountryCode;
 }
 
 export type CustomerTypeFilter = 'all' | 'returning' | 'new';
+
+export type CountryCode = 'MY' | 'SG';
+
+export type CountryFilter = 'all' | CountryCode;
+
+export const COUNTRY_LABELS: Record<CountryCode, string> = {
+  MY: 'Malaysia',
+  SG: 'Singapore',
+};
 
 export type CustomerSortField =
   | 'name'
@@ -26,6 +36,7 @@ export type CustomerSortField =
 
 export interface Query {
   type?: CustomerTypeFilter;
+  country?: CountryCode;
   page?: number;
   limit?: number;
   offset?: number;
