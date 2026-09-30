@@ -97,7 +97,7 @@ export default function CustomersPage() {
       : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="min-h-screen bg-[#fff8f3] p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>

@@ -7,11 +7,9 @@ import {
   Users,
   ShoppingBag,
   Package,
-  Bell,
   LogOut,
   ChevronDown,
   MessageCircle,
-  Box,
   Zap,
   User2,
   Radio,
@@ -40,8 +38,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -79,7 +75,6 @@ function CRMSidebar() {
       label: 'Inbox',
       icon: MessageCircle,
       href: '/inbox',
-      badge: 3,
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
     { id: 'templates', label: 'Templates', icon: Book, href: '/templates' },
@@ -154,16 +149,6 @@ function CRMSidebar() {
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
-                      {item.badge && !isCollapsed && (
-                        <Badge
-                          variant={
-                            item.badge === 'NEW' ? 'default' : 'secondary'
-                          }
-                          className="ml-auto"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -245,7 +230,7 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 items-center bg-background gap-4 border-b px-6 w-full">
+          <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-[#fff8f3] px-6">
             {/* Search Bar */}
             <SidebarTrigger className="shrink-0" />
             <div className="flex-1">
@@ -254,56 +239,6 @@ export default function CRMLayout({ children }: CRMLayoutProps) {
 
             {/* Header Actions */}
             <div className="flex items-center gap-2">
-              {/* Notifications */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-                      3
-                    </span>
-                    <span className="sr-only">Notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="flex flex-col gap-2 p-2">
-                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
-                      <p className="font-medium">New order received</p>
-                      <p className="text-muted-foreground">
-                        Order #1234 from John Doe
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        2 minutes ago
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
-                      <p className="font-medium">Customer inquiry</p>
-                      <p className="text-muted-foreground">
-                        New message in inbox
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        1 hour ago
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
-                      <p className="font-medium">Low stock alert</p>
-                      <p className="text-muted-foreground">
-                        Product XYZ is running low
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        3 hours ago
-                      </p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="justify-center">
-                    View all notifications
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {/* User Menu */}
               {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
