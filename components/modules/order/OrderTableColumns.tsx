@@ -40,7 +40,13 @@ interface ColumnActions {
 
 // Mirrors ORDER_STATUS_GROUPS in lunaa-agent's orders module.
 const STATUS_GROUPS = {
-  awaiting_pickup: ['pending', 'pending pickup', 'sent', 'read'],
+  awaiting_pickup: [
+    'pending',
+    'pending pickup',
+    'shipment data received',
+    'sent',
+    'read',
+  ],
   in_transit: [
     'in transit',
     'delivering',
@@ -49,8 +55,19 @@ const STATUS_GROUPS = {
     'shipment collected',
     'mainwaybill pickup',
   ],
-  delivered: ['delivered', 'successfully delivered'],
-  problem: ['undelivered', 'returned'],
+  delivered: [
+    'delivered',
+    'successfully delivered',
+    'delivery success',
+    'special pod',
+  ],
+  problem: [
+    'undelivered',
+    'returned',
+    'rto success',
+    'return success',
+    'return shipment was successfully delivered',
+  ],
 };
 
 const STATUS_STYLES = {
