@@ -611,78 +611,80 @@ export function OrderTable() {
       />
 
       {hasSelection && (
-        <div
-          className={cn(
-            'fixed bottom-6 left-1/2 z-50 -translate-x-1/2',
-            'w-[calc(100%-2rem)] max-w-3xl',
-            'rounded-xl border bg-white px-4 py-3 shadow-xl shadow-black/10',
-            'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
-            'animate-in fade-in slide-in-from-bottom-4 duration-200'
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-[#662d91] px-2 text-xs font-semibold tabular-nums text-white">
-              {selectedRows.length}
-            </span>
-            <p className="text-sm font-medium text-gray-700">
-              {selectedRows.length === 1 ? 'order' : 'orders'} selected
-            </p>
-          </div>
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 md:pl-[16rem]">
+          <div
+            data-selection-bar
+            className={cn(
+              'pointer-events-auto flex max-w-full flex-wrap items-center gap-x-3 gap-y-2',
+              'rounded-2xl border bg-card px-3 py-2 shadow-lg shadow-black/[0.08]',
+              'animate-in fade-in slide-in-from-bottom-4 duration-200'
+            )}
+          >
+            <div className="flex shrink-0 items-center gap-2.5 pl-1">
+              <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-primary px-2 text-xs font-semibold tabular-nums text-primary-foreground">
+                {selectedRows.length}
+              </span>
+              <span className="whitespace-nowrap text-sm font-medium">
+                {selectedRows.length === 1 ? 'order selected' : 'orders selected'}
+              </span>
+              <button
+                type="button"
+                className="whitespace-nowrap text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+                onClick={() => table.resetRowSelection()}
+                disabled={isBulkShipping}
+              >
+                Clear
+              </button>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={bulkCourier} onValueChange={setBulkCourier} disabled={isBulkShipping}>
-              <SelectTrigger className="h-8 w-[150px] text-xs">
-                <SelectValue placeholder="Courier" />
-              </SelectTrigger>
-              <SelectContent>
-                {[...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map(
-                  (courier) => (
-                    <SelectItem key={courier.value} value={courier.value}>
-                      {courier.label}
-                    </SelectItem>
-                  )
-                )}
-              </SelectContent>
-            </Select>
-            <Select
-              value={bulkDeliveryType}
-              onValueChange={(value: 'pickup' | 'dropoff') => setBulkDeliveryType(value)}
-              disabled={isBulkShipping}
-            >
-              <SelectTrigger className="h-8 w-[110px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pickup">Pick up</SelectItem>
-                <SelectItem value="dropoff">Drop-off</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="h-8"
-              onClick={handleCreateBulkShipments}
-              disabled={isBulkShipping}
-            >
-              {isBulkShipping ? 'Creating…' : 'Create shipments'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1.5"
-              onClick={() => handleSendTracking(selectedRows.map((r) => r.original.id))}
-            >
-              <Send className="h-3.5 w-3.5" />
-              Send tracking
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-muted-foreground"
-              onClick={() => table.resetRowSelection()}
-              disabled={isBulkShipping}
-            >
-              Clear
-            </Button>
+            <div className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={bulkCourier} onValueChange={setBulkCourier} disabled={isBulkShipping}>
+                <SelectTrigger className="h-9 w-[168px] bg-background">
+                  <SelectValue placeholder="Courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map(
+                    (courier) => (
+                      <SelectItem key={courier.value} value={courier.value}>
+                        {courier.label}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+              <Select
+                value={bulkDeliveryType}
+                onValueChange={(value: 'pickup' | 'dropoff') => setBulkDeliveryType(value)}
+                disabled={isBulkShipping}
+              >
+                <SelectTrigger className="h-9 w-[124px] bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pickup">Pick up</SelectItem>
+                  <SelectItem value="dropoff">Drop-off</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                className="h-9"
+                onClick={handleCreateBulkShipments}
+                disabled={isBulkShipping}
+              >
+                {isBulkShipping ? 'Creating…' : 'Create shipments'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 gap-1.5 bg-background"
+                onClick={() => handleSendTracking(selectedRows.map((r) => r.original.id))}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Send tracking
+              </Button>
+            </div>
           </div>
         </div>
       )}
