@@ -6,6 +6,17 @@ export interface DashboardStatsDTO {
   mtd_revenue: number;
 }
 
+export interface RepeatOrderValueDTO {
+  repeat_customers: number;
+  repeat_orders: number;
+  repeat_revenue: number;
+  repeat_average_order_value: number;
+  repeat_revenue_share: number;
+  new_orders: number;
+  new_revenue: number;
+  new_average_order_value: number;
+}
+
 export type RevenueTrend = 'increasing' | 'stable' | 'decreasing';
 
 export interface ProductPerformanceDTO {
@@ -40,4 +51,15 @@ export const EMPTY_DASHBOARD_STATS: DashboardStatsDTO = {
   total_revenue: 0,
   average_order_value: 0,
   mtd_revenue: 0,
+};
+
+export const EMPTY_REPEAT_ORDER_VALUE: RepeatOrderValueDTO = {
+  repeat_customers: 0,
+  repeat_orders: 0,
+  repeat_revenue: 0,
+  repeat_average_order_value: 0,
+  repeat_revenue_share: 0,
+  new_orders: 0,
+  new_revenue: 0,
+  new_average_order_value: 0,
 };

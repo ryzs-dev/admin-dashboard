@@ -3,7 +3,10 @@ import {
   getProductMonthlyTrends,
   getProductPerformance,
 } from '@/lib/api/stats';
-import { EMPTY_DASHBOARD_STATS } from '@/types/stats';
+import {
+  EMPTY_DASHBOARD_STATS,
+  EMPTY_REPEAT_ORDER_VALUE,
+} from '@/types/stats';
 import useSWR from 'swr';
 
 export function useStats(month: string) {
@@ -15,6 +18,7 @@ export function useStats(month: string) {
 
   return {
     stats: data?.stats ?? EMPTY_DASHBOARD_STATS,
+    repeatOrderValue: data?.repeat_order_value ?? EMPTY_REPEAT_ORDER_VALUE,
     revenueChart: data?.charts?.revenue ?? [],
     customerChart: data?.charts?.customer_acquisition ?? [],
     isLoading,

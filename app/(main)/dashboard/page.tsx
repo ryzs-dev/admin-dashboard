@@ -21,6 +21,7 @@ import {
   useStats,
 } from '@/hooks/useStats';
 import { StatsCards } from '@/components/dashboard/StatsCard';
+import { RepeatOrderValueCard } from '@/components/dashboard/RepeatOrderValue';
 import {
   ProductPerformanceInsights,
   TopProductsTable,
@@ -44,7 +45,13 @@ const CRMDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthKey());
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  const { stats, revenueChart, customerChart } = useStats(selectedMonth);
+  const {
+    stats,
+    repeatOrderValue,
+    revenueChart,
+    customerChart,
+    isLoading: statsLoading,
+  } = useStats(selectedMonth);
   const {
     products,
     isLoading: productsLoading,
@@ -100,6 +107,8 @@ const CRMDashboard = () => {
         </div>
 
         <StatsCards stats={stats} />
+
+        <RepeatOrderValueCard data={repeatOrderValue} isLoading={statsLoading} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>

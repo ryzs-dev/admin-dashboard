@@ -3,6 +3,7 @@ import {
   DashboardStatsDTO,
   ProductMonthlyTrendDTO,
   ProductPerformanceDTO,
+  RepeatOrderValueDTO,
 } from '@/types/stats';
 
 const API_BASE_URL =
@@ -19,6 +20,7 @@ export async function getDashboardStats(month: string) {
   const { data } = await api.get(`/dashboard?month=${month}`);
   return data as {
     stats: DashboardStatsDTO;
+    repeat_order_value?: RepeatOrderValueDTO;
     charts: {
       revenue: { label: string; value: number }[];
       customer_acquisition: { month: string; new_customers: number }[];
