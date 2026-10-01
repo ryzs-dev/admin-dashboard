@@ -1,35 +1,40 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
+import { toast } from 'sonner';
+import { UUID } from 'crypto';
+import {
+  AlertCircle,
+  Banknote,
+  Check,
+  Loader2,
+  MapPin,
+  Package2,
+  Store,
+  Truck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
+  DialogDescription,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { Order } from '../order/types';
-import { ShipmentInput } from './types';
-import { Label } from '@/components/ui/label';
-import { MapPin, Package2, Banknote, User, Truck } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { COURIER_SERVICES } from './constants';
 import { Switch } from '@/components/ui/switch';
-import { UUID } from 'crypto';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import Image from 'next/image';
-import { createParcelDailyShipment } from '@/lib/api/parcel-daily';
+import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils/currency';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
+import { createParcelDailyShipment } from '@/lib/api/parcel-daily';
+import { Order } from '../order/types';
+import { COURIER_SERVICES } from './constants';
+import { ShipmentInput } from './types';
+
+const DEFAULT_CONTENT = 'Feminine Products';
+const PARCEL_WEIGHT_KG = 0.5;
 
 interface CreateShipmentDialogProps {
   order: Order;
@@ -38,325 +43,414 @@ interface CreateShipmentDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+type DeliveryType = 'pickup' | 'dropoff';
+
+const DELIVERY_OPTIONS: {
+  value: DeliveryType;
+  label: string;
+  hint: string;
+  icon: React.ElementType;
+}[] = [
+  {
+    value: 'pickup',
+    label: 'Pickup',
+    hint: 'Courier collects from you',
+    icon: Truck,
+  },
+  {
+    value: 'dropoff',
+    label: 'Drop-off',
+    hint: 'You bring it to a counter',
+    icon: Store,
+  },
+];
+
+type ShipmentErrorBody = {
+  message?: string;
+  error?: string;
+  details?: { message?: string; error?: string; details?: { message?: string } };
+};
+
+function errorMessage(err: unknown): string {
+  const data = (err as { response?: { data?: ShipmentErrorBody } })?.response
+    ?.data;
+  return (
+    data?.details?.details?.message ||
+    data?.details?.message ||
+    data?.details?.error ||
+    data?.message ||
+    data?.error ||
+    'Couldn’t create the shipment. Please try again.'
+  );
+}
+
+function SectionTitle({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      {children}
+    </h3>
+  );
+}
+
 export default function CreateShipmentDialog({
   order,
   contentValue,
   isOpen,
   onOpenChange,
 }: CreateShipmentDialogProps) {
+  const router = useRouter();
+  const { mutate } = useSWRConfig();
+
+  const isSingapore = order.addresses?.country === 'Singapore';
+  const couriers = isSingapore
+    ? COURIER_SERVICES.Singapore
+    : COURIER_SERVICES.Malaysia;
+
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [courier, setCourier] = useState(couriers[0]?.value);
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup');
   const [codEnabled, setCodEnabled] = useState(false);
-  const [cod, setCod] = useState<number | undefined>(contentValue);
-  const [deliveryType, setDeliveryType] = useState<'pickup' | 'dropoff'>(
-    'pickup'
-  );
+  const [codAmount, setCodAmount] = useState(String(contentValue ?? ''));
 
   useEffect(() => {
-    if (isOpen) {
-      setDeliveryType('pickup');
-      setCodEnabled(false);
-      setCod(contentValue);
-    }
-  }, [isOpen, contentValue]);
+    if (!isOpen) return;
+    setError(null);
+    setCourier(couriers[0]?.value);
+    setDeliveryType('pickup');
+    setCodEnabled(false);
+    setCodAmount(String(contentValue ?? ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, contentValue, isSingapore]);
 
-  const country = order.addresses?.country;
+  const customer = order.customers;
+  const address = order.addresses;
+  const content = order.shipment_description?.trim() || DEFAULT_CONTENT;
+  const selectedCourier = couriers.find((c) => c.value === courier);
+  const cod = Number(codAmount);
 
-  const availableCouriers = useMemo(() => {
-    return country === 'Singapore'
-      ? COURIER_SERVICES.Singapore
-      : COURIER_SERVICES.Malaysia;
-  }, [country]);
+  const missing = useMemo(() => {
+    const items: string[] = [];
+    if (!customer?.phone_number) items.push('phone number');
+    if (!address?.full_address?.trim()) items.push('delivery address');
+    if (!address?.postcode?.trim()) items.push('postcode');
+    return items;
+  }, [customer?.phone_number, address?.full_address, address?.postcode]);
 
-  const [selectedCourier, setSelectedCourier] = useState(
-    availableCouriers[0]?.value
-  );
+  const codInvalid = codEnabled && !(cod > 0);
+  const canSubmit = !isLoading && !missing.length && !codInvalid && !!courier;
 
   const handleCreateShipment = async () => {
+    if (!canSubmit) return;
     setIsLoading(true);
+    setError(null);
 
     const payload: ShipmentInput = {
-      serviceProvider: selectedCourier,
+      serviceProvider: courier,
       clientAddress: {
-        fullName: order.customers?.name || '',
-        countryCode: phoneCountryCode(order.customers?.phone_number),
-        phone: order.customers?.phone_number || '',
-        email: order.customers?.email || '',
-        line1: order.addresses?.full_address || '',
+        fullName: customer?.name || '',
+        countryCode: phoneCountryCode(customer?.phone_number),
+        phone: customer?.phone_number || '',
+        email: customer?.email || '',
+        line1: address?.full_address || '',
         line2: '',
-        city: order.addresses?.city || '',
-        postcode: order.addresses?.postcode || '',
-        state: order.addresses?.state || '',
-        country:
-          order.addresses?.country === 'Singapore' ? 'Singapore' : 'Malaysia',
+        city: address?.city || '',
+        postcode: address?.postcode || '',
+        state: address?.state || '',
+        country: isSingapore ? 'Singapore' : 'Malaysia',
       },
-      kg: 0.5,
+      kg: PARCEL_WEIGHT_KG,
       price: 0,
       cod: codEnabled ? cod : undefined,
-      content: order.shipment_description || '',
+      content,
       content_value: contentValue,
       isDropoff: deliveryType === 'dropoff',
     };
 
     try {
-      const data = await createParcelDailyShipment(payload, order.id as UUID);
-      toast.success(`Shipment created`);
-      setIsLoading(false);
+      await createParcelDailyShipment(payload, order.id as UUID);
+      toast.success(`Shipment created with ${selectedCourier?.label ?? 'courier'}`);
       onOpenChange?.(false);
-    } catch (err: any) {
+      mutate(['order-tracking', order.id]);
+      router.refresh();
+    } catch (err) {
       console.error(err);
-
-      const message =
-        err?.response?.data?.details?.details.message ||
-        'Failed to create shipment';
-
-      toast.error(message);
-
+      setError(errorMessage(err));
+    } finally {
       setIsLoading(false);
-      onOpenChange?.(false);
     }
   };
 
+  const summary = [
+    selectedCourier?.label,
+    deliveryType === 'pickup' ? 'Pickup' : 'Drop-off',
+    codEnabled && cod > 0 ? `COD ${formatCurrency(cod)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => !isLoading && onOpenChange?.(open)}>
       <DialogContent
-        aria-description="create-new-shipment"
-        className="sm:max-w-3xl max-h-[90vh] overflow-y-auto"
-        onPointerDownOutside={(e) => {
-          if (isLoading) {
-            e.preventDefault();
-          }
-        }}
-        onEscapeKeyDown={(e) => {
-          if (isLoading) {
-            e.preventDefault();
-          }
-        }}
+        aria-describedby="create-shipment-description"
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        onPointerDownOutside={(e) => isLoading && e.preventDefault()}
+        onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
       >
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold">
-            Create New Shipment
+        <div className="border-b px-6 py-5">
+          <DialogTitle className="text-lg font-semibold tracking-tight">
+            Create shipment
           </DialogTitle>
-        </DialogHeader>
+          <DialogDescription id="create-shipment-description" className="mt-1">
+            <span className="font-mono">{order.order_number}</span>
+            {customer?.name ? ` · to ${customer.name}` : ''}
+          </DialogDescription>
+        </div>
 
-        <div className="space-y-6 py-2">
-          <div className="flex flex-col gap-5">
-            {/* Recipient Information Card */}
-            <div className="rounded-lg border bg-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <User className="w-4 h-4 text-primary" />
-
-                <h3 className="font-semibold">Recipient Information</h3>
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+          <section>
+            <SectionTitle icon={MapPin}>Ship to</SectionTitle>
+            <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">{customer?.name || 'Unknown customer'}</p>
+                <span
+                  className={cn(
+                    'rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide',
+                    isSingapore
+                      ? 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20'
+                      : 'bg-gray-100 text-gray-600'
+                  )}
+                >
+                  {isSingapore ? 'Singapore' : 'Malaysia'}
+                </span>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Name</p>
-                  <p className="font-medium">{order.customers?.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">
-                    Phone Number
-                  </p>
-                  <p className="font-medium">{formatPhone(order.customers?.phone_number)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Email</p>
-                  <p className="font-medium text-sm">
-                    {order.customers?.email || '-'}
-                  </p>
-                </div>
-              </div>
+              <p className="mt-0.5 text-muted-foreground">
+                {formatPhone(customer?.phone_number) || 'No phone number'}
+              </p>
+              <p className="mt-3 leading-relaxed">
+                {address?.full_address || (
+                  <span className="text-muted-foreground">No address</span>
+                )}
+              </p>
+              {(address?.postcode || address?.city || address?.state) && (
+                <p className="text-muted-foreground">
+                  {[address?.postcode, address?.city, address?.state]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              )}
             </div>
 
-            {/* Delivery Address Card */}
-            <div className="rounded-lg border bg-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <MapPin className="w-4 h-4 text-primary" />
+            {missing.length > 0 && (
+              <div className="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Missing {missing.join(', ')}. Update the order before creating
+                  a shipment.
+                </p>
+              </div>
+            )}
+          </section>
 
-                <h3 className="font-semibold">Delivery Address</h3>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm leading-relaxed">
-                  {order.addresses?.full_address}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {order.addresses?.postcode} {order.addresses?.city},{' '}
-                  {order.addresses?.state}
-                </p>
-                <p className="text-sm font-medium">
-                  {order.addresses?.country}
-                </p>
-              </div>
-            </div>
-          </div>
-          {/* Shipment Configuration */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Left: Courier & Delivery */}
-            <div className="space-y-5 flex">
-              <div className="rounded-lg border bg-card p-5 space-y-4 w-full">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="font-semibold text-sm">Courier Selection</h3>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Choose Courier
-                  </Label>
-                  <Select
-                    value={selectedCourier}
-                    onValueChange={setSelectedCourier}
+          <section>
+            <SectionTitle icon={Truck}>Courier</SectionTitle>
+            <div
+              role="radiogroup"
+              aria-label="Courier"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+            >
+              {couriers.map((c) => {
+                const active = c.value === courier;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
                     disabled={isLoading}
+                    onClick={() => setCourier(c.value)}
+                    className={cn(
+                      'relative flex items-center gap-3 rounded-lg border p-3 text-left transition-colors',
+                      active
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'hover:border-gray-300 hover:bg-muted/40'
+                    )}
                   >
-                    <SelectTrigger className="w-full p-2 ">
-                      <SelectValue placeholder="Select courier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCouriers.map((courier) => (
-                        <SelectItem key={courier.value} value={courier.value}>
-                          <div className="flex items-center gap-4">
-                            <Image
-                              src={courier.logo}
-                              alt={courier.label}
-                              width={64}
-                              height={64}
-                              className="rounded-sm"
-                            />
-
-                            {/* <span className="text-lg">{courier.logo}</span> */}
-                            <span>{courier.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <Label className="text-xs text-muted-foreground">
-                    Delivery Method
-                  </Label>
-                  <RadioGroup
-                    value={deliveryType}
-                    onValueChange={(value: 'pickup' | 'dropoff') =>
-                      setDeliveryType(value)
-                    }
-                    disabled={isLoading}
-                  >
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="pickup"
-                        className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-colors ${
-                          deliveryType === 'pickup'
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border'
-                        }`}
-                      >
-                        <RadioGroupItem value="pickup" id="pickup" />
-                        <div>
-                          <div className="font-medium text-sm">Pick Up</div>
-                        </div>
-                      </label>
-                      <label
-                        htmlFor="dropoff"
-                        className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-colors ${
-                          deliveryType === 'dropoff'
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border'
-                        }`}
-                      >
-                        <RadioGroupItem value="dropoff" id="dropoff" />
-                        <div>
-                          <div className="font-medium text-sm">Drop-off</div>
-                        </div>
-                      </label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
+                      <Image
+                        src={c.logo}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="h-full w-full object-contain p-1"
+                      />
+                    </span>
+                    <span className="text-sm font-medium leading-tight">
+                      {c.label}
+                    </span>
+                    {active && (
+                      <Check className="absolute right-2 top-2 h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Right: Package & Payment */}
-            <div className="space-y-5 flex flex-col">
-              <div className="rounded-lg border bg-card p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Package2 className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="font-semibold text-sm">Package Details</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Shipment Description
+            <div
+              role="radiogroup"
+              aria-label="Handover"
+              className="mt-3 grid grid-cols-2 gap-2"
+            >
+              {DELIVERY_OPTIONS.map((option) => {
+                const active = option.value === deliveryType;
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={isLoading}
+                    onClick={() => setDeliveryType(option.value)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3 text-left transition-colors',
+                      active
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'hover:border-gray-300 hover:bg-muted/40'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        active ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                    />
+                    <span>
+                      <span className="block text-sm font-medium">
+                        {option.label}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {option.hint}
+                      </span>
                     </span>
-                    <span className="text-sm font-medium">
-                      {order.shipment_description || '-'}
-                    </span>
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-                  <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Value</span>
-                    <span className="text-sm font-medium">
-                      RM {contentValue}
-                    </span>
-                  </div>
-                </div>
+          <section>
+            <SectionTitle icon={Package2}>Parcel</SectionTitle>
+            <dl className="divide-y rounded-lg border text-sm">
+              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <dt className="text-muted-foreground">Contents</dt>
+                <dd className="truncate font-mono text-[13px]">{content}</dd>
               </div>
+              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <dt className="text-muted-foreground">Declared value</dt>
+                <dd className="tabular-nums">{formatCurrency(contentValue)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <dt className="text-muted-foreground">Weight</dt>
+                <dd className="tabular-nums">{PARCEL_WEIGHT_KG} kg</dd>
+              </div>
+            </dl>
+          </section>
 
-              <div className="rounded-lg border bg-card p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-muted-foreground" />
-                    <h3 className="font-semibold text-sm">Cash on Delivery</h3>
-                  </div>
-                  <Switch
-                    id="cod-toggle"
-                    checked={codEnabled}
-                    onCheckedChange={setCodEnabled}
+          <section className="rounded-lg border p-4">
+            <div className="flex items-start justify-between gap-4">
+              <label htmlFor="cod-toggle" className="flex cursor-pointer gap-3">
+                <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>
+                  <span className="block text-sm font-semibold">
+                    Cash on delivery
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    The courier collects payment from the customer.
+                  </span>
+                </span>
+              </label>
+              <Switch
+                id="cod-toggle"
+                checked={codEnabled}
+                onCheckedChange={setCodEnabled}
+                disabled={isLoading}
+              />
+            </div>
+
+            {codEnabled && (
+              <div className="mt-4 pl-7">
+                <label
+                  htmlFor="cod-amount"
+                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                >
+                  Amount to collect
+                </label>
+                <div className="relative max-w-[200px]">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    RM
+                  </span>
+                  <Input
+                    id="cod-amount"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={codAmount}
+                    onChange={(e) => setCodAmount(e.target.value)}
+                    className={cn('pl-10 tabular-nums', codInvalid && 'border-red-300')}
                     disabled={isLoading}
                   />
                 </div>
-
-                {codEnabled && (
-                  <div className="space-y-2 pt-2">
-                    <Label
-                      htmlFor="cod-amount"
-                      className="text-xs text-muted-foreground"
-                    >
-                      Collection Amount
-                    </Label>
-                    <Input
-                      id="cod-amount"
-                      type="number"
-                      value={cod}
-                      onChange={(e) => setCod(Number(e.target.value))}
-                      placeholder="0.00"
-                      className="h-11"
-                      disabled={isLoading}
-                    />
-                  </div>
+                {codInvalid && (
+                  <p className="mt-1.5 text-xs text-red-600">
+                    Enter an amount above RM 0.
+                  </p>
                 )}
               </div>
+            )}
+          </section>
+
+          {error && (
+            <div
+              role="alert"
+              className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{error}</p>
             </div>
-          </div>
+          )}
         </div>
 
-        <DialogFooter className="gap-2 pt-4">
-          <Button
-            variant="outline"
-            disabled={isLoading}
-            className="min-w-24"
-            onClick={() => onOpenChange?.(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateShipment}
-            disabled={isLoading}
-            className="min-w-32"
-          >
-            {isLoading ? 'Creating...' : 'Create Shipment'}
-          </Button>
-        </DialogFooter>
+        <div className="flex flex-col-reverse gap-3 border-t bg-muted/20 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="truncate text-sm text-muted-foreground">{summary}</p>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => onOpenChange?.(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateShipment} disabled={!canSubmit} className="min-w-36">
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating…
+                </>
+              ) : (
+                'Create shipment'
+              )}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
