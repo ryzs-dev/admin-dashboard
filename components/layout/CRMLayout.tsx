@@ -10,7 +10,7 @@ import {
   LogOut,
   ChevronDown,
   MessageCircle,
-  Truck,
+  Blocks,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -74,7 +74,7 @@ function CRMSidebar() {
       href: '/inbox',
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
-    { id: 'parcel-daily', label: 'Parcel Daily', icon: Truck, href: '/parcel-daily' },
+    { id: 'integrations', label: 'Integrations', icon: Blocks, href: '/integrations' },
     // {
     //   id: 'import',
     //   label: 'Import',

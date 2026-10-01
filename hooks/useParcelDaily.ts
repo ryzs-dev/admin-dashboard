@@ -1,6 +1,4 @@
 import {
-  createBulkParcelDailyShipments,
-  createParcelDailyShipment,
   getParcelDailyAccountInfo,
   getParcelDailySettings,
   ParcelDailyAccount,
@@ -24,18 +22,4 @@ export function useParcelDailySettings() {
     revalidateOnFocus: false,
   });
   return { settings: data, isLoading, isError: !!error, refresh: mutate };
-}
-
-export function useParcelDaily() {
-  const { data, error, isLoading, mutate } = useSWR('parcel-daily', () =>
-    getParcelDailyAccountInfo()
-  );
-  return {
-    data: data?.data || [],
-    isLoading,
-    isError: error,
-    refresh: mutate,
-    createParcelDailyShipment,
-    createBulkParcelDailyShipments,
-  };
 }
