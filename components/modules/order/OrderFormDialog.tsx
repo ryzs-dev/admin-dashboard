@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
-import { Field, MoneyInput, QuantityStepper, SegmentedChoice } from '@/components/forms/Field';
+import { Field, MoneyInput, QuantityStepper, ChoiceField } from '@/components/forms/Field';
 import { getCustomerById, getCustomers } from '@/lib/api/customer';
 import { createAddress } from '@/lib/api/address';
 import {
@@ -596,7 +596,7 @@ export default function OrderFormDialog({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Payment">
-          <SegmentedChoice
+          <ChoiceField
             label="Payment"
             value={status}
             onChange={setStatus}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Field, SegmentedChoice } from '@/components/forms/Field';
+import { Field, ChoiceField } from '@/components/forms/Field';
 import { errorMessage, FormDialog } from '@/components/forms/FormDialog';
 import { CourierPicker } from '@/components/modules/parcel-daily/CourierPicker';
 import { BOOKABLE_COURIERS } from '@/components/modules/parcel-daily/couriers';
@@ -75,11 +75,10 @@ export function ShippingDefaultsDialog({
           value={courier}
           onChange={setCourier}
           disabled={saving}
-          layout="select"
         />
       </Field>
       <Field label="Handover">
-        <SegmentedChoice
+        <ChoiceField
           label="Handover"
           value={isDropoff ? 'dropoff' : 'pickup'}
           onChange={(v) => setIsDropoff(v === 'dropoff')}

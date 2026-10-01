@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { UUID } from 'crypto';
 import { Input } from '@/components/ui/input';
 import { FormDialog, errorMessage } from '@/components/forms/FormDialog';
-import { Field, SegmentedChoice } from '@/components/forms/Field';
+import { Field, ChoiceField } from '@/components/forms/Field';
 import { CourierPicker } from '../parcel-daily/CourierPicker';
 import { TRACKING_COURIERS } from '../parcel-daily/constants';
 
@@ -125,7 +125,7 @@ export function UpdateTrackingDialog({
         label="Tracking message to customer"
         hint="Whether the WhatsApp message with this tracking number has gone out."
       >
-        <SegmentedChoice
+        <ChoiceField
           label="Tracking message to customer"
           value={messageStatus}
           onChange={setMessageStatus}

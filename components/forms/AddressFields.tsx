@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Field, SegmentedChoice } from './Field';
+import { Field, ChoiceField } from './Field';
 
 export type AddressCountry = 'Malaysia' | 'Singapore';
 
@@ -111,7 +111,7 @@ export function AddressFields({
   return (
     <div className="space-y-4">
       <Field label="Country">
-        <SegmentedChoice
+        <ChoiceField
           label="Country"
           value={value.country}
           onChange={set('country')}

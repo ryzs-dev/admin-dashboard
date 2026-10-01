@@ -1,5 +1,13 @@
 import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 export function Field({
@@ -118,7 +126,10 @@ export function QuantityStepper({
   );
 }
 
-export function SegmentedChoice<T extends string>({
+export type ChoiceOption<T extends string> = { value: T; label: string; hint?: string };
+
+// Radio buttons for short lists; a dropdown once there are too many to scan in a row.
+export function ChoiceField<T extends string>({
   value,
   onChange,
   options,
@@ -127,37 +138,58 @@ export function SegmentedChoice<T extends string>({
 }: {
   value: T;
   onChange: (value: T) => void;
-  options: { value: T; label: string }[];
+  options: ChoiceOption<T>[];
   disabled?: boolean;
   label: string;
 }) {
+  if (options.length > 3) {
+    return (
+      <Select value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
+        <SelectTrigger aria-label={label} className="w-full bg-background">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  const withHints = options.some((option) => option.hint);
   return (
-    <div
-      role="radiogroup"
+    <RadioGroup
       aria-label={label}
-      className="inline-flex w-full rounded-lg border bg-muted/40 p-0.5"
+      value={value}
+      onValueChange={(next) => onChange(next as T)}
+      disabled={disabled}
+      className={withHints ? 'gap-3' : 'flex flex-wrap gap-x-6 gap-y-2'}
     >
       {options.map((option) => {
-        const active = option.value === value;
+        const id = `${label}-${option.value}`.replace(/\W+/g, '-').toLowerCase();
         return (
-          <button
+          <label
             key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange(option.value)}
+            htmlFor={id}
             className={cn(
-              'flex-1 rounded-md px-3 py-1.5 text-sm transition-colors',
-              active
-                ? 'bg-background font-medium text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              'flex cursor-pointer gap-2.5 text-sm',
+              withHints ? 'items-start' : 'items-center',
+              disabled && 'cursor-not-allowed opacity-60'
             )}
           >
-            {option.label}
-          </button>
+            <RadioGroupItem id={id} value={option.value} className={withHints ? 'mt-0.5' : undefined} />
+            <span>
+              <span className="block">{option.label}</span>
+              {option.hint && (
+                <span className="block text-xs text-muted-foreground">{option.hint}</span>
+              )}
+            </span>
+          </label>
         );
       })}
-    </div>
+    </RadioGroup>
   );
 }

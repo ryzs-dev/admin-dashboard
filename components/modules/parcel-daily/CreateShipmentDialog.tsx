@@ -11,7 +11,6 @@ import {
   Loader2,
   MapPin,
   Package2,
-  Store,
   Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useParcelDailySettings } from '@/hooks/useParcelDaily';
+import { ChoiceField, ChoiceOption } from '@/components/forms/Field';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
 import { createParcelDailyShipment, getCourierQuotes } from '@/lib/api/parcel-daily';
 import { Order } from '../order/types';
@@ -45,24 +45,9 @@ interface CreateShipmentDialogProps {
 
 type DeliveryType = 'pickup' | 'dropoff';
 
-const DELIVERY_OPTIONS: {
-  value: DeliveryType;
-  label: string;
-  hint: string;
-  icon: React.ElementType;
-}[] = [
-  {
-    value: 'pickup',
-    label: 'Pickup',
-    hint: 'Courier collects from you',
-    icon: Truck,
-  },
-  {
-    value: 'dropoff',
-    label: 'Drop-off',
-    hint: 'You bring it to a counter',
-    icon: Store,
-  },
+const DELIVERY_OPTIONS: ChoiceOption<DeliveryType>[] = [
+  { value: 'pickup', label: 'Courier pickup', hint: 'The courier collects the parcel from you' },
+  { value: 'dropoff', label: 'Drop-off', hint: 'You bring the parcel to a courier counter' },
 ];
 
 type ShipmentErrorBody = {
@@ -350,51 +335,19 @@ export default function CreateShipmentDialog({
                   onChange={setCourier}
                   disabled={isLoading}
                   formatPrice={formatCurrency}
-                  layout="select"
                 />
               </>
             )}
 
-            <div
-              role="radiogroup"
-              aria-label="Handover"
-              className="mt-3 grid grid-cols-2 gap-2"
-            >
-              {DELIVERY_OPTIONS.map((option) => {
-                const active = option.value === deliveryType;
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    disabled={isLoading}
-                    onClick={() => setDeliveryType(option.value)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg border p-3 text-left transition-colors',
-                      active
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'hover:border-gray-300 hover:bg-muted/40'
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-4 w-4 shrink-0',
-                        active ? 'text-primary' : 'text-muted-foreground'
-                      )}
-                    />
-                    <span>
-                      <span className="block text-sm font-medium">
-                        {option.label}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {option.hint}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-medium">Handover</p>
+              <ChoiceField
+                label="Handover"
+                value={deliveryType}
+                onChange={setDeliveryType}
+                options={DELIVERY_OPTIONS}
+                disabled={isLoading}
+              />
             </div>
           </section>
 

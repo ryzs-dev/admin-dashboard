@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { FormDialog, errorMessage } from '@/components/forms/FormDialog';
-import { Field, SegmentedChoice } from '@/components/forms/Field';
+import { Field, ChoiceField } from '@/components/forms/Field';
 import { CourierPicker } from '../parcel-daily/CourierPicker';
 import { TRACKING_COURIERS } from '../parcel-daily/constants';
 import { OrderTrackingInput } from './types';
@@ -92,7 +92,7 @@ export function CreateTrackingDialog({ open, onOpenChange, onSubmit }: Props) {
       </Field>
 
       <Field label="Delivery status">
-        <SegmentedChoice
+        <ChoiceField
           label="Delivery status"
           value={status}
           onChange={setStatus}

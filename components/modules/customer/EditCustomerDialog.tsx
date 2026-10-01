@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormDialog, errorMessage } from '@/components/forms/FormDialog';
-import { Field, SegmentedChoice } from '@/components/forms/Field';
+import { Field, ChoiceField } from '@/components/forms/Field';
 import { CustomerInput } from '@/types/customer';
 import { formatPhone } from '@/lib/utils/phone';
 
@@ -157,7 +157,7 @@ export default function EditCustomerDialog({
       </div>
 
       <Field label="Customer type" hint="Returning customers have ordered more than once.">
-        <SegmentedChoice
+        <ChoiceField
           label="Customer type"
           value={status}
           onChange={setStatus}

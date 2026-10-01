@@ -1,9 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 import { CourierInfo } from './couriers';
 
 export type CourierOption = CourierInfo & {
@@ -12,7 +16,13 @@ export type CourierOption = CourierInfo & {
   badge?: string;
 };
 
-export function CourierLogo({ courier, className }: { courier: CourierInfo; className?: string }) {
+export function CourierLogo({
+  courier,
+  className,
+}: {
+  courier: CourierInfo;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
@@ -56,7 +66,9 @@ function CourierRow({
       <CourierLogo courier={courier} className="h-8 w-16" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-foreground">{courier.label}</span>
+          <span className="truncate text-sm font-medium text-foreground">
+            {courier.label}
+          </span>
           {courier.badge && (
             <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-px text-[10px] font-medium text-emerald-700">
               {courier.badge}
@@ -64,14 +76,18 @@ function CourierRow({
           )}
         </span>
         {courier.detail && (
-          <span className="block truncate text-xs text-muted-foreground">{courier.detail}</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {courier.detail}
+          </span>
         )}
       </span>
       {courier.price !== undefined && formatPrice && (
         <span
           className={cn(
             'shrink-0 text-sm tabular-nums',
-            active ? 'font-semibold text-primary' : 'font-medium text-foreground'
+            active
+              ? 'font-semibold text-primary'
+              : 'font-medium text-foreground'
           )}
         >
           {formatPrice(courier.price)}
@@ -87,82 +103,42 @@ export function CourierPicker({
   onChange,
   disabled,
   formatPrice,
-  layout = 'grid',
 }: {
   couriers: CourierOption[];
   value?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   formatPrice?: (price: number) => string;
-  layout?: 'grid' | 'select';
 }) {
-  if (layout === 'select') {
-    const selected = couriers.find((c) => c.code === value);
-    return (
-      <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger
-          aria-label="Courier"
-          className="h-auto w-full bg-white py-2 pl-2 pr-3 data-[size=default]:h-auto"
-        >
-          {selected ? (
-            <CourierRow courier={selected} formatPrice={formatPrice} active />
-          ) : (
-            <span className="px-1 text-muted-foreground">Choose a courier</span>
-          )}
-        </SelectTrigger>
-        <SelectContent className="max-h-80">
-          {couriers.map((c) => (
-            <SelectItem key={c.code} value={c.code} textValue={c.label} className="py-2 pl-2 pr-8 *:[span]:last:flex-1 *:[span]:last:min-w-0">
-              <CourierRow courier={c} formatPrice={formatPrice} active={c.code === value} />
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
+  const selected = couriers.find((c) => c.code === value);
   return (
-    <div role="radiogroup" aria-label="Courier" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {couriers.map((c) => {
-        const active = c.code === value;
-        return (
-          <button
+    <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger
+        aria-label="Courier"
+        className="h-auto w-full bg-white py-2 pl-2 pr-3 data-[size=default]:h-auto"
+      >
+        {selected ? (
+          <CourierRow courier={selected} formatPrice={formatPrice} active />
+        ) : (
+          <span className="px-1 text-muted-foreground">Choose a courier</span>
+        )}
+      </SelectTrigger>
+      <SelectContent className="max-h-80">
+        {couriers.map((c) => (
+          <SelectItem
             key={c.code}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange(c.code)}
-            className={cn(
-              'relative flex items-center gap-3 rounded-lg border p-3 text-left transition-colors',
-              active
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'hover:border-gray-300 hover:bg-muted/40'
-            )}
+            value={c.code}
+            textValue={c.label}
+            className="py-2 pl-2 pr-8 *:[span]:last:flex-1 *:[span]:last:min-w-0"
           >
-            <CourierLogo courier={c} />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium leading-tight">{c.label}</span>
-              {c.price !== undefined && formatPrice && (
-                <span className="mt-0.5 flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
-                  {formatPrice(c.price)}
-                  {c.badge && (
-                    <span className="rounded-full bg-emerald-50 px-1.5 py-px text-[10px] font-medium text-emerald-700">
-                      {c.badge}
-                    </span>
-                  )}
-                </span>
-              )}
-              {c.detail && (
-                <span className="block truncate text-[11px] tabular-nums text-muted-foreground/80">
-                  {c.detail}
-                </span>
-              )}
-            </span>
-            {active && <Check className="absolute right-2 top-2 h-3.5 w-3.5 text-primary" />}
-          </button>
-        );
-      })}
-    </div>
+            <CourierRow
+              courier={c}
+              formatPrice={formatPrice}
+              active={c.code === value}
+            />
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
