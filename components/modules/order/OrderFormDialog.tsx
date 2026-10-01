@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
-import { Loader2, Package, Plus, Search, Trash2, User } from 'lucide-react';
+import { Loader2, MapPin, Package, Plus, Search, Trash2, User, UserPlus } from 'lucide-react';
 import { UUID } from 'crypto';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
@@ -15,7 +15,15 @@ import {
 } from '@/components/ui/select';
 import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
 import { Field, MoneyInput, QuantityStepper, SegmentedChoice } from '@/components/forms/Field';
-import { getCustomers } from '@/lib/api/customer';
+import { getCustomerById, getCustomers } from '@/lib/api/customer';
+import { createAddress } from '@/lib/api/address';
+import {
+  AddressDraft,
+  AddressFields,
+  addressDraft,
+  addressErrors,
+  addressPayload,
+} from '@/components/forms/AddressFields';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatPhone } from '@/lib/utils/phone';
 import { cn } from '@/lib/utils';
@@ -23,6 +31,7 @@ import { OrderInput, OrderItemsInput } from '@/types/order';
 import { Customer } from '../customer/types';
 import { Product } from '../products/types';
 import { Order } from './types';
+import NewCustomerInline from './NewCustomerInline';
 
 type OrderFormDialogProps = {
   isOpen: boolean;
@@ -57,6 +66,7 @@ function CustomerPicker({
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const handle = setTimeout(() => setDebounced(query.trim()), 250);
@@ -103,6 +113,25 @@ function CustomerPicker({
     );
   }
 
+  if (creating) {
+    return (
+      <NewCustomerInline
+        initialQuery={query}
+        onCancel={() => setCreating(false)}
+        onCreated={(customer) => {
+          onChange(customer);
+          setCreating(false);
+          setQuery('');
+        }}
+      />
+    );
+  }
+
+  const startCreating = () => {
+    setOpen(false);
+    setCreating(true);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
@@ -138,7 +167,7 @@ function CustomerPicker({
           </p>
         ) : results.length === 0 ? (
           <p className="px-3 py-3 text-sm text-muted-foreground">
-            No customers match “{debounced}”.
+            No existing customers match “{debounced}”.
           </p>
         ) : (
           <ul className="max-h-64 overflow-y-auto">
@@ -170,8 +199,133 @@ function CustomerPicker({
             ))}
           </ul>
         )}
+        <div className="mt-1 border-t pt-1">
+          <button
+            type="button"
+            onClick={startCreating}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-primary hover:bg-primary/5"
+          >
+            <UserPlus className="h-4 w-4" />
+            {query.trim() ? `Add “${query.trim()}” as a new customer` : 'Add a new customer'}
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+type SavedAddress = {
+  id: UUID;
+  full_address: string;
+  postcode?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+};
+
+function useSavedAddresses(customerId?: UUID) {
+  const { data, isLoading } = useSWR(
+    customerId ? ['order-form-addresses', customerId] : null,
+    () => getCustomerById(customerId as UUID),
+    { revalidateOnFocus: false }
+  );
+  const addresses = useMemo(() => {
+    const seen = new Set<string>();
+    return ((data?.data?.addresses ?? []) as SavedAddress[]).filter((address) => {
+      if (!address.full_address?.trim()) return false;
+      const key = `${address.full_address} ${address.postcode ?? ''}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data]);
+  return { addresses, isLoading: !!customerId && isLoading };
+}
+
+function ShippingAddressPicker({
+  addresses,
+  isLoading,
+  choice,
+  onChoiceChange,
+  draft,
+  onDraftChange,
+  showErrors,
+  disabled,
+}: {
+  addresses: SavedAddress[];
+  isLoading: boolean;
+  choice: UUID | 'new';
+  onChoiceChange: (choice: UUID | 'new') => void;
+  draft: AddressDraft;
+  onDraftChange: (draft: AddressDraft) => void;
+  showErrors: boolean;
+  disabled?: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <p className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading saved addresses…
+      </p>
+    );
+  }
+
+  const fields = (
+    <div className="rounded-lg border bg-muted/30 p-4">
+      <AddressFields
+        idPrefix="order-address"
+        value={draft}
+        onChange={onDraftChange}
+        showErrors={showErrors}
+        disabled={disabled}
+      />
+    </div>
+  );
+
+  if (!addresses.length) return fields;
+
+  const option = (value: UUID | 'new', content: React.ReactNode) => (
+    <label
+      key={value}
+      className={cn(
+        'flex cursor-pointer items-start gap-3 px-4 py-3 text-sm transition-colors',
+        choice === value ? 'bg-primary/5' : 'hover:bg-muted/40'
+      )}
+    >
+      <input
+        type="radio"
+        name="order-address"
+        className="mt-1 accent-[#662d91]"
+        checked={choice === value}
+        onChange={() => onChoiceChange(value)}
+        disabled={disabled}
+      />
+      <span className="min-w-0 flex-1">{content}</span>
+    </label>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="divide-y overflow-hidden rounded-lg border">
+        {addresses.slice(0, 4).map((address, index) =>
+          option(
+            address.id,
+            <>
+              <span className="block leading-snug">{address.full_address}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {[address.postcode, address.city, address.state, address.country]
+                  .filter(Boolean)
+                  .join(', ')}
+                {index === 0 && ' · Latest'}
+              </span>
+            </>
+          )
+        )}
+        {option('new', <span className="font-medium text-primary">Use a different address</span>)}
+      </div>
+      {choice === 'new' && fields}
+    </div>
   );
 }
 
@@ -192,6 +346,19 @@ export default function OrderFormDialog({
   const [status, setStatus] = useState<PaymentStatus>('unpaid');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [addressChoice, setAddressChoice] = useState<UUID | 'new'>('new');
+  const [addressDraftValue, setAddressDraftValue] = useState<AddressDraft>(addressDraft());
+  const [showAddressErrors, setShowAddressErrors] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const { addresses, isLoading: addressesLoading } = useSavedAddresses(customer?.id);
+  const createdAddress = useRef<{ key: string; id: UUID } | null>(null);
+  const busy = isSubmitting || savingAddress;
+
+  useEffect(() => {
+    setAddressChoice(addresses[0]?.id ?? 'new');
+    setAddressDraftValue(addressDraft());
+    setShowAddressErrors(false);
+  }, [customer?.id, addresses]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -208,6 +375,7 @@ export default function OrderFormDialog({
     setStatus(initialData?.status === 'paid' ? 'paid' : 'unpaid');
     setPaymentMethod(initialData?.payment_method ?? '');
     setError(null);
+    createdAddress.current = null;
   }, [isOpen, initialData]);
 
   const subtotal = lines.reduce(
@@ -248,10 +416,34 @@ export default function OrderFormDialog({
 
   const handleSubmit = async () => {
     if (!customer) return;
+    const newAddress = addressChoice === 'new';
+    if (newAddress && Object.values(addressErrors(addressDraftValue)).some(Boolean)) {
+      setShowAddressErrors(true);
+      return;
+    }
     setError(null);
     try {
+      let addressId = newAddress ? undefined : addressChoice;
+      if (newAddress) {
+        const payload = { ...addressPayload(addressDraftValue), customer_id: customer.id };
+        const key = JSON.stringify(payload);
+        // Reuse the address saved by a previous attempt so retries don't duplicate it.
+        if (createdAddress.current?.key === key) {
+          addressId = createdAddress.current.id;
+        } else {
+          setSavingAddress(true);
+          try {
+            const created = await createAddress(payload);
+            addressId = created.address.id;
+            createdAddress.current = { key, id: created.address.id };
+          } finally {
+            setSavingAddress(false);
+          }
+        }
+      }
       await onSubmit({
         customer_id: customer.id,
+        address_id: addressId,
         order_date: new Date(orderDate),
         order_items: lines.map((line) => ({
           product_id: line.product.id as UUID,
@@ -277,14 +469,29 @@ export default function OrderFormDialog({
       onSubmit={handleSubmit}
       submitLabel={initialData ? 'Save order' : 'Create order'}
       submittingLabel={initialData ? 'Saving…' : 'Creating…'}
-      isSubmitting={isSubmitting}
-      submitDisabled={!canSubmit}
+      isSubmitting={busy}
+      submitDisabled={!canSubmit || addressesLoading}
       error={error}
       footerNote={missingHint}
     >
       <FormSection title="Customer" icon={User}>
-        <CustomerPicker value={customer} onChange={setCustomer} disabled={isSubmitting} />
+        <CustomerPicker value={customer} onChange={setCustomer} disabled={busy} />
       </FormSection>
+
+      {customer && (
+        <FormSection title="Shipping address" icon={MapPin}>
+          <ShippingAddressPicker
+            addresses={addresses}
+            isLoading={addressesLoading}
+            choice={addressChoice}
+            onChoiceChange={setAddressChoice}
+            draft={addressDraftValue}
+            onDraftChange={setAddressDraftValue}
+            showErrors={showAddressErrors}
+            disabled={busy}
+          />
+        </FormSection>
+      )}
 
       <FormSection title="Products" icon={Package}>
         {lines.length > 0 && (
@@ -300,7 +507,7 @@ export default function OrderFormDialog({
                 <QuantityStepper
                   label={line.product.name}
                   value={line.quantity}
-                  disabled={isSubmitting}
+                  disabled={busy}
                   onChange={(quantity) =>
                     updateLines(lines.map((l, i) => (i === index ? { ...l, quantity } : l)))
                   }
@@ -311,7 +518,7 @@ export default function OrderFormDialog({
                 <button
                   type="button"
                   aria-label={`Remove ${line.product.name}`}
-                  disabled={isSubmitting}
+                  disabled={busy}
                   onClick={() => updateLines(lines.filter((_, i) => i !== index))}
                   className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
                 >
@@ -325,7 +532,7 @@ export default function OrderFormDialog({
         {available.length > 0 && (
           <Select
             value=""
-            disabled={isSubmitting}
+            disabled={busy}
             onValueChange={(id) => {
               const product = available.find((p) => p.id === id);
               if (product) updateLines([...lines, { product, quantity: 1 }]);
@@ -368,7 +575,7 @@ export default function OrderFormDialog({
             id="order-total"
             value={total}
             invalid={totalInvalid}
-            disabled={isSubmitting}
+            disabled={busy}
             onChange={(value) => {
               setTotal(value);
               setTotalTouched(true);
@@ -382,7 +589,7 @@ export default function OrderFormDialog({
             value={orderDate}
             max={todayInMalaysia()}
             onChange={(e) => setOrderDate(e.target.value)}
-            disabled={isSubmitting}
+            disabled={busy}
           />
         </Field>
       </div>
@@ -397,7 +604,7 @@ export default function OrderFormDialog({
               { value: 'unpaid', label: 'Unpaid' },
               { value: 'paid', label: 'Paid' },
             ]}
-            disabled={isSubmitting}
+            disabled={busy}
           />
         </Field>
         <Field label="Payment method" htmlFor="payment-method" optional>
@@ -406,14 +613,14 @@ export default function OrderFormDialog({
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
             placeholder="e.g. Bank transfer"
-            disabled={isSubmitting}
+            disabled={busy}
           />
           <div className="flex flex-wrap gap-1.5 pt-1">
             {PAYMENT_SUGGESTIONS.map((method) => (
               <button
                 key={method}
                 type="button"
-                disabled={isSubmitting}
+                disabled={busy}
                 onClick={() => setPaymentMethod(method)}
                 className={cn(
                   'rounded-full border px-2.5 py-0.5 text-xs transition-colors',

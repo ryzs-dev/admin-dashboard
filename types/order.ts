@@ -2,6 +2,7 @@ import { UUID } from 'crypto';
 
 export interface OrderInput {
   customer_id: UUID;
+  address_id?: UUID;
   order_date: Date;
   status: string;
   total_amount: number;

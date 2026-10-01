@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Receipt, ShoppingBag, Users, Wallet } from 'lucide-react';
+import { StatCard } from '@/components/layout/StatCard';
 import { formatCurrency } from '@/lib/utils/currency';
-import { Users, DollarSign, TrendingUp, Package } from 'lucide-react';
 
 interface StatsCardProps {
   total_customers: number;
@@ -10,64 +10,45 @@ interface StatsCardProps {
   total_orders: number;
 }
 
-export const StatsCards = ({ stats }: { stats: StatsCardProps }) => {
+export const StatsCards = ({
+  stats,
+  periodLabel,
+  isLoading,
+}: {
+  stats: StatsCardProps;
+  periodLabel: string;
+  isLoading?: boolean;
+}) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-      <Card>
-        <CardHeader className="flex gap-2 items-center">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Total Customers</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <span className="text-xl font-bold">{stats.total_customers}</span>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex gap-2 items-center">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Total Orders</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <span className="text-xl font-bold">{stats.total_orders}</span>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex gap-2 items-center">
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Total Revenue</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <span className="text-xl font-bold">
-            {formatCurrency(stats.total_revenue)}
-          </span>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex gap-2 items-center">
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Avg Order Value</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <span className="text-xl font-bold">
-            {formatCurrency(stats.average_order_value)}
-          </span>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex gap-2 items-center">
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Revenue MTD</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <span className="text-xl font-bold">
-            {formatCurrency(stats.mtd_revenue)}
-          </span>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatCard
+        label="Orders"
+        value={Number(stats.total_orders ?? 0).toLocaleString()}
+        hint={periodLabel}
+        icon={ShoppingBag}
+        isLoading={isLoading}
+      />
+      <StatCard
+        label="Revenue"
+        value={formatCurrency(Number(stats.total_revenue ?? 0))}
+        hint={periodLabel}
+        icon={Wallet}
+        isLoading={isLoading}
+      />
+      <StatCard
+        label="Average order"
+        value={formatCurrency(Number(stats.average_order_value ?? 0))}
+        hint={periodLabel}
+        icon={Receipt}
+        isLoading={isLoading}
+      />
+      <StatCard
+        label="Customers"
+        value={Number(stats.total_customers ?? 0).toLocaleString()}
+        hint="All time"
+        icon={Users}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

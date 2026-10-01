@@ -59,12 +59,12 @@ interface ChatMessage {
 const PAGE_SIZE = 100;
 
 function displayName(conversation: Conversation) {
-  const name = conversation.name?.trim();
+  const name = conversation.name?.replace(/^[^\p{L}\p{N}]+/u, '').trim();
   return name || formatPhone(conversation.phone_number);
 }
 
 function initials(conversation: Conversation) {
-  const name = conversation.name?.trim();
+  const name = conversation.name?.replace(/^[^\p{L}\p{N}]+/u, '').trim();
   if (!name) return '#';
   const parts = name.replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(Boolean);
   const letters = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');

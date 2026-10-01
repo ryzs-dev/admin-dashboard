@@ -50,7 +50,7 @@ export function TopProductsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top Performing Products</CardTitle>
+        <CardTitle>Top performing products</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -66,8 +66,8 @@ export function TopProductsTable({
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Revenue</TableHead>
                 <TableHead className="text-right">Orders</TableHead>
-                <TableHead className="text-right">Return Rate</TableHead>
-                <TableHead className="text-right">Avg Order Value</TableHead>
+                <TableHead className="text-right">Return rate</TableHead>
+                <TableHead className="text-right">Avg order</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -104,7 +104,7 @@ export function ProductPerformanceInsights({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Product ROI Insights</CardTitle>
+        <CardTitle>Product ROI insights</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (

@@ -58,6 +58,12 @@ export async function createCustomer(customer: CustomerInput) {
   return data;
 }
 
+// Fails with 409 (and the existing customer in `data`) if the phone number is taken.
+export async function createNewCustomer(customer: CustomerInput) {
+  const { data } = await api.post('/', customer, { params: { mode: 'create' } });
+  return data;
+}
+
 export async function updateCustomer(
   id: UUID,
   customer: Partial<CustomerInput>
@@ -65,8 +71,11 @@ export async function updateCustomer(
   try {
     const { data } = await api.patch(`/${id}`, customer);
     return data;
-  } catch (error: any) {
-    console.error('Error updating customer:', error.response?.data || error);
+  } catch (error) {
+    console.error(
+      'Error updating customer:',
+      axios.isAxiosError(error) ? error.response?.data ?? error : error
+    );
     throw error;
   }
 }

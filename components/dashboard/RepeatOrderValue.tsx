@@ -114,7 +114,7 @@ export function RepeatOrderValueCard({
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
         <div>
-          <CardTitle>Repeat vs First-time Customers</CardTitle>
+          <CardTitle>Repeat vs first-time customers</CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
             Orders {periodLabel ? `in ${periodLabel}` : 'this month'}, split by
             whether the customer had bought before

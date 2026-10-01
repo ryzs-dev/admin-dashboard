@@ -419,7 +419,7 @@ function ProfileSkeleton() {
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[88px] rounded-xl" />
+          <Skeleton key={i} className="h-[106px] rounded-xl" />
         ))}
       </div>
       <div className="grid gap-6 lg:grid-cols-3">

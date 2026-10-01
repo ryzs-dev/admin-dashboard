@@ -2,6 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  CHART_COLORS,
+  chartAxis,
+  chartGrid,
+  chartLegend,
+  chartTooltip,
+} from '@/lib/chartTheme';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -49,7 +56,7 @@ export function ProductDeepDive({
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Product Deep Dive</CardTitle>
+          <CardTitle>Product deep dive</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             Monthly sales, retention, and buyer mix for a selected product.
           </p>
@@ -83,114 +90,114 @@ export function ProductDeepDive({
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <MetricCard
-                label="Selected Month Revenue"
+                label="Revenue this month"
                 value={formatCurrency(selectedProduct.total_revenue)}
               />
               <MetricCard
-                label="Return Rate (Lifetime)"
+                label="Return rate (lifetime)"
                 value={`${selectedProduct.repeat_customer_rate.toFixed(1)}%`}
               />
               <MetricCard
-                label="Lifetime Buyers"
+                label="Lifetime buyers"
                 value={String(selectedProduct.unique_customers)}
               />
               <MetricCard
-                label="Avg Spent / Buyer"
+                label="Avg spent per buyer"
                 value={formatCurrency(selectedProduct.customer_lifetime_value)}
               />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <ChartCard title="Monthly Sales Trend">
+              <ChartCard title="Monthly sales">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis dataKey="label" {...chartAxis} />
+                    <YAxis {...chartAxis} />
+                    <Tooltip {...chartTooltip} />
+                    <Legend {...chartLegend} />
                     <Line
                       type="monotone"
                       dataKey="revenue"
                       name="Revenue"
-                      stroke="#2563eb"
+                      stroke={CHART_COLORS.primary}
                       strokeWidth={2}
                     />
                     <Line
                       type="monotone"
                       dataKey="quantity_sold"
-                      name="Quantity Sold"
-                      stroke="#16a34a"
+                      name="Units sold"
+                      stroke={CHART_COLORS.secondary}
                       strokeWidth={2}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Monthly Return Rate">
+              <ChartCard title="Monthly return rate">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis dataKey="label" {...chartAxis} />
+                    <YAxis {...chartAxis} />
+                    <Tooltip {...chartTooltip} />
+                    <Legend {...chartLegend} />
                     <Line
                       type="monotone"
                       dataKey="repeat_customer_rate"
-                      name="Return Rate %"
-                      stroke="#9333ea"
+                      name="Return rate %"
+                      stroke={CHART_COLORS.primary}
                       strokeWidth={2}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="First-Time vs Returning Buyers">
+              <ChartCard title="First-time vs returning buyers">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis dataKey="label" {...chartAxis} />
+                    <YAxis {...chartAxis} />
+                    <Tooltip {...chartTooltip} />
+                    <Legend {...chartLegend} />
                     <Bar
                       dataKey="first_time_buyers"
-                      name="First-Time Buyers"
-                      fill="#2563eb"
+                      name="First-time buyers"
+                      fill={CHART_COLORS.secondary}
                     />
                     <Bar
                       dataKey="returning_buyers"
-                      name="Returning Buyers"
-                      fill="#16a34a"
+                      name="Returning buyers"
+                      fill={CHART_COLORS.primary}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Revenue & Retention Trend">
+              <ChartCard title="Revenue and retention">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis dataKey="label" {...chartAxis} />
+                    <YAxis yAxisId="left" {...chartAxis} />
+                    <YAxis yAxisId="right" orientation="right" {...chartAxis} />
+                    <Tooltip {...chartTooltip} />
+                    <Legend {...chartLegend} />
                     <Line
                       yAxisId="left"
                       type="monotone"
                       dataKey="revenue"
                       name="Revenue"
-                      stroke="#2563eb"
+                      stroke={CHART_COLORS.primary}
                       strokeWidth={2}
                     />
                     <Line
                       yAxisId="right"
                       type="monotone"
                       dataKey="repeat_customer_rate"
-                      name="Return Rate %"
-                      stroke="#f97316"
+                      name="Return rate %"
+                      stroke={CHART_COLORS.secondary}
                       strokeWidth={2}
                     />
                   </LineChart>

@@ -4,7 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CHART_COLORS, chartAxis, chartGrid, chartTooltip } from '@/lib/chartTheme';
+import { formatCurrency } from '@/lib/utils/currency';
 import {
   LineChart,
   Line,
@@ -63,6 +65,8 @@ const CRMDashboard = () => {
   } = useProductMonthlyTrends(selectedProductId, selectedMonth);
 
   const currentDate = parseMonthKey(selectedMonth);
+  const isCurrentMonth = selectedMonth >= getCurrentMonthKey();
+  const periodLabel = format(currentDate, 'MMMM yyyy');
 
   const defaultProductId = useMemo(
     () => findDefaultProductId(products),
@@ -77,60 +81,76 @@ const CRMDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto w-full space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           title="Dashboard"
           description="Sales, repeat orders and products for the month."
         >
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setSelectedMonth(format(addMonths(currentDate, -1), 'yyyy-MM'))
-            }
-          >
-            ←
-          </Button>
-          <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4" />
-            {format(currentDate, 'MMMM yyyy')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setSelectedMonth(format(addMonths(currentDate, 1), 'yyyy-MM'))
-            }
-          >
-            →
-          </Button>
+          <div className="flex items-center rounded-lg border bg-card">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-r-none"
+              aria-label="Previous month"
+              onClick={() =>
+                setSelectedMonth(format(addMonths(currentDate, -1), 'yyyy-MM'))
+              }
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-32 border-x px-3 text-center text-sm font-medium">
+              {format(currentDate, 'MMMM yyyy')}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-l-none"
+              aria-label="Next month"
+              disabled={isCurrentMonth}
+              onClick={() =>
+                setSelectedMonth(format(addMonths(currentDate, 1), 'yyyy-MM'))
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </PageHeader>
 
-        <StatsCards stats={stats} />
+        <StatsCards stats={stats} periodLabel={periodLabel} isLoading={statsLoading} />
 
         <RepeatOrderValueCard
           data={repeatOrderValue}
           isLoading={statsLoading}
-          periodLabel={format(currentDate, 'MMMM yyyy')}
+          periodLabel={periodLabel}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Overview</CardTitle>
+              <CardTitle>Daily revenue</CardTitle>
+              <p className="text-sm text-muted-foreground">{periodLabel}</p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={revenueChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" />
-                  <YAxis />
-                  <Tooltip />
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={revenueChart} margin={{ left: 8, right: 8 }}>
+                  <CartesianGrid {...chartGrid} />
+                  <XAxis dataKey="label" {...chartAxis} minTickGap={16} />
+                  <YAxis
+                    {...chartAxis}
+                    width={56}
+                    tickFormatter={(v: number) => (v >= 1000 ? `${v / 1000}k` : String(v))}
+                  />
+                  <Tooltip
+                    {...chartTooltip}
+                    formatter={(v: number) => [formatCurrency(Number(v)), 'Revenue']}
+                  />
                   <Line
                     type="monotone"
                     dataKey="value"
-                    stroke="#2563eb"
+                    stroke={CHART_COLORS.primary}
                     strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -139,15 +159,25 @@ const CRMDashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Customer Acquisition</CardTitle>
+              <CardTitle>New customers</CardTitle>
+              <p className="text-sm text-muted-foreground">Last 6 months</p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={customerChart}>
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="new_customers" fill="#2563eb" />
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={customerChart} margin={{ left: 8, right: 8 }}>
+                  <CartesianGrid {...chartGrid} />
+                  <XAxis dataKey="month" {...chartAxis} />
+                  <YAxis {...chartAxis} width={40} allowDecimals={false} />
+                  <Tooltip
+                    {...chartTooltip}
+                    formatter={(v: number) => [Number(v).toLocaleString(), 'New customers']}
+                  />
+                  <Bar
+                    dataKey="new_customers"
+                    fill={CHART_COLORS.primary}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={48}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

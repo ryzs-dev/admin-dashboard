@@ -8,6 +8,7 @@ import {
   MapPin,
   MessageSquareText,
   Pencil,
+  Plus,
   Send,
   Trash,
   User,
@@ -23,7 +24,8 @@ import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import DeleteDialog from '../alert/DeleteDialog';
 import EditOrderDialog from '@/components/modules/order/EditOrderItemsDialog';
-import { useAddress } from '@/hooks/useAddress';
+import { createAddress, updateAddress } from '@/lib/api/address';
+import { updateOrder } from '@/lib/api/order';
 import EditAddressDialog from '@/components/modules/order/EditAddressDialog';
 import Link from 'next/link';
 import { getOrderShipmentStatus } from './OrderTableColumns';
@@ -70,7 +72,6 @@ const OrderTemplate = ({ order }: { order: Order }) => {
   const { order_items } = order;
   const { sendTrackingInfo } = useMessage();
   const { updateLineItems, deleteOrder } = useOrders();
-  const { updateAddress } = useAddress();
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
@@ -369,10 +370,13 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   size="sm"
                   className="h-8 gap-1.5 text-muted-foreground"
                   onClick={() => setEditAddressOpen(true)}
-                  disabled={!order.addresses}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
+                  {order.addresses ? (
+                    <Pencil className="h-3.5 w-3.5" />
+                  ) : (
+                    <Plus className="h-3.5 w-3.5" />
+                  )}
+                  {order.addresses ? 'Edit' : 'Add'}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -441,8 +445,16 @@ const OrderTemplate = ({ order }: { order: Order }) => {
         open={editAddressOpen}
         onOpenChange={setEditAddressOpen}
         onSubmit={async (data) => {
-          await updateAddress(order.addresses?.id as UUID, data);
-          toast.success('Address updated');
+          if (order.addresses?.id) {
+            await updateAddress(order.addresses.id as UUID, data);
+          } else {
+            const created = await createAddress({
+              ...(data as Required<typeof data>),
+              customer_id: order.customer_id,
+            });
+            await updateOrder(order.id, { address_id: created.address.id });
+          }
+          toast.success(order.addresses ? 'Address updated' : 'Address added');
           router.refresh();
         }}
       />
