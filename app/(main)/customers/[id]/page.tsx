@@ -1,22 +1,21 @@
 'use client';
 import CustomerProfile from '@/components/modules/customer/CustomerProfile';
-import { useCustomer } from '@/hooks/useCustomer';
+import { updateCustomer } from '@/lib/api/customer';
 import { UUID } from 'crypto';
 import { useParams } from 'next/navigation';
 
 export default function IndividualCustomerPage() {
-  const { updateCustomer } = useCustomer();
-  const params = useParams();
-
-  const { id } = params;
-
-  if (!id) {
-    return <div>Customer ID is missing</div>;
-  }
+  const { id } = useParams();
 
   return (
-    <div>
-      <CustomerProfile customer_id={id as UUID} update={updateCustomer} />
+    <div className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {id ? (
+          <CustomerProfile customer_id={id as UUID} update={updateCustomer} />
+        ) : (
+          <p className="text-sm text-muted-foreground">Customer ID is missing.</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -37,7 +37,6 @@ import { cn } from '@/lib/utils';
 import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
 import { COURIER_SERVICES } from '../parcel-daily/constants';
 import OrderFormDialog from './OrderFormDialog';
-import { useCustomer } from '@/hooks/useCustomer';
 import { useProducts } from '@/hooks/useProducts';
 import { OrderInput } from '@/types/order';
 
@@ -78,7 +77,6 @@ export function OrderTable() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { fetchOrders, deleteOrder, createOrder } = useOrders();
-  const { customers } = useCustomer({ limit: 500 });
   const { products } = useProducts();
   const { sendTrackingInfo } = useMessage();
   const searchParams = useSearchParams();
@@ -183,8 +181,6 @@ export function OrderTable() {
       if (result?.order?.id) {
         router.push(`/orders/${result.order.id}`);
       }
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create order');
     } finally {
       setIsCreating(false);
     }
@@ -352,7 +348,6 @@ export function OrderTable() {
         isOpen={isCreateOpen}
         onClose={() => !isCreating && setIsCreateOpen(false)}
         onSubmit={handleCreateOrder}
-        customers={customers ?? []}
         products={products ?? []}
         isSubmitting={isCreating}
       />

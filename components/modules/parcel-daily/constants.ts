@@ -39,3 +39,11 @@ export const COURIER_SERVICES = {
     },
   ],
 };
+
+// Couriers a tracking number can be entered for by hand, including ones that
+// aren't booked through Parcel Daily.
+export const TRACKING_COURIERS = [
+  ...COURIER_SERVICES.Malaysia,
+  { value: 'flash', label: 'Flash Express', logo: '/images/couriers/flash.png' },
+  ...COURIER_SERVICES.Singapore,
+];

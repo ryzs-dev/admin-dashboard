@@ -13,6 +13,7 @@ import { UUID } from 'crypto';
 
 import { AlertCircle, Plus, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function ProductsPage() {
   const {
@@ -28,18 +29,13 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const handleCreate = async (productData: ProductInput) => {
-    try {
-      if (editingProduct) {
-        await updateProduct(editingProduct.id as UUID, productData);
-      } else {
-        await createProduct(productData);
-      }
-      refresh();
-      setIsDialogOpen(false);
-      setEditingProduct(null);
-    } catch (error) {
-      console.error('Error creating/updating product:', error);
+    if (editingProduct) {
+      await updateProduct(editingProduct.id as UUID, productData);
+    } else {
+      await createProduct(productData);
     }
+    toast.success(editingProduct ? 'Product updated' : 'Product added');
+    refresh();
   };
 
   const handleUpdate = (product: Product) => {
@@ -50,9 +46,11 @@ export default function ProductsPage() {
   const handleDelete = async (productId: UUID) => {
     try {
       await deleteProduct(productId as UUID);
+      toast.success('Product deleted');
       refresh();
     } catch (error) {
       console.error('Error deleting product:', error);
+      toast.error('Couldn’t delete the product');
     }
   };
 

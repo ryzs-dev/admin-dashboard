@@ -1,13 +1,13 @@
+import { Loader2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 type DeleteDialogProps = {
   open: boolean;
@@ -16,6 +16,7 @@ type DeleteDialogProps = {
   onConfirm: () => Promise<void> | void;
   title?: string;
   description?: string;
+  confirmLabel?: string;
 };
 
 export default function DeleteDialog({
@@ -24,25 +25,39 @@ export default function DeleteDialog({
   isLoading = false,
   onConfirm,
   title = 'Delete item?',
-  description = 'This action cannot be undone.',
+  description = 'This can’t be undone.',
+  confirmLabel = 'Delete',
 }: DeleteDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
+    <AlertDialog open={open} onOpenChange={(next) => !isLoading && setOpen(next)}>
+      <AlertDialogContent className="sm:max-w-md">
+        <div className="flex gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <Trash2 className="h-5 w-5" />
+          </span>
+          <div className="space-y-1.5 pt-0.5">
+            <AlertDialogTitle className="text-base font-semibold">{title}</AlertDialogTitle>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          </div>
+        </div>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="mt-2">
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
+          <Button
+            variant="destructive"
             disabled={isLoading}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            onClick={() => onConfirm()}
+            className="min-w-24"
           >
-            {isLoading ? 'Deleting...' : 'Delete'}
-          </AlertDialogAction>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              confirmLabel
+            )}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

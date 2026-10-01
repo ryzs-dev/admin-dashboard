@@ -430,13 +430,9 @@ const OrderTemplate = ({ order }: { order: Order }) => {
         isOpen={editOrder}
         onOpenChange={setEditOrder}
         onUpdateOrder={async (data) => {
-          try {
-            await updateLineItems(order.id, data);
-            toast.success('Order updated');
-          } catch (error) {
-            console.error(error);
-            toast.error('Failed to update order');
-          }
+          await updateLineItems(order.id, data);
+          toast.success('Order updated');
+          router.refresh();
         }}
       />
 
@@ -445,13 +441,9 @@ const OrderTemplate = ({ order }: { order: Order }) => {
         open={editAddressOpen}
         onOpenChange={setEditAddressOpen}
         onSubmit={async (data) => {
-          try {
-            await updateAddress(order.addresses?.id as UUID, data);
-            toast.success('Address updated');
-          } catch (err) {
-            console.error(err);
-            toast.error('Failed to update address');
-          }
+          await updateAddress(order.addresses?.id as UUID, data);
+          toast.success('Address updated');
+          router.refresh();
         }}
       />
 

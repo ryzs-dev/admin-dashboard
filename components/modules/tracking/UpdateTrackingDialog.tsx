@@ -1,22 +1,13 @@
 'use client';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { UUID } from 'crypto';
+import { Input } from '@/components/ui/input';
+import { FormDialog, errorMessage } from '@/components/forms/FormDialog';
+import { Field, SegmentedChoice } from '@/components/forms/Field';
+import { CourierPicker } from '../parcel-daily/CourierPicker';
+import { TRACKING_COURIERS } from '../parcel-daily/constants';
 
 export type Courier =
   | 'spx'
@@ -27,6 +18,8 @@ export type Courier =
   | 'poslaju'
   | 'dhl'
   | 'lex';
+
+type MessageStatus = 'pending' | 'sent' | 'failed';
 
 interface Props {
   open: boolean;
@@ -47,101 +40,99 @@ interface Props {
   ) => Promise<void>;
 }
 
+const MESSAGE_OPTIONS: { value: MessageStatus; label: string }[] = [
+  { value: 'pending', label: 'Not sent' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'failed', label: 'Failed' },
+];
+
 export function UpdateTrackingDialog({
   open,
   onOpenChange,
   tracking,
   onSubmit,
 }: Props) {
-  const [trackingNumber, setTrackingNumber] = useState(
-    tracking.tracking_number ?? ''
-  );
-  const [courier, setCourier] = useState<Courier | ''>(tracking.courier ?? '');
-  const [status, setStatus] = useState(tracking.message_status ?? 'pending');
-  const [loading, setLoading] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [courier, setCourier] = useState<Courier | ''>('');
+  const [messageStatus, setMessageStatus] = useState<MessageStatus>('pending');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setTrackingNumber(tracking.tracking_number ?? '');
+    setCourier(tracking.courier ?? '');
+    setMessageStatus(
+      (['pending', 'sent', 'failed'] as const).find((s) => s === tracking.message_status) ??
+        'pending'
+    );
+    setError(null);
+  }, [open, tracking]);
 
   const handleSubmit = async () => {
     if (!courier) return;
-    setLoading(true);
-    await onSubmit(tracking.id, {
-      tracking_number: trackingNumber,
-      courier,
-      message_status: status,
-    });
-    setLoading(false);
-    onOpenChange(false);
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit(tracking.id, {
+        tracking_number: trackingNumber.trim(),
+        courier,
+        message_status: messageStatus,
+      });
+      toast.success('Tracking updated');
+      onOpenChange(false);
+    } catch (err) {
+      setError(errorMessage(err, 'Couldn’t save tracking. Please try again.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-0 shadow-sm">
-        <DialogHeader className="space-y-3 pb-4">
-          <DialogTitle className="text-lg font-medium text-gray-900">
-            Update Tracking
-          </DialogTitle>
-        </DialogHeader>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit tracking"
+      description="Fix a wrong courier or tracking number."
+      size="lg"
+      onSubmit={handleSubmit}
+      submitLabel="Save changes"
+      isSubmitting={saving}
+      submitDisabled={!trackingNumber.trim() || !courier}
+      error={error}
+    >
+      <Field label="Courier">
+        <CourierPicker
+          couriers={TRACKING_COURIERS}
+          value={courier}
+          onChange={(value) => setCourier(value as Courier)}
+          disabled={saving}
+        />
+      </Field>
 
-        <div className="space-y-3">
-          <div>
-            <Input
-              placeholder="Tracking Number"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              className="h-10 border-gray-200 focus:border-gray-400 focus:ring-0"
-            />
-          </div>
+      <Field label="Tracking number" htmlFor="tracking-number">
+        <Input
+          id="tracking-number"
+          value={trackingNumber}
+          onChange={(e) => setTrackingNumber(e.target.value)}
+          autoComplete="off"
+          className="font-mono"
+          disabled={saving}
+        />
+      </Field>
 
-          <div>
-            <Select
-              value={courier}
-              onValueChange={(value) => setCourier(value as Courier | '')}
-            >
-              <SelectTrigger className="h-10 border-gray-200 focus:border-gray-400 focus:ring-0">
-                <SelectValue placeholder="Select Courier" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="spx">Shopee Express</SelectItem>
-                <SelectItem value="flash">Flash</SelectItem>
-                <SelectItem value="jnt">J&T</SelectItem>
-                <SelectItem value="kex">KEX</SelectItem>
-                <SelectItem value="sf_express">SF Express</SelectItem>
-                <SelectItem value="poslaju">Pos Laju</SelectItem>
-                <SelectItem value="dhl">DHL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-10 border-gray-200 focus:border-gray-400 focus:ring-0">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <DialogFooter className="mt-6 gap-2 sm:gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="h-9 border-gray-200 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading || !trackingNumber || !courier}
-            className="h-9 bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <Field
+        label="Tracking message to customer"
+        hint="Whether the WhatsApp message with this tracking number has gone out."
+      >
+        <SegmentedChoice
+          label="Tracking message to customer"
+          value={messageStatus}
+          onChange={setMessageStatus}
+          options={MESSAGE_OPTIONS}
+          disabled={saving}
+        />
+      </Field>
+    </FormDialog>
   );
 }

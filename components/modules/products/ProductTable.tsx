@@ -18,7 +18,7 @@ export default function ProductTable({
 }: {
   products: Product[];
   onEdit: (product: Product) => void;
-  onDelete: (id: UUID) => void;
+  onDelete: (id: UUID) => void | Promise<void>;
 }) {
   return (
     <Table className="w-full">
@@ -59,8 +59,8 @@ export default function ProductTable({
                   <Edit className="h-4 w-4" />
                 </Button>
                 <DeleteDialog
-                  title="Delete Product"
-                  description="Are you sure you want to delete this product?"
+                  title="Delete product?"
+                  description="It will no longer be available for new orders. This can’t be undone."
                   onConfirm={() => onDelete(product.id as UUID)}
                 >
                   {({ open }) => (

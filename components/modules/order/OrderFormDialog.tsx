@@ -1,15 +1,11 @@
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import useSWR from 'swr';
+import { Loader2, Package, Plus, Search, Trash2, User } from 'lucide-react';
+import { UUID } from 'crypto';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -17,387 +13,421 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, X } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import { Customer } from '../customer/types';
-import { Order } from './types';
-import { OrderInput, OrderItemsInput } from '@/types/order';
-import { UUID } from 'crypto';
-import { Product } from '../products/types';
+import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
+import { Field, MoneyInput, QuantityStepper, SegmentedChoice } from '@/components/forms/Field';
+import { getCustomers } from '@/lib/api/customer';
+import { formatCurrency } from '@/lib/utils/currency';
 import { formatPhone } from '@/lib/utils/phone';
+import { cn } from '@/lib/utils';
+import { OrderInput, OrderItemsInput } from '@/types/order';
+import { Customer } from '../customer/types';
+import { Product } from '../products/types';
+import { Order } from './types';
 
 type OrderFormDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: OrderInput) => void | Promise<void>;
   initialData?: Order;
-  customers: Customer[];
+  customers?: Customer[];
   products: Product[];
   trigger?: React.ReactNode;
   isSubmitting?: boolean;
 };
+
+type Line = { product: Product; quantity: number };
+type PaymentStatus = 'unpaid' | 'paid';
+
+const PAYMENT_SUGGESTIONS = ['Bank transfer', 'COD', 'Cash', 'Card'];
+
+const todayInMalaysia = () =>
+  new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function CustomerPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Customer | null;
+  onChange: (customer: Customer | null) => void;
+  disabled?: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handle = setTimeout(() => setDebounced(query.trim()), 250);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  const { data, isLoading } = useSWR(
+    open ? ['order-form-customers', debounced] : null,
+    () =>
+      getCustomers({
+        search: debounced || undefined,
+        limit: 8,
+        sortBy: 'last_order_date',
+        sortOrder: 'desc',
+      }),
+    { keepPreviousData: true, revalidateOnFocus: false }
+  );
+  const results = data?.data ?? [];
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border p-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <User className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{value.name || 'Unnamed customer'}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {formatPhone(value.phone_number)}
+            {value.total_purchase_count
+              ? ` · ${value.total_purchase_count} previous ${value.total_purchase_count === 1 ? 'order' : 'orders'}`
+              : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(null)}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Change
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="order-customer"
+            value={query}
+            disabled={disabled}
+            autoComplete="off"
+            placeholder="Search by name, phone or email"
+            onFocus={() => setOpen(true)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            className="pl-9"
+          />
+        </div>
+      </PopoverAnchor>
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="w-[var(--radix-popover-trigger-width)] p-1"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if ((e.target as HTMLElement)?.id === 'order-customer') e.preventDefault();
+        }}
+      >
+        {isLoading && !results.length ? (
+          <p className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Searching…
+          </p>
+        ) : results.length === 0 ? (
+          <p className="px-3 py-3 text-sm text-muted-foreground">
+            No customers match “{debounced}”.
+          </p>
+        ) : (
+          <ul className="max-h-64 overflow-y-auto">
+            {results.map((customer) => (
+              <li key={customer.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(customer);
+                    setOpen(false);
+                    setQuery('');
+                  }}
+                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-muted"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium">
+                      {customer.name || 'Unnamed customer'}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {formatPhone(customer.phone_number)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {customer.total_purchase_count ?? 0}{' '}
+                    {customer.total_purchase_count === 1 ? 'order' : 'orders'}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function OrderFormDialog({
   isOpen,
   onClose,
   onSubmit,
   initialData,
-  customers,
   products,
   trigger,
   isSubmitting = false,
 }: OrderFormDialogProps) {
-  const [formData, setFormData] = useState<{
-    customer_id: string;
-    order_date: string;
-    order_items: { product_id: string; quantity: number }[];
-    total_amount: string;
-    status: 'unpaid' | 'paid' | 'refunded';
-    payment_method: string;
-  }>({
-    customer_id: '',
-    order_date: new Date().toISOString().split('T')[0],
-    order_items: [{ product_id: '', quantity: 1 }],
-    total_amount: '',
-    status: 'unpaid',
-    payment_method: '',
-  });
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [orderDate, setOrderDate] = useState(todayInMalaysia());
+  const [lines, setLines] = useState<Line[]>([]);
+  const [total, setTotal] = useState('');
+  const [totalTouched, setTotalTouched] = useState(false);
+  const [status, setStatus] = useState<PaymentStatus>('unpaid');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const uniqueProducts = useMemo(() => {
-    const seen = new Set<string>();
-    return (products ?? []).filter((product) => {
-      if (seen.has(product.id)) return false;
-      seen.add(product.id);
-      return true;
-    });
-  }, [products]);
-
-  // Reset form when dialog opens/closes or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        customer_id: initialData.customer_id || '',
-        order_date: initialData.order_date
-          ? initialData.order_date.split('T')[0]
-          : new Date().toISOString().split('T')[0],
-        order_items:
-          initialData.order_items?.length > 0
-            ? initialData.order_items.map((item) => ({
-                product_id: item.product_id,
-                quantity: item.quantity,
-              }))
-            : [{ product_id: '', quantity: 1 }],
-        total_amount: initialData.total_amount?.toString() || '',
-        status: initialData.status || 'unpaid',
-        payment_method: initialData.payment_method || '',
-      });
-    } else {
-      resetForm();
-    }
-  }, [initialData, isOpen]);
-
-  const resetForm = () => {
-    setFormData({
-      customer_id: '',
-      order_date: new Date().toISOString().split('T')[0],
-      order_items: [{ product_id: '', quantity: 1 }],
-      total_amount: '',
-      status: 'unpaid',
-      payment_method: '',
-    });
-    setErrors({});
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.customer_id) {
-      newErrors.customer_id = 'Customer is required';
-    }
-    if (!formData.total_amount || parseFloat(formData.total_amount) <= 0) {
-      newErrors.total_amount = 'Total amount must be greater than 0';
-    }
-    if (
-      formData.order_items.some(
-        (item) => !item.product_id || item.quantity <= 0
-      )
-    ) {
-      newErrors.order_items =
-        'All items must have a valid product ID and quantity';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm() || isSubmitting) {
-      return;
-    }
-
-    const orderData: OrderInput = {
-      customer_id: formData.customer_id as UUID,
-      order_date: new Date(formData.order_date),
-      order_items: formData.order_items.map((item) => ({
-        product_id: item.product_id as UUID,
+    if (!isOpen) return;
+    setCustomer((initialData?.customers as Customer | undefined) ?? null);
+    setOrderDate(initialData?.order_date?.slice(0, 10) ?? todayInMalaysia());
+    setLines(
+      (initialData?.order_items ?? []).map((item) => ({
+        product: item.products as Product,
         quantity: item.quantity,
-      })) as OrderItemsInput[],
-      total_amount: parseFloat(formData.total_amount),
-      status: formData.status,
-      payment_method: formData.payment_method,
-    };
+      }))
+    );
+    setTotal(initialData ? String(initialData.total_amount ?? '') : '');
+    setTotalTouched(!!initialData);
+    setStatus(initialData?.status === 'paid' ? 'paid' : 'unpaid');
+    setPaymentMethod(initialData?.payment_method ?? '');
+    setError(null);
+  }, [isOpen, initialData]);
 
-    await onSubmit(orderData);
+  const subtotal = lines.reduce(
+    (sum, line) => sum + Number(line.product.price ?? 0) * line.quantity,
+    0
+  );
+
+  const updateLines = (next: Line[]) => {
+    setLines(next);
+    if (!totalTouched) {
+      const nextSubtotal = next.reduce(
+        (sum, line) => sum + Number(line.product.price ?? 0) * line.quantity,
+        0
+      );
+      setTotal(nextSubtotal ? String(round2(nextSubtotal)) : '');
+    }
   };
 
-  const addOrderItem = () => {
-    setFormData((prev) => ({
-      ...prev,
-      order_items: [...prev.order_items, { product_id: '', quantity: 1 }],
-    }));
-  };
+  const available = useMemo(() => {
+    const used = new Set(lines.map((line) => line.product.id));
+    const unique = new Map<string, Product>();
+    for (const product of products ?? []) {
+      if (!used.has(product.id) && !unique.has(product.id)) unique.set(product.id, product);
+    }
+    return [...unique.values()];
+  }, [products, lines]);
 
-  const removeOrderItem = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      order_items: prev.order_items.filter((_, i) => i !== index),
-    }));
-  };
+  const totalNumber = Number(total);
+  const totalInvalid = total.trim() !== '' && !(totalNumber > 0);
+  const canSubmit = !!customer && lines.length > 0 && totalNumber > 0;
+  const missingHint = !customer
+    ? 'Choose a customer'
+    : !lines.length
+      ? 'Add at least one product'
+      : !(totalNumber > 0)
+        ? 'Enter the order total'
+        : `${lines.length} ${lines.length === 1 ? 'product' : 'products'} · ${formatCurrency(totalNumber)}`;
 
-  const updateOrderItem = (
-    index: number,
-    field: 'product_id' | 'quantity',
-    value: string | number
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      order_items: prev.order_items.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      ),
-    }));
+  const handleSubmit = async () => {
+    if (!customer) return;
+    setError(null);
+    try {
+      await onSubmit({
+        customer_id: customer.id,
+        order_date: new Date(orderDate),
+        order_items: lines.map((line) => ({
+          product_id: line.product.id as UUID,
+          quantity: line.quantity,
+        })) as OrderItemsInput[],
+        total_amount: round2(totalNumber),
+        status,
+        payment_method: paymentMethod.trim(),
+      });
+    } catch (err) {
+      setError(errorMessage(err, 'Couldn’t create the order. Please try again.'));
+    }
   };
-
-  // const selectedCustomer = customers.find(c => c.id === formData.customer_id);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="w-auto max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {initialData ? 'Edit Order' : 'Create New Order'}
-          </DialogTitle>
-          <DialogDescription>
-            {initialData
-              ? 'Update the order details below.'
-              : 'Fill in the order details below.'}
-          </DialogDescription>
-        </DialogHeader>
+    <FormDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      trigger={trigger}
+      title={initialData ? 'Edit order' : 'New order'}
+      description="For orders that didn’t come through the WhatsApp bot."
+      size="lg"
+      onSubmit={handleSubmit}
+      submitLabel={initialData ? 'Save order' : 'Create order'}
+      submittingLabel={initialData ? 'Saving…' : 'Creating…'}
+      isSubmitting={isSubmitting}
+      submitDisabled={!canSubmit}
+      error={error}
+      footerNote={missingHint}
+    >
+      <FormSection title="Customer" icon={User}>
+        <CustomerPicker value={customer} onChange={setCustomer} disabled={isSubmitting} />
+      </FormSection>
 
-        <div className="space-y-4 grid grid-cols-2 gap-4">
-          {/* Customer ID/ Name */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="customer">Customer *</Label>
-            <Select
-              value={formData.customer_id}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, customer_id: value }))
-              }
-            >
-              <SelectTrigger className="w-full" id="customer">
-                <SelectValue placeholder="Select a customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {formatPhone(customer.phone_number)} - ( {customer.name} )
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.customer_id && (
-              <p className="text-sm text-red-500">{errors.customer_id}</p>
-            )}
+      <FormSection title="Products" icon={Package}>
+        {lines.length > 0 && (
+          <div className="mb-2 divide-y rounded-lg border">
+            {lines.map((line, index) => (
+              <div key={line.product.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{line.product.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(Number(line.product.price ?? 0))} each
+                  </p>
+                </div>
+                <QuantityStepper
+                  label={line.product.name}
+                  value={line.quantity}
+                  disabled={isSubmitting}
+                  onChange={(quantity) =>
+                    updateLines(lines.map((l, i) => (i === index ? { ...l, quantity } : l)))
+                  }
+                />
+                <p className="w-20 text-right text-sm tabular-nums">
+                  {formatCurrency(Number(line.product.price ?? 0) * line.quantity)}
+                </p>
+                <button
+                  type="button"
+                  aria-label={`Remove ${line.product.name}`}
+                  disabled={isSubmitting}
+                  onClick={() => updateLines(lines.filter((_, i) => i !== index))}
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
           </div>
+        )}
 
-          {/* Order Date */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="order_date">Order Date</Label>
-            <div className="flex w-full">
-              <Input
-                id="order_date"
-                type="date"
-                value={formData.order_date}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    order_date: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div className="col-span-2 space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Order Items *</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addOrderItem}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {formData.order_items.map((item, index) => {
-                // Filter products that are not already selected in other rows
-                const availableProducts = uniqueProducts.filter(
-                  (p) =>
-                    !formData.order_items.some(
-                      (oi, i) => i !== index && oi.product_id === p.id
-                    )
-                );
-
-                return (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Select
-                      value={item.product_id}
-                      onValueChange={(value) =>
-                        updateOrderItem(index, 'product_id', value)
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProducts.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.name} - ( MYR {p.price.toFixed(2)} )
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateOrderItem(
-                          index,
-                          'quantity',
-                          parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="w-20"
-                      min="1"
-                    />
-
-                    {formData.order_items.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeOrderItem(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {errors.order_items && (
-              <p className="text-sm text-red-500">{errors.order_items}</p>
-            )}
-          </div>
-
-          {/* Total Amount */}
-          <div className="grid gap-2">
-            <Label htmlFor="total_amount">Total Amount *</Label>
-            <Input
-              id="total_amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={formData.total_amount}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  total_amount: e.target.value,
-                }))
-              }
-            />
-            {errors.total_amount && (
-              <p className="text-sm text-red-500">{errors.total_amount}</p>
-            )}
-          </div>
-
-          {/* Peyment Status */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value: 'unpaid' | 'paid' | 'refunded') =>
-                setFormData((prev) => ({ ...prev, status: value }))
-              }
-            >
-              <SelectTrigger className="w-full" id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Payment Method */}
-          <div className="flex flex-col gap-2 col-span-2">
-            <Label htmlFor="payment_method">Payment Method</Label>
-            <Input
-              className="w-full"
-              id="payment_method"
-              placeholder="e.g., Cash, Card, Bank Transfer"
-              value={formData.payment_method}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  payment_method: e.target.value,
-                }))
-              }
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
+        {available.length > 0 && (
+          <Select
+            value=""
             disabled={isSubmitting}
+            onValueChange={(id) => {
+              const product = available.find((p) => p.id === id);
+              if (product) updateLines([...lines, { product, quantity: 1 }]);
+            }}
           >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting
-              ? 'Saving…'
-              : initialData
-                ? 'Update Order'
-                : 'Create Order'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <SelectTrigger className="w-full border-dashed text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <SelectValue placeholder="Add a product" />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {available.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                  <span className="ml-2 text-muted-foreground">
+                    {formatCurrency(Number(product.price ?? 0))}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </FormSection>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Order total"
+          htmlFor="order-total"
+          error={totalInvalid ? 'Enter an amount above RM 0.' : undefined}
+          hint={
+            subtotal > 0
+              ? totalTouched && round2(totalNumber) !== round2(subtotal)
+                ? `List price is ${formatCurrency(subtotal)}`
+                : 'Filled in from list prices. Change it for bundle deals.'
+              : undefined
+          }
+        >
+          <MoneyInput
+            id="order-total"
+            value={total}
+            invalid={totalInvalid}
+            disabled={isSubmitting}
+            onChange={(value) => {
+              setTotal(value);
+              setTotalTouched(true);
+            }}
+          />
+        </Field>
+        <Field label="Order date" htmlFor="order-date">
+          <Input
+            id="order-date"
+            type="date"
+            value={orderDate}
+            max={todayInMalaysia()}
+            onChange={(e) => setOrderDate(e.target.value)}
+            disabled={isSubmitting}
+          />
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Payment">
+          <SegmentedChoice
+            label="Payment"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: 'unpaid', label: 'Unpaid' },
+              { value: 'paid', label: 'Paid' },
+            ]}
+            disabled={isSubmitting}
+          />
+        </Field>
+        <Field label="Payment method" htmlFor="payment-method" optional>
+          <Input
+            id="payment-method"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            placeholder="e.g. Bank transfer"
+            disabled={isSubmitting}
+          />
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {PAYMENT_SUGGESTIONS.map((method) => (
+              <button
+                key={method}
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setPaymentMethod(method)}
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+                  paymentMethod === method
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'text-muted-foreground hover:border-gray-300 hover:text-foreground'
+                )}
+              >
+                {method}
+              </button>
+            ))}
+          </div>
+        </Field>
+      </div>
+    </FormDialog>
   );
 }

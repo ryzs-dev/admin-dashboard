@@ -1,15 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import ConfirmDeleteDialog from '../../alert/DeleteDialog';
 
 type DeleteDialogProps = {
   title?: string;
@@ -19,8 +11,8 @@ type DeleteDialogProps = {
 };
 
 export function DeleteDialog({
-  title = "Are you sure?",
-  description = "This action cannot be undone.",
+  title = 'Delete item?',
+  description = 'This can’t be undone.',
   onConfirm,
   children,
 }: DeleteDialogProps) {
@@ -40,26 +32,14 @@ export function DeleteDialog({
   return (
     <>
       {children({ open: () => setOpen(true) })}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirm}
-              disabled={loading}
-            >
-              {loading ? "Deleting..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={open}
+        setOpen={setOpen}
+        isLoading={loading}
+        onConfirm={handleConfirm}
+        title={title}
+        description={description}
+      />
     </>
   );
 }
