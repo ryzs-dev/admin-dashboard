@@ -47,13 +47,76 @@ export function CourierPicker({
   onChange,
   disabled,
   formatPrice,
+  layout = 'grid',
 }: {
   couriers: CourierOption[];
   value?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   formatPrice?: (price: number) => string;
+  layout?: 'grid' | 'list';
 }) {
+  if (layout === 'list') {
+    return (
+      <div
+        role="radiogroup"
+        aria-label="Courier"
+        className="divide-y overflow-hidden rounded-lg border bg-white"
+      >
+        {couriers.map((c) => {
+          const active = c.code === value;
+          return (
+            <button
+              key={c.code}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={disabled}
+              onClick={() => onChange(c.code)}
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors disabled:opacity-60',
+                active ? 'bg-primary/5' : 'hover:bg-muted/40'
+              )}
+            >
+              <span
+                className={cn(
+                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                  active ? 'border-primary' : 'border-gray-300'
+                )}
+              >
+                {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+              </span>
+              <CourierLogo courier={c} className="h-8 w-8" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium">{c.label}</span>
+                  {c.badge && (
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-px text-[10px] font-medium text-emerald-700">
+                      {c.badge}
+                    </span>
+                  )}
+                </span>
+                {c.detail && (
+                  <span className="block truncate text-xs text-muted-foreground">{c.detail}</span>
+                )}
+              </span>
+              {c.price !== undefined && formatPrice && (
+                <span
+                  className={cn(
+                    'shrink-0 text-sm tabular-nums',
+                    active ? 'font-semibold text-primary' : 'font-medium'
+                  )}
+                >
+                  {formatPrice(c.price)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div role="radiogroup" aria-label="Courier" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {couriers.map((c) => {

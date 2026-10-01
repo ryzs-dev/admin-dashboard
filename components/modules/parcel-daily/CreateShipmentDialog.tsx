@@ -315,9 +315,14 @@ export default function CreateShipmentDialog({
                 Add a valid postcode to see which couriers deliver there.
               </p>
             ) : quoteLoading && !quote ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-[62px] animate-pulse rounded-lg border bg-muted/40" />
+              <div className="divide-y overflow-hidden rounded-lg border">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex h-[53px] items-center gap-3 px-3">
+                    <div className="h-4 w-4 animate-pulse rounded-full bg-muted" />
+                    <div className="h-8 w-8 animate-pulse rounded-md bg-muted" />
+                    <div className="h-3 flex-1 animate-pulse rounded bg-muted" />
+                    <div className="h-3 w-14 animate-pulse rounded bg-muted" />
+                  </div>
                 ))}
               </div>
             ) : quote && quote.couriers.length === 0 ? (
@@ -344,6 +349,7 @@ export default function CreateShipmentDialog({
                   onChange={setCourier}
                   disabled={isLoading}
                   formatPrice={formatCurrency}
+                  layout="list"
                 />
               </>
             )}
