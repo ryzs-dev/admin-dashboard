@@ -29,7 +29,7 @@ type ExistingAddress = {
   country?: string | null;
 };
 
-const MALAYSIAN_STATES = [
+export const MALAYSIAN_STATES = [
   'Johor',
   'Kedah',
   'Kelantan',

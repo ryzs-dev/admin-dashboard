@@ -17,6 +17,52 @@ export async function getParcelDailyAccountInfo() {
   return data;
 }
 
+export type ParcelDailyAccount = {
+  credit: string;
+  topupPackage: string;
+  packageValidDays: number;
+  expiresIn: number;
+  packageBoughtAt: string;
+};
+
+export type PickupAddress = {
+  fullName: string;
+  countryCode: '+60';
+  phone: string;
+  email?: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  postcode: string;
+  state: string;
+  country: 'Malaysia';
+};
+
+export type ShippingDefaults = {
+  kg: number;
+  isDropoff: boolean;
+  courier: string;
+};
+
+export type ParcelDailySettings = {
+  pickupAddress: PickupAddress;
+  defaults: ShippingDefaults;
+  updatedAt: string | null;
+  connection?: { environment: 'live' | 'sandbox'; merchantId: string };
+};
+
+export async function getParcelDailySettings() {
+  const { data } = await api.get('/settings');
+  return data.data as ParcelDailySettings;
+}
+
+export async function saveParcelDailySettings(
+  settings: Pick<ParcelDailySettings, 'pickupAddress' | 'defaults'>
+) {
+  const { data } = await api.put('/settings', settings);
+  return data.data as ParcelDailySettings;
+}
+
 export type CourierQuote = {
   code: string;
   name: string;

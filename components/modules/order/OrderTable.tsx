@@ -38,6 +38,7 @@ import { Order } from './types';
 import { cn } from '@/lib/utils';
 import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
 import { BOOKABLE_COURIERS } from '../parcel-daily/couriers';
+import { useParcelDailySettings } from '@/hooks/useParcelDaily';
 
 // Ninja Van serves both countries; list it once.
 const BULK_COURIERS = {
@@ -115,10 +116,21 @@ export function OrderTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isBulkShipping, setIsBulkShipping] = useState(false);
+  const { settings: parcelDailySettings } = useParcelDailySettings();
   const [bulkCourier, setBulkCourier] = useState('spx');
+  const defaultBulkCourier = parcelDailySettings?.defaults.courier;
+  const defaultBulkDropoff = parcelDailySettings?.defaults.isDropoff;
+  useEffect(() => {
+    if (defaultBulkCourier) setBulkCourier(defaultBulkCourier);
+  }, [defaultBulkCourier]);
   const [bulkDeliveryType, setBulkDeliveryType] = useState<'pickup' | 'dropoff'>(
     'pickup'
   );
+  useEffect(() => {
+    if (defaultBulkDropoff !== undefined) {
+      setBulkDeliveryType(defaultBulkDropoff ? 'dropoff' : 'pickup');
+    }
+  }, [defaultBulkDropoff]);
 
   useEffect(() => {
     const handler = setTimeout(() => setSearch(searchInput.trim()), 400);

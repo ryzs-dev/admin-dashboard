@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
+import { useParcelDailySettings } from '@/hooks/useParcelDaily';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
 import { createParcelDailyShipment, getCourierQuotes } from '@/lib/api/parcel-daily';
 import { Order } from '../order/types';
@@ -33,7 +34,7 @@ import { CourierOption, CourierPicker } from './CourierPicker';
 import { ShipmentInput } from './types';
 
 const DEFAULT_CONTENT = 'Feminine Products';
-const PARCEL_WEIGHT_KG = 0.5;
+const FALLBACK_WEIGHT_KG = 0.5;
 
 interface CreateShipmentDialogProps {
   order: Order;
@@ -113,7 +114,11 @@ export default function CreateShipmentDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [courier, setCourier] = useState<string | undefined>();
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup');
+  const { settings } = useParcelDailySettings();
+  const defaults = settings?.defaults;
+  const weightKg = defaults?.kg ?? FALLBACK_WEIGHT_KG;
+  const defaultDelivery: DeliveryType = defaults?.isDropoff ? 'dropoff' : 'pickup';
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(defaultDelivery);
   const [codEnabled, setCodEnabled] = useState(false);
   const [codAmount, setCodAmount] = useState(String(contentValue ?? ''));
 
@@ -121,10 +126,10 @@ export default function CreateShipmentDialog({
     if (!isOpen) return;
     setError(null);
     setCourier(undefined);
-    setDeliveryType('pickup');
+    setDeliveryType(defaultDelivery);
     setCodEnabled(false);
     setCodAmount(String(contentValue ?? ''));
-  }, [isOpen, contentValue]);
+  }, [isOpen, contentValue, defaultDelivery]);
 
   const customer = order.customers;
   const address = order.addresses;
@@ -147,8 +152,8 @@ export default function CreateShipmentDialog({
     isValidating: quoteRefreshing,
     mutate: retryQuote,
   } = useSWR(
-    isOpen && postcodeValid ? ['courier-quote', postcode, country, quoteCod] : null,
-    () => getCourierQuotes({ postcode, country, weight: PARCEL_WEIGHT_KG, cod: quoteCod }),
+    isOpen && postcodeValid ? ['courier-quote', postcode, country, quoteCod, weightKg] : null,
+    () => getCourierQuotes({ postcode, country, weight: weightKg, cod: quoteCod }),
     { keepPreviousData: true, revalidateOnFocus: false, shouldRetryOnError: false }
   );
 
@@ -166,8 +171,9 @@ export default function CreateShipmentDialog({
 
   useEffect(() => {
     if (!couriers.length || couriers.some((c) => c.code === courier)) return;
-    setCourier((couriers.find((c) => c.code === 'spx') ?? couriers[0]).code);
-  }, [couriers, courier]);
+    const preferred = defaults?.courier ?? 'spx';
+    setCourier((couriers.find((c) => c.code === preferred) ?? couriers[0]).code);
+  }, [couriers, courier, defaults?.courier]);
 
   const selectedCourier = couriers.find((c) => c.code === courier);
 
@@ -202,7 +208,7 @@ export default function CreateShipmentDialog({
         state: address?.state || '',
         country,
       },
-      kg: PARCEL_WEIGHT_KG,
+      kg: weightKg,
       price: 0,
       cod: codEnabled ? cod : undefined,
       content,
@@ -405,7 +411,7 @@ export default function CreateShipmentDialog({
               </div>
               <div className="flex items-center justify-between gap-4 px-4 py-2.5">
                 <dt className="text-muted-foreground">Weight</dt>
-                <dd className="tabular-nums">{PARCEL_WEIGHT_KG} kg</dd>
+                <dd className="tabular-nums">{weightKg} kg</dd>
               </div>
             </dl>
           </section>
