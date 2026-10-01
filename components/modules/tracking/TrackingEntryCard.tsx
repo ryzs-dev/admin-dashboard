@@ -6,22 +6,7 @@ import { OrderTracking } from './types';
 import { formatFriendlyDateTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { COURIER_SERVICES } from '../parcel-daily/constants';
-
-const COURIER_LABELS: Record<string, string> = Object.fromEntries(
-  [...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map((courier) => [
-    courier.value,
-    courier.label,
-  ])
-);
-
-const TRACKING_URLS: Record<string, (trackingNumber: string) => string> = {
-  spx: (n) => `https://spx.com.my/track?${encodeURIComponent(n)}`,
-  jnt: (n) => `https://www.jtexpress.my/track?waybill=${encodeURIComponent(n)}`,
-  poslaju: (n) => `https://tracking.pos.com.my/tracking/${encodeURIComponent(n)}`,
-  dhl: (n) =>
-    `https://www.dhl.com/my-en/home/tracking.html?tracking-id=${encodeURIComponent(n)}`,
-};
+import { courierLabel as labelFor, courierTrackingUrl } from '../parcel-daily/couriers';
 
 interface TrackingEntryCardProps {
   tracking: OrderTracking;
@@ -67,11 +52,8 @@ function buildSteps(tracking: OrderTracking): Step[] {
 
 export function TrackingEntryCard({ tracking, onEdit }: TrackingEntryCardProps) {
   const courier = tracking.courier as string | undefined;
-  const courierLabel = (courier && COURIER_LABELS[courier]) || courier || 'Courier';
-  const trackingUrl =
-    courier && tracking.tracking_number && TRACKING_URLS[courier]
-      ? TRACKING_URLS[courier](tracking.tracking_number)
-      : null;
+  const courierLabel = labelFor(courier) || 'Courier';
+  const trackingUrl = courierTrackingUrl(courier, tracking.tracking_number) ?? null;
 
   const copyTrackingNumber = async () => {
     try {

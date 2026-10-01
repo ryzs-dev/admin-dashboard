@@ -17,6 +17,27 @@ export async function getParcelDailyAccountInfo() {
   return data;
 }
 
+export type CourierQuote = {
+  code: string;
+  name: string;
+  price: number;
+  postage: number;
+  codFee: number;
+};
+
+export async function getCourierQuotes(input: {
+  postcode: string;
+  country: 'Malaysia' | 'Singapore';
+  weight: number;
+  cod?: number;
+}) {
+  const { data } = await api.post('/quote', input);
+  return data.data as {
+    couriers: CourierQuote[];
+    destination: { state: string | null; city: string | null };
+  };
+}
+
 export async function createParcelDailyShipment(
   shipmentData: ShipmentInput,
   orderId: UUID
@@ -31,10 +52,9 @@ export async function createBulkParcelDailyShipments(
   try {
     const { data } = await api.post('/order/create/bulk', { shipments });
     return data as { success: boolean; data: unknown };
-  } catch (error: any) {
-    console.error(error?.response?.data || error.message);
-    throw new Error(
-      error?.response?.data?.error || 'Failed to create bulk shipments'
-    );
+  } catch (error) {
+    const body = axios.isAxiosError(error) ? error.response?.data : undefined;
+    console.error(body || error);
+    throw new Error(body?.error || 'Failed to create bulk shipments');
   }
 }

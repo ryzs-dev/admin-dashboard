@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSWRConfig } from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { UUID } from 'crypto';
 import {
@@ -26,10 +26,10 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
-import { createParcelDailyShipment } from '@/lib/api/parcel-daily';
+import { createParcelDailyShipment, getCourierQuotes } from '@/lib/api/parcel-daily';
 import { Order } from '../order/types';
-import { COURIER_SERVICES } from './constants';
-import { CourierPicker } from './CourierPicker';
+import { BOOKABLE_COURIERS, courierInfo } from './couriers';
+import { CourierOption, CourierPicker } from './CourierPicker';
 import { ShipmentInput } from './types';
 
 const DEFAULT_CONTENT = 'Feminine Products';
@@ -108,13 +108,11 @@ export default function CreateShipmentDialog({
   const { mutate } = useSWRConfig();
 
   const isSingapore = order.addresses?.country === 'Singapore';
-  const couriers = isSingapore
-    ? COURIER_SERVICES.Singapore
-    : COURIER_SERVICES.Malaysia;
+  const country = isSingapore ? 'Singapore' : 'Malaysia';
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [courier, setCourier] = useState(couriers[0]?.value);
+  const [courier, setCourier] = useState<string | undefined>();
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup');
   const [codEnabled, setCodEnabled] = useState(false);
   const [codAmount, setCodAmount] = useState(String(contentValue ?? ''));
@@ -122,18 +120,56 @@ export default function CreateShipmentDialog({
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
-    setCourier(couriers[0]?.value);
+    setCourier(undefined);
     setDeliveryType('pickup');
     setCodEnabled(false);
     setCodAmount(String(contentValue ?? ''));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, contentValue, isSingapore]);
+  }, [isOpen, contentValue]);
 
   const customer = order.customers;
   const address = order.addresses;
   const content = order.shipment_description?.trim() || DEFAULT_CONTENT;
-  const selectedCourier = couriers.find((c) => c.value === courier);
   const cod = Number(codAmount);
+
+  const postcode = (address?.postcode ?? '').replace(/\D/g, '');
+  const postcodeValid = postcode.length === (isSingapore ? 6 : 5);
+  const targetCod = codEnabled && cod > 0 ? cod : 0;
+  const [quoteCod, setQuoteCod] = useState(0);
+  useEffect(() => {
+    const handle = setTimeout(() => setQuoteCod(targetCod), 500);
+    return () => clearTimeout(handle);
+  }, [targetCod]);
+
+  const {
+    data: quote,
+    error: quoteError,
+    isLoading: quoteLoading,
+    isValidating: quoteRefreshing,
+    mutate: retryQuote,
+  } = useSWR(
+    isOpen && postcodeValid ? ['courier-quote', postcode, country, quoteCod] : null,
+    () => getCourierQuotes({ postcode, country, weight: PARCEL_WEIGHT_KG, cod: quoteCod }),
+    { keepPreviousData: true, revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+
+  const couriers: CourierOption[] = useMemo(() => {
+    if (quote?.couriers.length) {
+      return quote.couriers.map((q, index) => ({
+        ...courierInfo(q.code, q.name),
+        price: q.price,
+        detail: q.codFee ? `Incl. ${formatCurrency(q.codFee)} COD fee` : undefined,
+        badge: index === 0 ? 'Cheapest' : undefined,
+      }));
+    }
+    return quoteError ? BOOKABLE_COURIERS[country] : [];
+  }, [quote, quoteError, country]);
+
+  useEffect(() => {
+    if (!couriers.length || couriers.some((c) => c.code === courier)) return;
+    setCourier((couriers.find((c) => c.code === 'spx') ?? couriers[0]).code);
+  }, [couriers, courier]);
+
+  const selectedCourier = couriers.find((c) => c.code === courier);
 
   const missing = useMemo(() => {
     const items: string[] = [];
@@ -144,7 +180,8 @@ export default function CreateShipmentDialog({
   }, [customer?.phone_number, address?.full_address, address?.postcode]);
 
   const codInvalid = codEnabled && !(cod > 0);
-  const canSubmit = !isLoading && !missing.length && !codInvalid && !!courier;
+  const pricesStale = quoteCod !== targetCod || quoteRefreshing;
+  const canSubmit = !isLoading && !missing.length && !codInvalid && !pricesStale && !!courier;
 
   const handleCreateShipment = async () => {
     if (!canSubmit) return;
@@ -152,7 +189,7 @@ export default function CreateShipmentDialog({
     setError(null);
 
     const payload: ShipmentInput = {
-      serviceProvider: courier,
+      serviceProvider: courier as string,
       clientAddress: {
         fullName: customer?.name || '',
         countryCode: phoneCountryCode(customer?.phone_number),
@@ -163,7 +200,7 @@ export default function CreateShipmentDialog({
         city: address?.city || '',
         postcode: address?.postcode || '',
         state: address?.state || '',
-        country: isSingapore ? 'Singapore' : 'Malaysia',
+        country,
       },
       kg: PARCEL_WEIGHT_KG,
       price: 0,
@@ -189,6 +226,7 @@ export default function CreateShipmentDialog({
 
   const summary = [
     selectedCourier?.label,
+    selectedCourier?.price !== undefined ? formatCurrency(selectedCourier.price) : null,
     deliveryType === 'pickup' ? 'Pickup' : 'Drop-off',
     codEnabled && cod > 0 ? `COD ${formatCurrency(cod)}` : null,
   ]
@@ -259,13 +297,56 @@ export default function CreateShipmentDialog({
           </section>
 
           <section>
-            <SectionTitle icon={Truck}>Courier</SectionTitle>
-            <CourierPicker
-              couriers={couriers}
-              value={courier}
-              onChange={setCourier}
-              disabled={isLoading}
-            />
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <Truck className="h-4 w-4 text-muted-foreground" />
+                Courier
+              </h3>
+              {quote && couriers.length > 0 && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {quoteRefreshing && <Loader2 className="h-3 w-3 animate-spin" />}
+                  Live Parcel Daily prices to {quote.destination.state || country}
+                </span>
+              )}
+            </div>
+
+            {!postcodeValid ? (
+              <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                Add a valid postcode to see which couriers deliver there.
+              </p>
+            ) : quoteLoading && !quote ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-[62px] animate-pulse rounded-lg border bg-muted/40" />
+                ))}
+              </div>
+            ) : quote && quote.couriers.length === 0 ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Parcel Daily has no courier for postcode {postcode}. Check the address.
+              </p>
+            ) : (
+              <>
+                {quoteError && (
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <span>Couldn’t load live prices. Parcel Daily will price the courier you pick.</span>
+                    <button
+                      type="button"
+                      onClick={() => retryQuote()}
+                      className="shrink-0 font-medium underline-offset-2 hover:underline"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+                <CourierPicker
+                  couriers={couriers}
+                  value={courier}
+                  onChange={setCourier}
+                  disabled={isLoading}
+                  formatPrice={formatCurrency}
+                />
+              </>
+            )}
 
             <div
               role="radiogroup"

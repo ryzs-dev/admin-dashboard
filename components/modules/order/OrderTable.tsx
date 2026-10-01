@@ -8,7 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -35,7 +37,15 @@ import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
 import { cn } from '@/lib/utils';
 import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
-import { COURIER_SERVICES } from '../parcel-daily/constants';
+import { BOOKABLE_COURIERS } from '../parcel-daily/couriers';
+
+// Ninja Van serves both countries; list it once.
+const BULK_COURIERS = {
+  Malaysia: BOOKABLE_COURIERS.Malaysia,
+  Singapore: BOOKABLE_COURIERS.Singapore.filter(
+    (c) => !BOOKABLE_COURIERS.Malaysia.some((m) => m.code === c.code)
+  ),
+};
 import OrderFormDialog from './OrderFormDialog';
 import { useProducts } from '@/hooks/useProducts';
 import { OrderInput } from '@/types/order';
@@ -640,13 +650,16 @@ export function OrderTable() {
                   <SelectValue placeholder="Courier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map(
-                    (courier) => (
-                      <SelectItem key={courier.value} value={courier.value}>
-                        {courier.label}
-                      </SelectItem>
-                    )
-                  )}
+                  {(['Malaysia', 'Singapore'] as const).map((region) => (
+                    <SelectGroup key={region}>
+                      <SelectLabel>{region}</SelectLabel>
+                      {BULK_COURIERS[region].map((courier) => (
+                        <SelectItem key={courier.code} value={courier.code}>
+                          {courier.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
                 </SelectContent>
               </Select>
               <Select

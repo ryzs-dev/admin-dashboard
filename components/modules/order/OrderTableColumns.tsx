@@ -29,7 +29,7 @@ import {
 import { UUID } from 'crypto';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
-import { COURIER_SERVICES } from '../parcel-daily/constants';
+import { courierLabel } from '../parcel-daily/couriers';
 import { formatPhone } from '@/lib/utils/phone';
 
 interface ColumnActions {
@@ -119,13 +119,6 @@ export function getOrderShipmentStatus(order: {
 function getStatusStyle(order: Order) {
   return getOrderShipmentStatus(order);
 }
-
-const COURIER_LABELS: Record<string, string> = Object.fromEntries(
-  [...COURIER_SERVICES.Malaysia, ...COURIER_SERVICES.Singapore].map((c) => [
-    c.value,
-    c.label,
-  ])
-);
 
 function initials(name?: string) {
   const parts = (name ?? '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/);
@@ -320,7 +313,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
             <Copy className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
           <p className="truncate text-xs text-muted-foreground">
-            {(courier && COURIER_LABELS[courier]) || courier || '—'}
+            {courierLabel(courier) || '—'}
             {tracking.message_status === 'sent' && ' · Tracking sent'}
           </p>
         </div>
