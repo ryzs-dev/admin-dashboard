@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
-import { Field, MoneyInput, QuantityStepper } from '@/components/forms/Field';
+import { MoneyInput, QuantityStepper } from '@/components/forms/Field';
+import { cn } from '@/lib/utils';
 import { useProducts } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/utils/currency';
 import { UpdateLineItemsInput } from '@/types/order';
@@ -80,6 +81,24 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
   const totalNumber = Number(total);
   const totalInvalid = !(totalNumber >= 0) || total.trim() === '';
   const units = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const adjustment = round2(subtotal - totalNumber);
+
+  const itemsKey = (list: Line[]) =>
+    list
+      .map((line) => `${line.product.id}:${line.quantity}`)
+      .sort()
+      .join(',');
+  const descriptionChanged = itemsKey(lines) !== itemsKey(originalLines);
+  const shipmentDescription = descriptionChanged
+    ? lines
+        .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
+        .join('')
+    : (order.shipment_description ?? '');
+  const tracking = order.order_tracking as
+    | Order['order_tracking']
+    | Order['order_tracking'][]
+    | undefined;
+  const bookedParcel = Array.isArray(tracking) ? tracking[0] : tracking;
 
   const handleSave = async () => {
     setSaving(true);
@@ -185,33 +204,82 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
         )}
       </FormSection>
 
-      <div className="grid gap-4 rounded-lg bg-muted/40 p-4 sm:grid-cols-2 sm:items-end">
-        <div className="text-sm">
-          <p className="text-muted-foreground">Subtotal at list price</p>
-          <p className="mt-0.5 text-base font-medium tabular-nums">{formatCurrency(subtotal)}</p>
-        </div>
-        <Field
-          label="Order total"
-          htmlFor="order-total"
-          error={totalInvalid ? 'Enter the amount the customer paid.' : undefined}
-          hint={
-            !totalTouched && originalDiscount > 0
-              ? `Keeps the ${formatCurrency(originalDiscount)} bundle discount`
-              : undefined
-          }
-        >
+      <section aria-label="Order summary" className="rounded-xl border">
+        <dl className="space-y-2 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">
+              Subtotal
+              <span className="ml-1 text-xs">
+                ({units} {units === 1 ? 'unit' : 'units'} at list price)
+              </span>
+            </dt>
+            <dd className="tabular-nums">{formatCurrency(subtotal)}</dd>
+          </div>
+          {!totalInvalid && Math.abs(adjustment) >= 0.01 && (
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">
+                {adjustment > 0 ? 'Bundle discount' : 'Above list price'}
+              </dt>
+              <dd
+                className={cn(
+                  'tabular-nums',
+                  adjustment > 0 ? 'text-emerald-700' : 'text-amber-700'
+                )}
+              >
+                {adjustment > 0 ? '−' : '+'}
+                {formatCurrency(Math.abs(adjustment))}
+              </dd>
+            </div>
+          )}
+          {shipmentDescription && (
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">Parcel description</dt>
+              <dd className="font-mono text-xs">{shipmentDescription}</dd>
+            </div>
+          )}
+        </dl>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/40 px-4 py-3">
+          <div>
+            <label htmlFor="order-total" className="text-sm font-semibold">
+              Order total
+            </label>
+            <p
+              className={cn(
+                'text-xs',
+                totalInvalid ? 'text-red-600' : 'text-muted-foreground'
+              )}
+            >
+              {totalInvalid
+                ? 'Enter the amount the customer paid.'
+                : totalTouched
+                  ? 'Set manually'
+                  : originalDiscount > 0
+                    ? 'Keeps the original bundle discount'
+                    : 'Follows list prices'}
+            </p>
+          </div>
           <MoneyInput
             id="order-total"
             value={total}
             invalid={totalInvalid}
             disabled={saving}
+            className="w-40 [&_input]:text-right [&_input]:text-base [&_input]:font-semibold"
             onChange={(value) => {
               setTotal(value);
               setTotalTouched(true);
             }}
           />
-        </Field>
-      </div>
+        </div>
+      </section>
+
+      {bookedParcel && descriptionChanged && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          A parcel is already booked for this order
+          {bookedParcel.tracking_number ? ` (${bookedParcel.tracking_number})` : ''}. Its label
+          keeps “{order.shipment_description}” because Parcel Daily can’t edit a booked parcel.
+        </p>
+      )}
     </FormDialog>
   );
 };

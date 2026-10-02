@@ -378,18 +378,31 @@ export default function OrderFormDialog({
     createdAddress.current = null;
   }, [isOpen, initialData]);
 
-  const shipmentDescription = lines
-    .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
-    .join('');
+  const itemsKey = (list: { product_id: string; quantity: number }[]) =>
+    list
+      .map((item) => `${item.product_id}:${item.quantity}`)
+      .sort()
+      .join(',');
+  const descriptionChanged =
+    !!initialData &&
+    itemsKey(lines.map((l) => ({ product_id: l.product.id, quantity: l.quantity }))) !==
+      itemsKey(
+        (initialData.order_items ?? []).map((i) => ({
+          product_id: String(i.product_id),
+          quantity: i.quantity,
+        }))
+      );
+  const shipmentDescription =
+    initialData && !descriptionChanged
+      ? (initialData.shipment_description ?? '')
+      : lines
+          .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
+          .join('');
   const tracking = initialData?.order_tracking as
     | Order['order_tracking']
     | Order['order_tracking'][]
     | undefined;
   const bookedTracking = Array.isArray(tracking) ? tracking[0] : tracking;
-  const descriptionChanged =
-    !!initialData &&
-    shipmentDescription.replace(/\s+/g, '') !==
-      String(initialData.shipment_description ?? '').replace(/\s+/g, '');
 
   const subtotal = lines.reduce(
     (sum, line) => sum + Number(line.product.price ?? 0) * line.quantity,
