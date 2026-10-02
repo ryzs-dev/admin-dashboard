@@ -378,6 +378,19 @@ export default function OrderFormDialog({
     createdAddress.current = null;
   }, [isOpen, initialData]);
 
+  const shipmentDescription = lines
+    .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
+    .join('');
+  const tracking = initialData?.order_tracking as
+    | Order['order_tracking']
+    | Order['order_tracking'][]
+    | undefined;
+  const bookedTracking = Array.isArray(tracking) ? tracking[0] : tracking;
+  const descriptionChanged =
+    !!initialData &&
+    shipmentDescription.replace(/\s+/g, '') !==
+      String(initialData.shipment_description ?? '').replace(/\s+/g, '');
+
   const subtotal = lines.reduce(
     (sum, line) => sum + Number(line.product.price ?? 0) * line.quantity,
     0
@@ -454,7 +467,7 @@ export default function OrderFormDialog({
         payment_method: paymentMethod.trim(),
       });
     } catch (err) {
-      setError(errorMessage(err, 'Couldn’t create the order. Please try again.'));
+      setError(errorMessage(err, initialData ? 'Couldn’t save the order. Please try again.' : 'Couldn’t create the order. Please try again.'));
     }
   };
 
@@ -555,6 +568,23 @@ export default function OrderFormDialog({
               ))}
             </SelectContent>
           </Select>
+        )}
+
+        {lines.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">Parcel description</span>
+              <span className="font-mono text-xs">{shipmentDescription || '—'}</span>
+            </div>
+            {bookedTracking && descriptionChanged && (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                A parcel is already booked for this order
+                {bookedTracking.tracking_number ? ` (${bookedTracking.tracking_number})` : ''}. Its
+                label keeps “{initialData?.shipment_description}” because Parcel Daily can’t edit a
+                booked parcel.
+              </p>
+            )}
+          </div>
         )}
       </FormSection>
 
