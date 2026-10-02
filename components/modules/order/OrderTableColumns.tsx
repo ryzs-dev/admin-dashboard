@@ -243,24 +243,21 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     id: 'items',
     header: 'Items',
     cell: ({ row }) => {
-      const items = row.original.order_items ?? [];
-      if (!items.length) {
+      const code = row.original.shipment_description?.trim();
+      if (!code) {
         return <span className="text-sm text-muted-foreground">—</span>;
       }
-
-      const labels = items.map(
+      const names = (row.original.order_items ?? []).map(
         (item) => `${item.products?.name ?? 'Item'} × ${item.quantity}`
       );
 
       return (
-        <div className="flex min-w-0 items-center gap-1.5" title={labels.join('\n')}>
-          <span className="truncate text-sm text-gray-700">{labels[0]}</span>
-          {labels.length > 1 && (
-            <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-              +{labels.length - 1}
-            </span>
-          )}
-        </div>
+        <span
+          title={names.join('\n') || undefined}
+          className="block truncate font-mono text-sm text-gray-700"
+        >
+          {code}
+        </span>
       );
     },
   },
