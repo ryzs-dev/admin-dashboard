@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Trash2 } from 'lucide-react';
+import { Package, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { UUID } from 'crypto';
 import {
   Select,
@@ -13,6 +13,8 @@ import {
 import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
 import { MoneyInput, QuantityStepper } from '@/components/forms/Field';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { buildShipmentDescription, giftCodes } from './shipmentDescription';
 import { useProducts } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/utils/currency';
 import { UpdateLineItemsInput } from '@/types/order';
@@ -38,6 +40,7 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
   const [lines, setLines] = useState<Line[]>([]);
   const [total, setTotal] = useState('');
   const [totalTouched, setTotalTouched] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +61,7 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
     setLines(originalLines);
     setTotal(String(Number(order.total_amount) || 0));
     setTotalTouched(false);
+    setDescriptionDraft(null);
     setError(null);
   }, [isOpen, originalLines, order.total_amount]);
 
@@ -83,17 +87,25 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
   const units = lines.reduce((sum, line) => sum + line.quantity, 0);
   const adjustment = round2(subtotal - totalNumber);
 
+  const productCodes = useMemo(
+    () => ((products ?? []) as Product[]).map((p) => p.code ?? '').filter(Boolean),
+    [products]
+  );
   const itemsKey = (list: Line[]) =>
     list
       .map((line) => `${line.product.id}:${line.quantity}`)
       .sort()
       .join(',');
-  const descriptionChanged = itemsKey(lines) !== itemsKey(originalLines);
-  const shipmentDescription = descriptionChanged
-    ? lines
-        .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
-        .join('')
-    : (order.shipment_description ?? '');
+  const itemsChanged = itemsKey(lines) !== itemsKey(originalLines);
+  const storedDescription = order.shipment_description ?? '';
+  const shipmentDescription =
+    descriptionDraft ??
+    (itemsChanged
+      ? buildShipmentDescription(lines, storedDescription, productCodes)
+      : storedDescription);
+  const gifts = giftCodes(shipmentDescription, productCodes);
+  const descriptionChanged =
+    shipmentDescription.replace(/\s+/g, '') !== storedDescription.replace(/\s+/g, '');
   const tracking = order.order_tracking as
     | Order['order_tracking']
     | Order['order_tracking'][]
@@ -110,6 +122,9 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
           quantity: line.quantity,
         })),
         total_amount: round2(totalNumber),
+        ...(descriptionDraft !== null && {
+          shipment_description: descriptionDraft.replace(/\s+/g, ''),
+        }),
       });
       onOpenChange(false);
     } catch (err) {
@@ -231,12 +246,39 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
               </dd>
             </div>
           )}
-          {shipmentDescription && (
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-muted-foreground">Parcel description</dt>
-              <dd className="font-mono text-xs">{shipmentDescription}</dd>
-            </div>
-          )}
+          <div className="flex items-start justify-between gap-4 pt-1">
+            <dt className="pt-1.5">
+              <label htmlFor="shipment-description" className="text-muted-foreground">
+                Parcel description
+              </label>
+              <p className="text-xs text-muted-foreground">
+                {gifts.length
+                  ? `Includes free ${gifts.length === 1 ? 'gift' : 'gifts'} ${gifts.join(', ')}`
+                  : 'Add gift codes here, e.g. 1a'}
+              </p>
+            </dt>
+            <dd className="flex items-center gap-1">
+              <Input
+                id="shipment-description"
+                value={shipmentDescription}
+                disabled={saving}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                className="h-8 w-44 text-right font-mono text-xs"
+              />
+              {descriptionDraft !== null && (
+                <button
+                  type="button"
+                  aria-label="Reset parcel description"
+                  title="Rebuild from items"
+                  disabled={saving}
+                  onClick={() => setDescriptionDraft(null)}
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </dd>
+          </div>
         </dl>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/40 px-4 py-3">

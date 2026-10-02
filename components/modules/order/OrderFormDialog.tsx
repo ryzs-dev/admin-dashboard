@@ -31,6 +31,7 @@ import { OrderInput, OrderItemsInput } from '@/types/order';
 import { Customer } from '../customer/types';
 import { Product } from '../products/types';
 import { Order } from './types';
+import { buildShipmentDescription } from './shipmentDescription';
 import NewCustomerInline from './NewCustomerInline';
 
 type OrderFormDialogProps = {
@@ -395,9 +396,11 @@ export default function OrderFormDialog({
   const shipmentDescription =
     initialData && !descriptionChanged
       ? (initialData.shipment_description ?? '')
-      : lines
-          .map((line) => (line.product.code ? `${line.quantity}${line.product.code.trim()}` : ''))
-          .join('');
+      : buildShipmentDescription(
+          lines,
+          initialData?.shipment_description,
+          (products ?? []).map((p) => p.code ?? '').filter(Boolean)
+        );
   const tracking = initialData?.order_tracking as
     | Order['order_tracking']
     | Order['order_tracking'][]
