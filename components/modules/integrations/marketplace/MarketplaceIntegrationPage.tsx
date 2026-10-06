@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ExternalLink,
+  FileSpreadsheet,
   Loader2,
   LogIn,
   RefreshCw,
@@ -27,12 +28,13 @@ import { errorMessage } from '@/components/forms/FormDialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMarketplaceOrders, useMarketplaces } from '@/hooks/useMarketplaces';
+import { useMarketplaceOrders, useMarketplaces, useSheetSync } from '@/hooks/useMarketplaces';
 import {
   disconnectMarketplaceShop,
   Marketplace,
   MarketplaceConnection,
   marketplaceConnectUrl,
+  runSheetSync,
   syncMarketplaceShop,
 } from '@/lib/api/marketplaces';
 import { cn } from '@/lib/utils';
@@ -65,6 +67,99 @@ function SetupNotice({ title, children }: { title: string; children: React.React
         <div className="mt-1 text-amber-800">{children}</div>
       </div>
     </div>
+  );
+}
+
+const ROW_COLOURS: Record<Marketplace, { label: string; swatch: string }> = {
+  shopee: { label: 'Orange', swatch: '#ff9900' },
+  lazada: { label: 'Dark-blue', swatch: '#4a86e8' },
+};
+
+function SheetSyncCard({ platform }: { platform: Marketplace }) {
+  const { sync, isLoading, isError, refresh } = useSheetSync();
+  const [syncing, setSyncing] = useState(false);
+  const colour = ROW_COLOURS[platform];
+
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const result = await runSheetSync();
+      const changes = result.created + result.updated + result.removed;
+      toast.success(
+        changes
+          ? `Synced: ${result.created} new, ${result.updated} updated, ${result.removed} removed`
+          : 'Already up to date'
+      );
+    } catch (err) {
+      toast.error(errorMessage(err, 'Couldn’t read the order sheet. Please try again.'));
+    } finally {
+      setSyncing(false);
+      refresh();
+    }
+  };
+
+  return (
+    <Card className="gap-0 py-0">
+      <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-5">
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-gray-100 p-2">
+            <FileSpreadsheet className="h-4 w-4 text-gray-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold">Order sheet</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              <span
+                className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm align-middle"
+                style={{ backgroundColor: colour.swatch }}
+              />
+              {colour.label} rows in the LUNAA Order form come in as {NAMES[platform]} orders
+              every 15 minutes.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/orders?source=${platform}`}>View orders</Link>
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={syncNow} disabled={syncing || sync?.running}>
+            <RefreshCw className={cn('h-3.5 w-3.5', (syncing || sync?.running) && 'animate-spin')} />
+            {syncing || sync?.running ? 'Syncing…' : 'Sync now'}
+          </Button>
+        </div>
+      </div>
+      <dl className="mt-4 divide-y border-t text-sm">
+        {isLoading ? (
+          <div className="p-5">
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isError || !sync ? (
+          <p className="px-5 py-4 text-red-600">Couldn’t load the sync status.</p>
+        ) : (
+          <>
+            <div className="grid gap-1 px-5 py-3 sm:grid-cols-[180px_1fr] sm:gap-4">
+              <dt className="text-muted-foreground">Orders imported</dt>
+              <dd className="tabular-nums">{sync.counts[platform].toLocaleString()}</dd>
+            </div>
+            <div className="grid gap-1 px-5 py-3 sm:grid-cols-[180px_1fr] sm:gap-4">
+              <dt className="text-muted-foreground">Last synced</dt>
+              <dd>
+                {sync.lastError ? (
+                  <span className="text-red-600">Failed: {sync.lastError.message}</span>
+                ) : sync.lastResult ? (
+                  formatFriendlyDateTime(sync.lastResult.finishedAt)
+                ) : (
+                  'Waiting for the first sync'
+                )}
+              </dd>
+            </div>
+            <div className="grid gap-1 px-5 py-3 sm:grid-cols-[180px_1fr] sm:gap-4">
+              <dt className="text-muted-foreground">Tabs read</dt>
+              <dd>{sync.tabs.join(', ')}</dd>
+            </div>
+          </>
+        )}
+      </dl>
+    </Card>
   );
 }
 
@@ -346,13 +441,8 @@ export function MarketplaceIntegrationPage({ platform }: { platform: Marketplace
           <Skeleton className="h-40 w-full rounded-xl" />
         ) : (
           <>
-            {!configured && (
-              <SetupNotice title={`${NAMES[platform]} app keys aren’t set up yet`}>
-                {platform === 'shopee'
-                  ? 'Register an app on the Shopee Open Platform, then add its Partner ID and Partner Key to the server. Sign-in is available once they’re in place.'
-                  : 'Register an app on the Lazada Open Platform, then add its App Key and App Secret to the server. Sign-in is available once they’re in place.'}
-              </SetupNotice>
-            )}
+            <SheetSyncCard platform={platform} />
+
             {data.setupRequired && (
               <SetupNotice title="Database setup needed">
                 The tables that store connected shops and their orders haven’t been created yet.
@@ -366,9 +456,14 @@ export function MarketplaceIntegrationPage({ platform }: { platform: Marketplace
                     <Store className="h-4 w-4 text-gray-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold">Connected shops</h2>
+                    <h2 className="text-sm font-semibold">
+                      Direct connection{' '}
+                      <span className="font-normal text-muted-foreground">· optional</span>
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                      Sign in with the {NAMES[platform]} seller account to allow access to its orders.
+                      {configured
+                        ? `Sign in with the ${NAMES[platform]} seller account to pull orders straight from ${NAMES[platform]}.`
+                        : `Pulls orders straight from ${NAMES[platform]} instead of the sheet. Needs a ${NAMES[platform]} Open Platform app, so it’s off for now.`}
                     </p>
                   </div>
                 </div>

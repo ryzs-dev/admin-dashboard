@@ -17,7 +17,19 @@ export interface Order {
   created_at: string;
   updated_at: string;
   shipment_description?: string;
+  source?: OrderSource;
+  buyer_name?: string | null;
 }
+
+export type OrderSource = 'whatsapp' | 'shopee' | 'lazada';
+
+export const MARKETPLACE_LABELS: Partial<Record<OrderSource, string>> = {
+  shopee: 'Shopee',
+  lazada: 'Lazada',
+};
+
+export const isMarketplaceOrder = (order: { source?: string | null }) =>
+  order.source === 'shopee' || order.source === 'lazada';
 
 export interface OrderItems {
   id: UUID;

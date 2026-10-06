@@ -106,6 +106,7 @@ export function OrderTable() {
   const [location, setLocation] = useState(
     () => searchParams.get('location') || 'all'
   );
+  const [source, setSource] = useState(() => searchParams.get('source') || 'all');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
@@ -144,11 +145,11 @@ export function OrderTable() {
       return;
     }
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [search, status, location, dateRange, sorting]);
+  }, [search, status, location, source, dateRange, sorting]);
 
   useEffect(() => {
     setRowSelection({});
-  }, [pagination, search, status, location, dateRange, sorting]);
+  }, [pagination, search, status, location, source, dateRange, sorting]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -156,8 +157,9 @@ export function OrderTable() {
     params.set('pageSize', String(pagination.pageSize));
     if (status !== 'all') params.set('status', status);
     if (location !== 'all') params.set('location', location);
+    if (source !== 'all') params.set('source', source);
     router.replace(`/orders?${params.toString()}`, { scroll: false });
-  }, [pagination, status, location, router]);
+  }, [pagination, status, location, source, router]);
 
   const refreshOrders = useCallback(async () => {
     await Promise.all([
@@ -173,7 +175,7 @@ export function OrderTable() {
   });
 
   const { data, isLoading, isFetching } = useQuery<OrdersResponse, Error>({
-    queryKey: ['orders', pagination, sorting, status, location, search, dateRange],
+    queryKey: ['orders', pagination, sorting, status, location, source, search, dateRange],
     queryFn: () =>
       fetchOrders({
         pagination,
@@ -182,6 +184,7 @@ export function OrderTable() {
           search,
           status,
           location,
+          source,
           dateFrom: dateRange.from ? new Date(dateRange.from) : undefined,
           dateTo: dateRange.to ? new Date(dateRange.to) : undefined,
         },
@@ -360,7 +363,7 @@ export function OrderTable() {
   };
 
   const hasFilters =
-    !!searchInput || !!dateRange.from || location !== 'all';
+    !!searchInput || !!dateRange.from || location !== 'all' || source !== 'all';
   const firstRow = total === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
   const lastRow = Math.min((pagination.pageIndex + 1) * pagination.pageSize, total);
 
@@ -460,6 +463,18 @@ export function OrderTable() {
               </SelectContent>
             </Select>
 
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="h-10 lg:w-[160px]" aria-label="Channel">
+                <SelectValue placeholder="Channel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All channels</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="shopee">Shopee</SelectItem>
+                <SelectItem value="lazada">Lazada</SelectItem>
+              </SelectContent>
+            </Select>
+
             {hasFilters && (
               <Button
                 variant="ghost"
@@ -469,6 +484,7 @@ export function OrderTable() {
                   setSearchInput('');
                   setDateRange({ from: '', to: '' });
                   setLocation('all');
+                  setSource('all');
                 }}
               >
                 <X className="h-4 w-4" />

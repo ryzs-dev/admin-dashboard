@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMarketplaces } from '@/hooks/useMarketplaces';
+import { useMarketplaces, useSheetSync } from '@/hooks/useMarketplaces';
 import { useParcelDailyAccount } from '@/hooks/useParcelDaily';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationId } from './registry';
@@ -11,17 +11,18 @@ export type IntegrationStatus = 'connected' | 'attention' | 'disconnected' | 'er
 export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
   const parcelDaily = useParcelDailyAccount();
   const marketplaces = useMarketplaces();
+  const sheetSync = useSheetSync();
   switch (id) {
     case 'parcel-daily':
       if (parcelDaily.isLoading) return 'checking';
       return parcelDaily.isError || !parcelDaily.account ? 'error' : 'connected';
     case 'shopee':
     case 'lazada': {
-      if (marketplaces.isLoading) return 'checking';
-      if (marketplaces.isError) return 'error';
+      if (marketplaces.isLoading || sheetSync.isLoading) return 'checking';
       const shops = marketplaces.status?.connections.filter((c) => c.platform === id) ?? [];
-      if (!shops.length) return 'disconnected';
-      return shops.some((shop) => shop.lastSyncError) ? 'attention' : 'connected';
+      if (sheetSync.sync?.lastError || shops.some((shop) => shop.lastSyncError)) return 'attention';
+      if (shops.length || (sheetSync.sync?.counts[id] ?? 0) > 0) return 'connected';
+      return sheetSync.isError && marketplaces.isError ? 'error' : 'disconnected';
     }
   }
 }

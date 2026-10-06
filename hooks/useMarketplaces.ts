@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { getMarketplaceOrders, getMarketplaces, Marketplace } from '@/lib/api/marketplaces';
+import { getMarketplaceOrders, getMarketplaces, getSheetSync, Marketplace } from '@/lib/api/marketplaces';
 
 export function useMarketplaces() {
   const { data, error, isLoading, mutate } = useSWR('marketplaces', getMarketplaces);
@@ -18,4 +18,11 @@ export function useMarketplaceOrders(platform: Marketplace, page: number, pageSi
     isError: !!error,
     refresh: mutate,
   };
+}
+
+export function useSheetSync() {
+  const { data, error, isLoading, mutate } = useSWR('marketplace-sheet-sync', getSheetSync, {
+    refreshInterval: 60_000,
+  });
+  return { sync: data, isLoading, isError: !!error, refresh: mutate };
 }

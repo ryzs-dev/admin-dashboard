@@ -49,6 +49,7 @@ export interface Query {
   tracking?: string;
   location?: string;
   status?: string | null;
+  source?: string;
 }
 
 export type FilterType = 'all' | 'today' | 'week' | 'month';

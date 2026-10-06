@@ -71,3 +71,28 @@ export function marketplaceConnectUrl(platform: Marketplace) {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   return `${API_BASE_URL}/api/marketplaces/${platform}/connect?return=${encodeURIComponent(origin)}`;
 }
+
+export type SheetSyncStatus = {
+  running: boolean;
+  tabs: string[];
+  counts: Record<Marketplace, number>;
+  lastResult: {
+    tabs: string[];
+    created: number;
+    updated: number;
+    removed: number;
+    skipped: number;
+    finishedAt: string;
+  } | null;
+  lastError: { message: string; at: string } | null;
+};
+
+export async function getSheetSync() {
+  const { data } = await api.get<SheetSyncStatus>('/sheet-sync');
+  return data;
+}
+
+export async function runSheetSync() {
+  const { data } = await api.post<NonNullable<SheetSyncStatus['lastResult']>>('/sheet-sync');
+  return data;
+}

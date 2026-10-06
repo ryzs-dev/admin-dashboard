@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Order } from './types';
+import { isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
 import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
 import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
 import { useRouter } from 'next/navigation';
@@ -112,6 +112,9 @@ const OrderTemplate = ({ order }: { order: Order }) => {
   const hasTracking = Boolean(tracking);
 
   const shipment = getOrderShipmentStatus(order);
+  const marketplace = isMarketplaceOrder(order)
+    ? MARKETPLACE_LABELS[order.source!]
+    : null;
   const ShipmentIcon = shipment.icon;
   const placedOn = formatOrderDate(order.order_date || order.created_at);
   const description = [
@@ -169,7 +172,12 @@ const OrderTemplate = ({ order }: { order: Order }) => {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {!hasTracking ? (
+              {marketplace ? (
+                <p className="max-w-xs text-sm text-muted-foreground">
+                  Synced from the order sheet. Edit or remove it there and the
+                  change shows up here within 15 minutes.
+                </p>
+              ) : !hasTracking ? (
                 <Button
                   onClick={() => setShipmentDialogOpen(true)}
                   className="gap-1.5"
@@ -187,22 +195,26 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   Send tracking
                 </Button>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setEditOrder(true)}
-                className="gap-1.5 bg-background"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Delete order"
-                onClick={() => setOpen(true)}
-              >
-                <Trash className="h-4 w-4 text-red-600" />
-              </Button>
+              {!marketplace && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditOrder(true)}
+                    className="gap-1.5 bg-background"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Delete order"
+                    onClick={() => setOpen(true)}
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -322,40 +334,59 @@ const OrderTemplate = ({ order }: { order: Order }) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  Customer
+                  {marketplace ? `${marketplace} buyer` : 'Customer'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Link
-                  href={`/customers/${order.customers?.id}`}
-                  className="flex items-center gap-3 rounded-lg transition-colors hover:text-primary"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                    {initials(order.customers?.name)}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {order.customers?.name || 'Unknown'}
+                {marketplace ? (
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                      {initials(order.buyer_name ?? undefined)}
                     </span>
-                    <span className="block truncate text-sm text-muted-foreground">
-                      View profile
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">
+                        {order.buyer_name || 'Unknown buyer'}
+                      </span>
+                      <span className="block text-sm text-muted-foreground">
+                        From the order sheet. Contact the buyer in {marketplace}
+                        .
+                      </span>
                     </span>
-                  </span>
-                </Link>
-                <dl className="mt-4 space-y-3 border-t pt-4 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Phone</dt>
-                    <dd className="text-right">
-                      {formatPhone(order.customers?.phone_number) || '—'}
-                    </dd>
                   </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Email</dt>
-                    <dd className="max-w-[14rem] truncate text-right">
-                      {order.customers?.email || '—'}
-                    </dd>
-                  </div>
-                </dl>
+                ) : (
+                  <>
+                    <Link
+                      href={`/customers/${order.customers?.id}`}
+                      className="flex items-center gap-3 rounded-lg transition-colors hover:text-primary"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                        {initials(order.customers?.name)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {order.customers?.name || 'Unknown'}
+                        </span>
+                        <span className="block truncate text-sm text-muted-foreground">
+                          View profile
+                        </span>
+                      </span>
+                    </Link>
+                    <dl className="mt-4 space-y-3 border-t pt-4 text-sm">
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Phone</dt>
+                        <dd className="text-right">
+                          {formatPhone(order.customers?.phone_number) || '—'}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Email</dt>
+                        <dd className="max-w-[14rem] truncate text-right">
+                          {order.customers?.email || '—'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </>
+                )}
               </CardContent>
             </Card>
 

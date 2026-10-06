@@ -15,10 +15,11 @@ import {
   MoreHorizontal,
   PackageOpen,
   Send,
+  ShoppingBag,
   Trash2,
   Truck,
 } from 'lucide-react';
-import { Order } from './types';
+import { isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -99,9 +100,23 @@ const STATUS_STYLES = {
   },
 } as const;
 
+const MARKETPLACE_STYLES = {
+  shopee: 'bg-orange-50 text-orange-700 ring-orange-600/20',
+  lazada: 'bg-blue-50 text-blue-700 ring-blue-600/20',
+};
+
 export function getOrderShipmentStatus(order: {
+  source?: string | null;
   order_tracking?: { status?: string | null } | { status?: string | null }[] | null;
 }) {
+  if (order.source === 'shopee' || order.source === 'lazada') {
+    return {
+      label: `Ships via ${MARKETPLACE_LABELS[order.source]}`,
+      className: MARKETPLACE_STYLES[order.source],
+      icon: ShoppingBag,
+      raw: undefined,
+    };
+  }
   const tracking = Array.isArray(order.order_tracking)
     ? order.order_tracking[0]
     : order.order_tracking ?? undefined;
@@ -221,18 +236,31 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
     header: 'Customer',
     cell: ({ row }) => {
       const customer = row.original.customers;
+      const marketplace = isMarketplaceOrder(row.original)
+        ? MARKETPLACE_LABELS[row.original.source!]
+        : null;
+      const name = customer?.name || row.original.buyer_name;
 
       return (
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#662d91]/[0.08] text-xs font-semibold text-[#662d91]">
-            {initials(customer?.name)}
+            {initials(name ?? undefined)}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-gray-900">
-              {customer?.name || 'Guest customer'}
+              {name || 'Guest customer'}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {formatPhone(customer?.phone_number) || '—'}
+            <p
+              className={cn(
+                'truncate text-xs',
+                row.original.source === 'shopee'
+                  ? 'text-orange-600'
+                  : row.original.source === 'lazada'
+                    ? 'text-blue-600'
+                    : 'text-muted-foreground'
+              )}
+            >
+              {marketplace ? `${marketplace} buyer` : formatPhone(customer?.phone_number) || '—'}
             </p>
           </div>
         </div>

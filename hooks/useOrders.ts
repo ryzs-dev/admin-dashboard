@@ -26,6 +26,7 @@ interface FetchOrdersParams {
     status?: string;
     tracking?: string;
     location?: string;
+    source?: string;
     dateFrom?: Date;
     dateTo?: Date;
   };
@@ -66,6 +67,7 @@ export function useOrders() {
         status: filters.status,
         tracking: filters.tracking,
         location: filters.location,
+        source: filters.source,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
         sortBy: sorting?.[0]?.id,
