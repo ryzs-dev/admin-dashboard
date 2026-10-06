@@ -159,7 +159,42 @@ function SheetSyncCard({ platform }: { platform: Marketplace }) {
           </>
         )}
       </dl>
+      <UnreadRows platform={platform} issues={sync?.issues ?? []} />
     </Card>
+  );
+}
+
+function UnreadRows({
+  platform,
+  issues,
+}: {
+  platform: Marketplace;
+  issues: { tab: string; row_number: number; platform: string | null; buyer_name: string | null; reason: string }[];
+}) {
+  const rows = issues.filter((issue) => issue.platform === platform);
+  if (!rows.length) return null;
+  return (
+    <div className="border-t">
+      <div className="px-5 pt-4">
+        <h3 className="text-sm font-semibold">Couldn’t read {rows.length} {rows.length === 1 ? 'row' : 'rows'}</h3>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Fix these on the order sheet and the next sync will pick them up.
+        </p>
+      </div>
+      <ul className="mt-2 divide-y text-sm">
+        {rows.map((issue) => (
+          <li key={`${issue.tab}-${issue.row_number}`} className="flex items-start justify-between gap-4 px-5 py-3">
+            <span>
+              <span className="font-medium">{issue.buyer_name || 'No name'}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{issue.reason}</span>
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {issue.tab} · row {issue.row_number}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

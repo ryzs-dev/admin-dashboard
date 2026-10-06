@@ -11,6 +11,8 @@ import {
   ChevronDown,
   MessageCircle,
   Blocks,
+  Banknote,
+  Clock,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -67,6 +69,8 @@ function CRMSidebar() {
     },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
+    { id: 'cod', label: 'COD', icon: Banknote, href: '/cod' },
+    { id: 'follow-ups', label: 'Follow-ups', icon: Clock, href: '/follow-ups' },
     {
       id: 'inbox',
       label: 'Inbox',

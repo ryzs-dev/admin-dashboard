@@ -80,6 +80,48 @@ export async function updateCustomer(
   }
 }
 
+export type FollowUp = {
+  id: UUID;
+  name: string | null;
+  phone_number: string;
+  last_order_date: string | null;
+  days_since: number | null;
+  total_purchase_count: number;
+  total_amount_spent: number;
+  last_order_id: UUID | null;
+  last_order_number: string | null;
+  last_items: string | null;
+};
+
+export async function getFollowUps(days: number, offset = 0, limit = 50) {
+  const { data } = await api.get<{ days: number; total: number; customers: FollowUp[] }>(
+    '/follow-ups',
+    { params: { days, offset, limit } }
+  );
+  return data;
+}
+
+export type DuplicateCustomer = {
+  id: UUID;
+  name: string | null;
+  phone_number: string;
+  total_purchase_count: number | null;
+  total_amount_spent: number | null;
+  created_at: string;
+};
+
+export async function getDuplicateCustomers() {
+  const { data } = await api.get<{ groups: { key: string; customers: DuplicateCustomer[] }[] }>(
+    '/duplicates'
+  );
+  return data.groups;
+}
+
+export async function mergeCustomers(keepId: UUID, mergeId: UUID) {
+  const { data } = await api.post('/merge', { keepId, mergeId });
+  return data;
+}
+
 export async function deleteCustomer(id: UUID) {
   const { data } = await api.delete(`/${id}`);
   return data;

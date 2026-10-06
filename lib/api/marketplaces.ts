@@ -85,6 +85,13 @@ export type SheetSyncStatus = {
     finishedAt: string;
   } | null;
   lastError: { message: string; at: string } | null;
+  issues: {
+    tab: string;
+    row_number: number;
+    platform: string | null;
+    buyer_name: string | null;
+    reason: string;
+  }[];
 };
 
 export async function getSheetSync() {

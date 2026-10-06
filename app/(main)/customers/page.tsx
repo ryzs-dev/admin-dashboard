@@ -9,6 +9,7 @@ import {
   CustomerTypeFilter,
   FilterType,
 } from '@/components/modules/customer/types';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +24,7 @@ import { useCustomerSummary } from '@/hooks/useCustomer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { Repeat, Search, UserPlus, Users } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const LIMIT = 25;
@@ -107,7 +109,11 @@ export default function CustomersPage() {
         <PageHeader
           title="Customers"
           description="See who buys again and how many times they have ordered."
-        />
+        >
+          <Button variant="outline" asChild>
+            <Link href="/customers/duplicates">Possible duplicates</Link>
+          </Button>
+        </PageHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <SummaryCard

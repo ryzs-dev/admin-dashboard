@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { CHART_COLORS, chartAxis, chartGrid, chartTooltip } from '@/lib/chartTheme';
 import { formatCurrency } from '@/lib/utils/currency';
 import {
@@ -31,6 +31,7 @@ import {
   TopProductsTable,
 } from '@/components/dashboard/ProductPerformance';
 import { ProductDeepDive } from '@/components/dashboard/ProductDeepDive';
+import { downloadMonthExport } from '@/lib/api/stats';
 import { getCurrentMonthKey, parseMonthKey } from '@/lib/utils/date';
 import { addMonths, format } from 'date-fns';
 
@@ -47,6 +48,7 @@ function findDefaultProductId(
 
 const CRMDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthKey());
+  const [exporting, setExporting] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const {
@@ -88,6 +90,22 @@ const CRMDashboard = () => {
           title="Dashboard"
           description="Sales, repeat orders and products for the month."
         >
+          <Button
+            variant="outline"
+            className="gap-1.5"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await downloadMonthExport(selectedMonth);
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? 'Preparing…' : 'Download'}
+          </Button>
           <div className="flex items-center rounded-lg border bg-card">
             <Button
               variant="ghost"

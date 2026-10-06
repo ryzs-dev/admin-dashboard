@@ -37,6 +37,19 @@ export async function getProductPerformance(month: string) {
   };
 }
 
+export async function downloadMonthExport(month: string) {
+  const { data } = await api.get<Blob>('/export', {
+    params: { month },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `lunaa-sales-${month}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function getProductMonthlyTrends(
   productId: string,
   month: string,

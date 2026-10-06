@@ -121,6 +121,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
     placedOn && `Placed ${placedOn}`,
     order.created_at && `Created ${formatFriendlyDateTime(order.created_at)}`,
     labelize(order.payment_method),
+    order.agent_name && `Taken by ${order.agent_name}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -166,6 +167,15 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   <ShipmentIcon className="h-3.5 w-3.5" />
                   {shipment.label}
                 </span>
+                {order.cod_status && (
+                  <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800 ring-1 ring-inset ring-sky-600/20">
+                    {order.cod_status === 'out'
+                      ? 'COD out'
+                      : order.cod_status === 'pending'
+                        ? 'COD payment pending'
+                        : 'COD collected'}
+                  </span>
+                )}
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 {description}

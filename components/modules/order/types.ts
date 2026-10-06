@@ -19,6 +19,8 @@ export interface Order {
   shipment_description?: string;
   source?: OrderSource;
   buyer_name?: string | null;
+  agent_name?: string | null;
+  cod_status?: 'out' | 'pending' | 'collected' | null;
 }
 
 export type OrderSource = 'whatsapp' | 'shopee' | 'lazada';
