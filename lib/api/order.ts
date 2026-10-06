@@ -133,31 +133,6 @@ export async function createOrderTrackingByOrderId(
   return data;
 }
 
-export type CodStatus = 'out' | 'pending' | 'collected';
-
-export type CodOrder = {
-  id: UUID;
-  order_number: string;
-  order_date: string;
-  total_amount: number;
-  shipment_description: string | null;
-  cod_status: CodStatus;
-  agent_name: string | null;
-  customers: { id: UUID; name: string | null; phone_number: string | null } | null;
-};
-
-export async function getCodOrders(status: CodStatus) {
-  const { data } = await api.get<{ orders: CodOrder[]; counts: Record<CodStatus, number> }>('/cod', {
-    params: { status },
-  });
-  return data;
-}
-
-export async function markCodCollected(id: UUID) {
-  const { data } = await api.post(`/${id}/cod-collected`);
-  return data;
-}
-
 export async function getOrderTrackingByOrderId(id: UUID) {
   const { data } = await api.get(`/${id}/tracking`);
   return data;
