@@ -13,10 +13,13 @@ import { OrderTrackingInput } from './types';
 
 interface TrackingCardTemplateProps {
   orderId: UUID;
+  // Shopee/Lazada orders ship through the marketplace, not Parcel Daily.
+  marketplace?: string | null;
 }
 
 export default function TrackingCardTemplate({
   orderId,
+  marketplace,
 }: TrackingCardTemplateProps) {
   const { tracking, updateTracking, refreshOrderTracking } =
     useOrderTracking(orderId);
@@ -36,8 +39,13 @@ export default function TrackingCardTemplate({
             Shipping
           </CardTitle>
 
-          {tracking.length === 0 && (
-            <Button size="sm" variant="outline" className="gap-1.5 bg-background" onClick={() => setCreateOpen(true)}>
+          {tracking.length === 0 && !marketplace && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 bg-background"
+              onClick={() => setCreateOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               Add tracking manually
             </Button>
@@ -54,9 +62,13 @@ export default function TrackingCardTemplate({
         ) : (
           <div className="rounded-xl border border-dashed py-8 text-center">
             <Package className="mx-auto mb-2 h-7 w-7 text-muted-foreground/50" />
-            <p className="text-sm font-medium">Not shipped yet</p>
+            <p className="text-sm font-medium">
+              {marketplace ? `Shipped by ${marketplace}` : 'Not shipped yet'}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Create a shipment to get a tracking number.
+              {marketplace
+                ? `${marketplace} handles the courier and tracking. Check it in Seller Centre.`
+                : 'Create a shipment to get a tracking number.'}
             </p>
           </div>
         )}

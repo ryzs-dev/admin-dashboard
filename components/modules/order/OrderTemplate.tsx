@@ -302,7 +302,11 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <dt>
-                          {adjustment < 0 ? 'Bundle discount' : 'Adjustment'}
+                          {marketplace
+                            ? `Discounts & ${marketplace} fees`
+                            : adjustment < 0
+                              ? 'Bundle discount'
+                              : 'Adjustment'}
                         </dt>
                         <dd
                           className={cn(
@@ -326,7 +330,10 @@ const OrderTemplate = ({ order }: { order: Order }) => {
               </CardContent>
             </Card>
 
-            <TrackingCardTemplate orderId={order.id} />
+            <TrackingCardTemplate
+              orderId={order.id}
+              marketplace={marketplace}
+            />
           </div>
 
           <div className="space-y-6">
@@ -396,19 +403,21 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   Shipping address
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 text-muted-foreground"
-                  onClick={() => setEditAddressOpen(true)}
-                >
-                  {order.addresses ? (
-                    <Pencil className="h-3.5 w-3.5" />
-                  ) : (
-                    <Plus className="h-3.5 w-3.5" />
-                  )}
-                  {order.addresses ? 'Edit' : 'Add'}
-                </Button>
+                {!marketplace && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-muted-foreground"
+                    onClick={() => setEditAddressOpen(true)}
+                  >
+                    {order.addresses ? (
+                      <Pencil className="h-3.5 w-3.5" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5" />
+                    )}
+                    {order.addresses ? 'Edit' : 'Add'}
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {order.addresses ? (
@@ -435,7 +444,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base font-semibold">
                     <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-                    WhatsApp order code
+                    {marketplace ? 'Order code' : 'WhatsApp order code'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -443,8 +452,9 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                     {order.shipment_description}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    The line the items were read from. Also used as the parcel
-                    description.
+                    {marketplace
+                      ? 'From the shipment description column in the order sheet.'
+                      : 'The line the items were read from. Also used as the parcel description.'}
                   </p>
                 </CardContent>
               </Card>
