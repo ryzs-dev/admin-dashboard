@@ -1,4 +1,4 @@
-export type IntegrationId = 'parcel-daily';
+export type IntegrationId = 'parcel-daily' | 'shopee' | 'lazada';
 
 export type Integration = {
   id: IntegrationId;
@@ -19,6 +19,24 @@ export const INTEGRATIONS: Integration[] = [
     logo: '/images/integrations/parcel-daily.png',
     href: '/integrations/parcel-daily',
     portalUrl: 'https://partner.parceldaily.com',
+  },
+  {
+    id: 'shopee',
+    name: 'Shopee',
+    category: 'Marketplace',
+    description: 'Sign in with your Shopee shop to pull its orders into the back office.',
+    logo: '/images/integrations/shopee.png',
+    href: '/integrations/shopee',
+    portalUrl: 'https://seller.shopee.com.my',
+  },
+  {
+    id: 'lazada',
+    name: 'Lazada',
+    category: 'Marketplace',
+    description: 'Sign in with your Lazada seller account to pull its orders into the back office.',
+    logo: '/images/integrations/lazada.png',
+    href: '/integrations/lazada',
+    portalUrl: 'https://sellercenter.lazada.com.my',
   },
 ];
 

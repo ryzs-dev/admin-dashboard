@@ -1,18 +1,28 @@
 'use client';
 
 import Image from 'next/image';
+import { useMarketplaces } from '@/hooks/useMarketplaces';
 import { useParcelDailyAccount } from '@/hooks/useParcelDaily';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationId } from './registry';
 
-export type IntegrationStatus = 'connected' | 'error' | 'checking';
+export type IntegrationStatus = 'connected' | 'attention' | 'disconnected' | 'error' | 'checking';
 
 export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
   const parcelDaily = useParcelDailyAccount();
+  const marketplaces = useMarketplaces();
   switch (id) {
     case 'parcel-daily':
       if (parcelDaily.isLoading) return 'checking';
       return parcelDaily.isError || !parcelDaily.account ? 'error' : 'connected';
+    case 'shopee':
+    case 'lazada': {
+      if (marketplaces.isLoading) return 'checking';
+      if (marketplaces.isError) return 'error';
+      const shops = marketplaces.status?.connections.filter((c) => c.platform === id) ?? [];
+      if (!shops.length) return 'disconnected';
+      return shops.some((shop) => shop.lastSyncError) ? 'attention' : 'connected';
+    }
   }
 }
 
@@ -21,6 +31,16 @@ const STATUS_STYLES: Record<IntegrationStatus, { label: string; className: strin
     label: 'Connected',
     className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     dot: 'bg-emerald-500',
+  },
+  attention: {
+    label: 'Needs attention',
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
+    dot: 'bg-amber-500',
+  },
+  disconnected: {
+    label: 'Not connected',
+    className: 'border-gray-200 bg-gray-50 text-gray-600',
+    dot: 'bg-gray-400',
   },
   error: {
     label: 'Not connected',
