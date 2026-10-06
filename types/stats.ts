@@ -6,6 +6,19 @@ export interface DashboardStatsDTO {
   mtd_revenue: number;
 }
 
+export type SalesChannel = 'whatsapp' | 'shopee' | 'lazada';
+
+export type ChannelTotalsDTO = Record<
+  SalesChannel,
+  { orders: number; revenue: number }
+>;
+
+export const EMPTY_CHANNEL_TOTALS: ChannelTotalsDTO = {
+  whatsapp: { orders: 0, revenue: 0 },
+  shopee: { orders: 0, revenue: 0 },
+  lazada: { orders: 0, revenue: 0 },
+};
+
 export interface RepeatOrderValueDTO {
   repeat_customers: number;
   repeat_orders: number;

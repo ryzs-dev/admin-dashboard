@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+  ChannelTotalsDTO,
   DashboardStatsDTO,
   ProductMonthlyTrendDTO,
   ProductPerformanceDTO,
@@ -21,6 +22,7 @@ export async function getDashboardStats(month: string) {
   return data as {
     stats: DashboardStatsDTO;
     repeat_order_value?: RepeatOrderValueDTO;
+    channels?: ChannelTotalsDTO;
     charts: {
       revenue: { label: string; value: number }[];
       customer_acquisition: { month: string; new_customers: number }[];

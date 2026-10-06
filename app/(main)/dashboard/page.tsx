@@ -24,6 +24,7 @@ import {
   useStats,
 } from '@/hooks/useStats';
 import { StatsCards } from '@/components/dashboard/StatsCard';
+import { ChannelBreakdown } from '@/components/dashboard/ChannelBreakdown';
 import { RepeatOrderValueCard } from '@/components/dashboard/RepeatOrderValue';
 import {
   ProductPerformanceInsights,
@@ -51,6 +52,7 @@ const CRMDashboard = () => {
   const {
     stats,
     repeatOrderValue,
+    channels,
     revenueChart,
     customerChart,
     isLoading: statsLoading,
@@ -117,6 +119,8 @@ const CRMDashboard = () => {
         </PageHeader>
 
         <StatsCards stats={stats} periodLabel={periodLabel} isLoading={statsLoading} />
+
+        <ChannelBreakdown channels={channels} isLoading={statsLoading} />
 
         <RepeatOrderValueCard
           data={repeatOrderValue}

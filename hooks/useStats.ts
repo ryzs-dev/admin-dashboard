@@ -4,6 +4,7 @@ import {
   getProductPerformance,
 } from '@/lib/api/stats';
 import {
+  EMPTY_CHANNEL_TOTALS,
   EMPTY_DASHBOARD_STATS,
   EMPTY_REPEAT_ORDER_VALUE,
 } from '@/types/stats';
@@ -19,6 +20,7 @@ export function useStats(month: string) {
   return {
     stats: data?.stats ?? EMPTY_DASHBOARD_STATS,
     repeatOrderValue: data?.repeat_order_value ?? EMPTY_REPEAT_ORDER_VALUE,
+    channels: data?.channels ?? EMPTY_CHANNEL_TOTALS,
     revenueChart: data?.charts?.revenue ?? [],
     customerChart: data?.charts?.customer_acquisition ?? [],
     isLoading,
