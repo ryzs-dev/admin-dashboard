@@ -11,7 +11,12 @@ import { formatCurrency } from '@/lib/utils/currency';
 import { formatPhone } from '@/lib/utils/phone';
 import { cn } from '@/lib/utils';
 
-const WINDOWS = [30, 45, 60, 90];
+const WINDOWS = [
+  { days: 30, label: '30–44 days' },
+  { days: 45, label: '45–59 days' },
+  { days: 60, label: '60–89 days' },
+  { days: 90, label: '90+ days' },
+];
 const PAGE_SIZE = 50;
 
 function formatDate(value?: string | null) {
@@ -31,37 +36,44 @@ export default function FollowUpsPage() {
   );
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const window = WINDOWS.find((item) => item.days === days)!;
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader
           title="Follow-ups"
-          description="Customers whose last order was long enough ago that they may be ready to buy again."
+          description="Each customer is in one group, based on how long it has been since their last order."
         >
           <div className="flex rounded-lg border bg-card p-0.5">
-            {WINDOWS.map((window) => (
-              <button
-                key={window}
-                type="button"
-                onClick={() => {
-                  setDays(window);
-                  setPage(0);
-                }}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-sm',
-                  days === window ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {window} days
-              </button>
-            ))}
+            {WINDOWS.map((item) => {
+              const count = data?.counts?.find((entry) => entry.days === item.days)?.total;
+              return (
+                <button
+                  key={item.days}
+                  type="button"
+                  onClick={() => {
+                    setDays(item.days);
+                    setPage(0);
+                  }}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-sm',
+                    days === item.days
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {item.label}
+                  {count != null && <span className="ml-1.5 tabular-nums opacity-80">{count}</span>}
+                </button>
+              );
+            })}
           </div>
         </PageHeader>
 
         <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex items-baseline justify-between border-b px-5 py-4">
-            <h2 className="font-semibold">Quiet since {days} days</h2>
+            <h2 className="font-semibold">Last order {window.label} ago</h2>
             <span className="text-sm text-muted-foreground">{total.toLocaleString()} customers</span>
           </div>
           {isLoading ? (
@@ -69,7 +81,7 @@ export default function FollowUpsPage() {
           ) : !data?.customers.length ? (
             <div className="px-5 py-14 text-center">
               <Clock className="mx-auto mb-2 h-7 w-7 text-muted-foreground/50" />
-              <p className="text-sm font-medium">No one has gone this long without ordering</p>
+              <p className="text-sm font-medium">No one last ordered in this stretch</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

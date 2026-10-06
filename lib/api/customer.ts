@@ -94,10 +94,13 @@ export type FollowUp = {
 };
 
 export async function getFollowUps(days: number, offset = 0, limit = 50) {
-  const { data } = await api.get<{ days: number; total: number; customers: FollowUp[] }>(
-    '/follow-ups',
-    { params: { days, offset, limit } }
-  );
+  const { data } = await api.get<{
+    days: number;
+    until: number | null;
+    total: number;
+    counts: { days: number; total: number }[];
+    customers: FollowUp[];
+  }>('/follow-ups', { params: { days, offset, limit } });
   return data;
 }
 
