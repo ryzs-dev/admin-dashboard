@@ -39,62 +39,85 @@ export function ChannelBreakdown({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      {CHANNELS.map(({ key, label, color, logo }) => {
-        const { orders = 0, revenue = 0 } = channels[key] ?? {};
-        const share = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
+    <Card className="gap-0 py-0">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm font-medium">Sales by channel</p>
+          {isLoading ? (
+            <Skeleton className="h-4 w-20" />
+          ) : (
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {formatCurrency(totalRevenue)} total
+            </p>
+          )}
+        </div>
 
-        return (
-          <Card key={key} className="gap-0 py-0">
-            <CardContent className="space-y-3 p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">{label} sales</p>
+        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted">
+          {CHANNELS.map(({ key, color }) => {
+            const revenue = Number(channels[key]?.revenue ?? 0);
+            if (!totalRevenue || !revenue) return null;
+            return (
+              <div
+                key={key}
+                className="h-full transition-all"
+                style={{
+                  width: `${(revenue / totalRevenue) * 100}%`,
+                  backgroundColor: color,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {CHANNELS.map(({ key, label, color, logo }) => {
+            const { orders = 0, revenue = 0 } = channels[key] ?? {};
+            const share = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
+
+            return (
+              <div
+                key={key}
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 sm:px-5 sm:py-0 sm:first:pl-0 sm:last:pr-0"
+              >
                 {logo ? (
                   <Image
                     src={logo}
                     alt=""
-                    width={28}
-                    height={28}
-                    className="rounded-md"
+                    width={32}
+                    height={32}
+                    className="shrink-0 rounded-md"
                   />
                 ) : (
                   <span
-                    className="flex h-7 w-7 items-center justify-center rounded-md"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
                     style={{ backgroundColor: `${color}1f` }}
                   >
                     <MessageCircle className="h-4 w-4" style={{ color }} />
                   </span>
                 )}
-              </div>
-
-              {isLoading ? (
-                <Skeleton className="h-7 w-28" />
-              ) : (
-                <p className="truncate text-2xl font-semibold tabular-nums">
-                  {formatCurrency(revenue)}
-                </p>
-              )}
-
-              <div className="space-y-1.5">
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${share}%`, backgroundColor: color }}
-                  />
-                </div>
-                <p className="flex justify-between text-xs text-muted-foreground">
-                  <span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>{label}</span>
+                    <span className="tabular-nums">
+                      {share.toFixed(share > 0 && share < 1 ? 1 : 0)}%
+                    </span>
+                  </p>
+                  {isLoading ? (
+                    <Skeleton className="my-1 h-5 w-24" />
+                  ) : (
+                    <p className="truncate text-lg font-semibold tabular-nums">
+                      {formatCurrency(revenue)}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
                     {orders.toLocaleString()} {orders === 1 ? 'order' : 'orders'}
-                  </span>
-                  <span className="tabular-nums">
-                    {share.toFixed(share > 0 && share < 1 ? 1 : 0)}% of revenue
-                  </span>
-                </p>
+                  </p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
