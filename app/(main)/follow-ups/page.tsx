@@ -44,32 +44,33 @@ export default function FollowUpsPage() {
         <PageHeader
           title="Follow-ups"
           description="Each customer is in one group, based on how long it has been since their last order."
-        >
-          <div className="flex rounded-lg border bg-card p-0.5">
-            {WINDOWS.map((item) => {
-              const count = data?.counts?.find((entry) => entry.days === item.days)?.total;
-              return (
-                <button
-                  key={item.days}
-                  type="button"
-                  onClick={() => {
-                    setDays(item.days);
-                    setPage(0);
-                  }}
-                  className={cn(
-                    'rounded-md px-3 py-1.5 text-sm',
-                    days === item.days
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {item.label}
-                  {count != null && <span className="ml-1.5 tabular-nums opacity-80">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </PageHeader>
+        />
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {WINDOWS.map((item) => {
+            const count = data?.counts?.find((entry) => entry.days === item.days)?.total;
+            return (
+              <button
+                key={item.days}
+                type="button"
+                onClick={() => {
+                  setDays(item.days);
+                  setPage(0);
+                }}
+                className={cn(
+                  'rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:border-gray-300',
+                  days === item.days && 'border-[#662d91] ring-1 ring-[#662d91]'
+                )}
+              >
+                <p className="text-sm text-muted-foreground">Last order</p>
+                <p className="mt-1 text-lg font-semibold">{item.label}</p>
+                <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
+                  {count == null ? '—' : `${count.toLocaleString()} customers`}
+                </p>
+              </button>
+            );
+          })}
+        </div>
 
         <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex items-baseline justify-between border-b px-5 py-4">
