@@ -1,4 +1,4 @@
-export type IntegrationId = 'parcel-daily' | 'shopee' | 'lazada';
+export type IntegrationId = 'parcel-daily' | 'shopee' | 'lazada' | 'converra';
 
 export type Integration = {
   id: IntegrationId;
@@ -37,6 +37,15 @@ export const INTEGRATIONS: Integration[] = [
     logo: '/images/integrations/lazada.png',
     href: '/integrations/lazada',
     portalUrl: 'https://sellercenter.lazada.com.my',
+  },
+  {
+    id: 'converra',
+    name: 'Converra',
+    category: 'WhatsApp marketing',
+    description: 'Customers and segments sync to Converra for WhatsApp broadcasts and inbox.',
+    logo: '/images/integrations/converra.png',
+    href: '/integrations/converra',
+    portalUrl: 'https://app.converra.app',
   },
 ];
 

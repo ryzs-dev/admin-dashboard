@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useMarketplaces, useSheetSync } from '@/hooks/useMarketplaces';
 import { useParcelDailyAccount } from '@/hooks/useParcelDaily';
+import { useConverraStatus } from '@/hooks/useConverra';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationId } from './registry';
 
@@ -12,6 +13,7 @@ export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
   const parcelDaily = useParcelDailyAccount();
   const marketplaces = useMarketplaces();
   const sheetSync = useSheetSync();
+  const converra = useConverraStatus();
   switch (id) {
     case 'parcel-daily':
       if (parcelDaily.isLoading) return 'checking';
@@ -23,6 +25,12 @@ export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
       if (sheetSync.sync?.lastError || shops.some((shop) => shop.lastSyncError)) return 'attention';
       if (shops.length || (sheetSync.sync?.counts[id] ?? 0) > 0) return 'connected';
       return sheetSync.isError && marketplaces.isError ? 'error' : 'disconnected';
+    }
+    case 'converra': {
+      if (converra.isLoading) return 'checking';
+      if (converra.isError || !converra.status?.configured) return 'disconnected';
+      if (!converra.status.connection?.ok) return 'error';
+      return converra.status.sync.error ? 'attention' : 'connected';
     }
   }
 }
