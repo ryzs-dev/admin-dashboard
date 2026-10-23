@@ -28,9 +28,9 @@ export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
     }
     case 'converra': {
       if (converra.isLoading) return 'checking';
-      if (converra.isError || !converra.status?.configured) return 'disconnected';
-      if (!converra.status.connection?.ok) return 'error';
-      return converra.status.sync.error ? 'attention' : 'connected';
+      if (converra.isError || !converra.status?.connected) return 'disconnected';
+      if (converra.status.connection && !converra.status.connection.ok) return 'error';
+      return converra.status.sync.last?.status === 'failed' ? 'attention' : 'connected';
     }
   }
 }
