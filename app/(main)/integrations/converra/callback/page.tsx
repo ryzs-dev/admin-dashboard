@@ -11,6 +11,7 @@ import { getIntegration } from '@/components/modules/integrations/registry';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { completeConverraConnect, converraErrorMessage } from '@/lib/api/converra';
+import { announceConverraConnect } from '@/lib/converra-connect-events';
 
 const integration = getIntegration('converra');
 
@@ -34,7 +35,9 @@ function ConverraCallback() {
     const state = params.get('state');
 
     if (providerError) {
-      setError(PROVIDER_ERRORS[providerError] ?? `Converra couldn’t connect: ${providerError}`);
+      const message = PROVIDER_ERRORS[providerError] ?? `Converra couldn’t connect: ${providerError}`;
+      announceConverraConnect({ type: 'failed', message });
+      setError(message);
       return;
     }
     if (!code || !state) {
@@ -44,6 +47,9 @@ function ConverraCallback() {
 
     completeConverraConnect({ code, state })
       .then((status) => {
+        announceConverraConnect({ type: 'connected', workspaceName: status.workspaceName });
+        // Opened from the Integrations page: that tab refreshes itself, so close this one.
+        window.close();
         void mutate('converra-status', status, { revalidate: false });
         void mutate('converra-sync-runs');
         toast.success(
@@ -54,7 +60,9 @@ function ConverraCallback() {
         router.replace('/integrations/converra');
       })
       .catch((err) => {
-        setError(converraErrorMessage(err, 'Couldn’t finish connecting to Converra.'));
+        const message = converraErrorMessage(err, 'Couldn’t finish connecting to Converra.');
+        announceConverraConnect({ type: 'failed', message });
+        setError(message);
       });
   }, [params, router]);
 

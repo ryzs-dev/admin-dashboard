@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { mutate } from 'swr';
 import { StatCard } from '@/components/layout/StatCard';
 import {
   IntegrationLogo,
@@ -66,6 +67,7 @@ import {
   startConverraSync,
   updateConverraSettings,
 } from '@/lib/api/converra';
+import { onConverraConnect } from '@/lib/converra-connect-events';
 import { cn } from '@/lib/utils';
 import { formatFriendlyDateTime } from '@/lib/utils/date';
 
@@ -147,11 +149,20 @@ function ConnectButton({ label = 'Connect to Converra', variant = 'default' }: {
   const [connecting, setConnecting] = useState(false);
   const connect = async () => {
     setConnecting(true);
+    // Open the tab inside the click so popup blockers allow it, then point it at Converra.
+    const tab = window.open('about:blank', '_blank');
     try {
       const { authorizeUrl } = await startConverraConnect();
-      window.location.assign(authorizeUrl);
+      if (tab) {
+        tab.location.href = authorizeUrl;
+        toast.message('Approve the connection in the Converra tab');
+      } else {
+        window.location.assign(authorizeUrl);
+      }
     } catch (err) {
+      tab?.close();
       toast.error(converraErrorMessage(err, 'Couldn’t start connecting to Converra'));
+    } finally {
       setConnecting(false);
     }
   };
@@ -522,6 +533,25 @@ function DisconnectButton({ workspace, onDisconnected }: {
 export default function ConverraIntegrationPage() {
   const badge = useIntegrationStatus('converra');
   const { status, isLoading, isError, refresh } = useConverraStatus();
+
+  // The approval finishes in another tab; refresh here when it reports back.
+  useEffect(
+    () =>
+      onConverraConnect((event) => {
+        if (event.type === 'connected') {
+          toast.success(
+            event.workspaceName
+              ? `Connected to ${event.workspaceName} — syncing customers now`
+              : 'Converra connected — syncing customers now'
+          );
+        } else {
+          toast.error(event.message);
+        }
+        void refresh();
+        void mutate('converra-sync-runs');
+      }),
+    [refresh]
+  );
   const { refresh: refreshRuns } = useConverraSyncRuns(!!status?.connected);
   const [starting, setStarting] = useState(false);
 
