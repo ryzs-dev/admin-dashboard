@@ -50,7 +50,10 @@ export interface Query {
   location?: string;
   status?: string | null;
   source?: string;
+  order_type?: OrderType;
 }
+
+export type OrderType = 'all' | 'customer' | 'distributor';
 
 export type FilterType = 'all' | 'today' | 'week' | 'month';
 

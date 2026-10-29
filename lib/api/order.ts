@@ -1,4 +1,4 @@
-import { Query } from '@/components/modules/customer/types';
+import { OrderType, Query } from '@/components/modules/customer/types';
 import { OrderTrackingInput } from '@/components/modules/tracking/types';
 import { OrderInput, UpdateLineItemsInput } from '@/types/order';
 import { Order } from '@/components/modules/order/types';
@@ -43,8 +43,10 @@ export type OrderStatusGroup =
   | 'delivered'
   | 'problem';
 
-export async function getOrderSummary() {
-  const { data } = await api.get('/summary');
+export async function getOrderSummary(orderType?: OrderType) {
+  const { data } = await api.get('/summary', {
+    params: { order_type: orderType },
+  });
   return data as Record<'all' | OrderStatusGroup, number>;
 }
 

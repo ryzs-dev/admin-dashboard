@@ -1,4 +1,5 @@
 import { OrderTrackingInput } from '@/components/modules/tracking/types';
+import { OrderType } from '@/components/modules/customer/types';
 import {
   bulkDeleteOrders,
   createOrder,
@@ -31,6 +32,7 @@ interface FetchOrdersParams {
     dateTo?: Date;
   };
   sorting?: { id: string; desc: boolean }[];
+  orderType?: OrderType;
 }
 
 export function useOrders() {
@@ -59,6 +61,7 @@ export function useOrders() {
       pagination,
       filters = defaultFilters,
       sorting,
+      orderType,
     }: FetchOrdersParams) => {
       const response = await getAllOrders({
         limit: pagination.pageSize,
@@ -72,6 +75,7 @@ export function useOrders() {
         dateTo: filters.dateTo,
         sortBy: sorting?.[0]?.id,
         sortOrder: sorting?.[0] && !sorting[0].desc ? 'asc' : 'desc',
+        order_type: orderType,
       });
 
       return {

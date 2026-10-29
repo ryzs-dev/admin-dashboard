@@ -10,7 +10,7 @@ export default function OrdersPage() {
   return (
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div className="p-6">Loading orders...</div>}>
-        <OrderTable />
+        <OrderTable orderType="customer" />
       </Suspense>
     </QueryClientProvider>
   );

@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Blocks,
   Clock,
+  Store,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -68,6 +69,12 @@ function CRMSidebar() {
     },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
+    {
+      id: 'distributors',
+      label: 'Distributors',
+      icon: Store,
+      href: '/distributors',
+    },
     { id: 'follow-ups', label: 'Follow-ups', icon: Clock, href: '/follow-ups' },
     {
       id: 'inbox',

@@ -22,7 +22,7 @@ import {
   SortingState,
   RowSelectionState,
 } from '@tanstack/react-table';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Plus, Search, Send, X } from 'lucide-react';
 import { createColumns } from './OrderTableColumns';
@@ -50,6 +50,7 @@ const BULK_COURIERS = {
 import OrderFormDialog from './OrderFormDialog';
 import { useProducts } from '@/hooks/useProducts';
 import { OrderInput } from '@/types/order';
+import { OrderType } from '../customer/types';
 
 interface OrdersResponse {
   rows: Order[];
@@ -84,8 +85,13 @@ const COLUMN_WIDTHS: Record<string, string> = {
   actions: 'w-16',
 };
 
-export function OrderTable() {
+type OrderTableProps = {
+  orderType?: OrderType;
+};
+
+export function OrderTable({ orderType = 'all' }: OrderTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { fetchOrders, deleteOrder, createOrder } = useOrders();
   const { products } = useProducts();
@@ -158,8 +164,8 @@ export function OrderTable() {
     if (status !== 'all') params.set('status', status);
     if (location !== 'all') params.set('location', location);
     if (source !== 'all') params.set('source', source);
-    router.replace(`/orders?${params.toString()}`, { scroll: false });
-  }, [pagination, status, location, source, router]);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pagination, status, location, source, router, pathname]);
 
   const refreshOrders = useCallback(async () => {
     await Promise.all([
@@ -169,17 +175,18 @@ export function OrderTable() {
   }, [queryClient]);
 
   const { data: summary } = useQuery({
-    queryKey: ['orders-summary'],
-    queryFn: getOrderSummary,
+    queryKey: ['orders-summary', orderType],
+    queryFn: () => getOrderSummary(orderType),
     staleTime: 60_000,
   });
 
   const { data, isLoading, isFetching } = useQuery<OrdersResponse, Error>({
-    queryKey: ['orders', pagination, sorting, status, location, source, search, dateRange],
+    queryKey: ['orders', orderType, pagination, sorting, status, location, source, search, dateRange],
     queryFn: () =>
       fetchOrders({
         pagination,
         sorting,
+        orderType,
         filters: {
           search,
           status,
