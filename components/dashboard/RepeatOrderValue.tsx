@@ -1,203 +1,122 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CHART_COLORS } from '@/lib/chartTheme';
 import { formatCurrency } from '@/lib/utils/currency';
-import { cn } from '@/lib/utils';
 import { RepeatOrderValueDTO } from '@/types/stats';
-import { UserPlus, Users } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Panel, PanelHeader } from './Panel';
 
-interface SegmentProps {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  tone: 'repeat' | 'new';
-  revenue: number;
-  share: number;
-  averageLabel: string;
-  average: number;
-  orders: number;
-  customers: number;
-}
-
-const TONES = {
-  repeat: {
-    panel: 'border-[#662d91]/15 bg-[#662d91]/[0.05]',
-    icon: 'bg-[#662d91] text-white',
-    dot: 'bg-[#662d91]',
-    accent: 'text-[#662d91]',
-  },
-  new: {
-    panel: 'border-[#d98b4a]/20 bg-[#d98b4a]/[0.07]',
-    icon: 'bg-[#d98b4a] text-white',
-    dot: 'bg-[#d98b4a]',
-    accent: 'text-[#a8612a]',
-  },
-};
-
-function Segment({
-  title,
-  description,
-  icon: Icon,
-  tone,
-  revenue,
-  share,
-  averageLabel,
-  average,
-  orders,
-  customers,
-}: SegmentProps) {
-  const colors = TONES[tone];
-
-  return (
-    <div className={cn('rounded-xl border p-5', colors.panel)}>
-      <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-            colors.icon
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-semibold leading-tight">{title}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-
-      <div className="mt-5 flex items-baseline justify-between gap-3">
-        <p className="text-2xl font-bold tracking-tight">
-          {formatCurrency(revenue)}
-        </p>
-        <p className={cn('text-sm font-medium', colors.accent)}>
-          {share.toFixed(1)}% of revenue
-        </p>
-      </div>
-
-      <dl className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-background/70 py-3 text-center">
-        <div className="px-2">
-          <dt className="text-xs text-muted-foreground">{averageLabel}</dt>
-          <dd className="mt-1 font-semibold">{formatCurrency(average)}</dd>
-        </div>
-        <div className="px-2">
-          <dt className="text-xs text-muted-foreground">Orders</dt>
-          <dd className="mt-1 font-semibold">{orders.toLocaleString()}</dd>
-        </div>
-        <div className="px-2">
-          <dt className="text-xs text-muted-foreground">Customers</dt>
-          <dd className="mt-1 font-semibold">{customers.toLocaleString()}</dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
+// Repeat vs first-time only covers WhatsApp orders: marketplace orders have no CRM customer.
 export function RepeatOrderValueCard({
   data,
   isLoading,
-  periodLabel,
 }: {
   data: RepeatOrderValueDTO;
   isLoading?: boolean;
-  periodLabel?: string;
 }) {
-  const repeatShare = Math.min(Math.max(data.repeat_revenue_share, 0), 100);
-  const hasRevenue = data.repeat_revenue + data.new_revenue > 0;
-  const averageGap =
+  const total = data.repeat_revenue + data.new_revenue;
+  const repeatShare = total > 0 ? (data.repeat_revenue / total) * 100 : 0;
+  const lift =
     data.new_average_order_value > 0
       ? ((data.repeat_average_order_value - data.new_average_order_value) /
           data.new_average_order_value) *
         100
-      : 0;
+      : null;
+
+  const rows = [
+    {
+      label: 'Returning',
+      color: CHART_COLORS.primary,
+      revenue: data.repeat_revenue,
+      orders: data.repeat_orders,
+      average: data.repeat_average_order_value,
+    },
+    {
+      label: 'First-time',
+      color: CHART_COLORS.primarySoft,
+      revenue: data.new_revenue,
+      orders: data.new_orders,
+      average: data.new_average_order_value,
+    },
+  ];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
-        <div>
-          <CardTitle>Repeat vs first-time customers</CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Orders {periodLabel ? `in ${periodLabel}` : 'this month'}, split by
-            whether the customer had bought before
-          </p>
-        </div>
-        {!isLoading && data.repeat_orders > 0 && data.new_orders > 0 && (
-          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
-            Repeat orders are{' '}
-            <span className={averageGap >= 0 ? 'text-[#662d91]' : 'text-rose-600'}>
-              {Math.abs(averageGap).toFixed(1)}% {averageGap >= 0 ? 'larger' : 'smaller'}
-            </span>{' '}
-            on average
-          </span>
-        )}
-      </CardHeader>
-
-      <CardContent className="space-y-5">
+    <Panel>
+      <PanelHeader title="WhatsApp buyers" meta="returning vs first-time" />
+      <div className="px-5 pb-4 pt-3">
         {isLoading ? (
-          <div className="space-y-5">
-            <Skeleton className="h-3 w-full rounded-full" />
-            <div className="grid gap-4 md:grid-cols-2">
-              <Skeleton className="h-44 rounded-xl" />
-              <Skeleton className="h-44 rounded-xl" />
-            </div>
-          </div>
+          <Skeleton className="h-1.5 w-full" />
         ) : (
-          <>
-            <div className="space-y-2">
-              <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
-                {hasRevenue && (
-                  <>
-                    <div
-                      className="bg-[#662d91] transition-all"
-                      style={{ width: `${repeatShare}%` }}
-                    />
-                    <div
-                      className="bg-[#d98b4a] transition-all"
-                      style={{ width: `${100 - repeatShare}%` }}
-                    />
-                  </>
-                )}
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#662d91]" />
-                  Repeat {repeatShare.toFixed(1)}%
-                </span>
-                <span className="flex items-center gap-1.5">
-                  First-time {hasRevenue ? (100 - repeatShare).toFixed(1) : '0.0'}%
-                  <span className="h-2 w-2 rounded-full bg-[#d98b4a]" />
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Segment
-                title="Returning customers"
-                description="Customers who had ordered before"
-                icon={Users}
-                tone="repeat"
-                revenue={data.repeat_revenue}
-                share={repeatShare}
-                averageLabel="Avg order"
-                average={data.repeat_average_order_value}
-                orders={data.repeat_orders}
-                customers={data.repeat_customers}
-              />
-              <Segment
-                title="First-time customers"
-                description="Each customer's very first order"
-                icon={UserPlus}
-                tone="new"
-                revenue={data.new_revenue}
-                share={hasRevenue ? 100 - repeatShare : 0}
-                averageLabel="Avg 1st order"
-                average={data.new_average_order_value}
-                orders={data.new_orders}
-                customers={data.new_orders}
-              />
-            </div>
-          </>
+          <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-muted">
+            {total > 0 && (
+              <>
+                <div style={{ width: `${repeatShare}%`, background: CHART_COLORS.primary }} />
+                <div className="flex-1" style={{ background: CHART_COLORS.primarySoft }} />
+              </>
+            )}
+          </div>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Phone: one two-line row per buyer type; the table returns from sm up. */}
+        <ul className="mt-3 space-y-2 text-sm sm:hidden">
+          {rows.map((row) => (
+            <li key={row.label}>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full" style={{ background: row.color }} />
+                {row.label}
+                <span className="ml-auto font-medium tabular-nums">
+                  {formatCurrency(row.revenue)}
+                </span>
+              </div>
+              <p className="pl-4 text-xs tabular-nums text-muted-foreground">
+                {row.orders.toLocaleString()} orders · avg {formatCurrency(row.average)}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        <table className="mt-3 hidden w-full text-sm sm:table">
+          <thead>
+            <tr className="text-xs text-muted-foreground">
+              <th className="pb-1 text-left font-normal">
+                <span className="sr-only">Buyer type</span>
+              </th>
+              <th className="pb-1 pl-3 text-right font-normal">Revenue</th>
+              <th className="pb-1 pl-3 text-right font-normal">Orders</th>
+              <th className="pb-1 pl-3 text-right font-normal">Avg order</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <td className="py-1">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: row.color }} />
+                    {row.label}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap py-1 pl-3 text-right font-medium tabular-nums">
+                  {formatCurrency(row.revenue)}
+                </td>
+                <td className="whitespace-nowrap py-1 pl-3 text-right tabular-nums text-muted-foreground">
+                  {row.orders.toLocaleString()}
+                </td>
+                <td className="whitespace-nowrap py-1 pl-3 text-right tabular-nums text-muted-foreground">
+                  {formatCurrency(row.average)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {lift !== null && !isLoading && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Returning customers spend{' '}
+            <span className="font-medium text-foreground tabular-nums">
+              {Math.abs(lift).toFixed(1)}% {lift >= 0 ? 'more' : 'less'}
+            </span>{' '}
+            per order than first-timers.
+          </p>
+        )}
+      </div>
+    </Panel>
   );
 }

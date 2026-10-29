@@ -3,6 +3,9 @@
 export const CHART_COLORS = {
   primary: '#662d91',
   secondary: '#d98b4a',
+  // A pale plum for the other part of a two-part split; grey for a comparison series.
+  primarySoft: '#d4bfe3',
+  comparison: '#c9c4cc',
 } as const;
 
 export const chartGrid = {

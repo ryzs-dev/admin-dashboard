@@ -1,27 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  CHART_COLORS,
-  chartAxis,
-  chartGrid,
-  chartLegend,
-  chartTooltip,
-} from '@/lib/chartTheme';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { formatCurrency } from '@/lib/utils/currency';
-import { ProductPerformanceDTO, ProductMonthlyTrendDTO } from '@/types/stats';
+import { useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -29,208 +12,181 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CHART_COLORS, chartAxis, chartGrid, chartTooltip } from '@/lib/chartTheme';
+import { formatCurrency, formatCurrencyShort } from '@/lib/utils/currency';
+import { cn } from '@/lib/utils';
+import { ProductMonthlyTrendDTO, ProductPerformanceDTO } from '@/types/stats';
 
-export function ProductDeepDive({
-  products,
+type Metric = 'revenue' | 'quantity_sold' | 'repeat_customer_rate';
+
+const METRICS: { value: Metric; label: string; format: (v: number) => string; axis: (v: number) => string }[] = [
+  { value: 'revenue', label: 'Revenue', format: formatCurrency, axis: formatCurrencyShort },
+  {
+    value: 'quantity_sold',
+    label: 'Units',
+    format: (v) => v.toLocaleString(),
+    axis: (v) => v.toLocaleString(),
+  },
+  {
+    value: 'repeat_customer_rate',
+    label: 'Return rate',
+    format: (v) => `${v.toFixed(1)}%`,
+    axis: (v) => `${v}%`,
+  },
+];
+
+export function ProductDetailSheet({
+  product,
   trends,
-  selectedProductId,
-  onProductChange,
   isLoading,
+  onClose,
 }: {
-  products: ProductPerformanceDTO[];
+  product: ProductPerformanceDTO | null;
   trends: ProductMonthlyTrendDTO[];
-  selectedProductId: string | null;
-  onProductChange: (productId: string) => void;
   isLoading?: boolean;
+  onClose: () => void;
 }) {
-  const selectedProduct = products.find(
-    (product) => product.product_id === selectedProductId
-  );
+  const [metric, setMetric] = useState<Metric>('revenue');
+  const active = METRICS.find((m) => m.value === metric)!;
+  const points = trends.map((t) => ({ ...t, short: t.month_label.slice(0, 3) }));
 
-  const chartData = trends.map((trend) => ({
-    ...trend,
-    label: trend.month_label,
-  }));
+  const facts = product
+    ? [
+        ['Revenue this month', formatCurrency(product.total_revenue)],
+        ['Lifetime buyers', product.unique_customers.toLocaleString()],
+        ['Bought again', `${product.repeat_customer_rate.toFixed(1)}%`],
+        ['Spent per buyer', formatCurrency(product.customer_lifetime_value)],
+      ]
+    : [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle>Product deep dive</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Monthly sales, retention, and buyer mix for a selected product.
-          </p>
-        </div>
+    <Sheet open={product !== null} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-xl">
+        <SheetHeader className="border-b px-6 py-5">
+          <SheetTitle className="text-lg">{product?.product_name}</SheetTitle>
+          <SheetDescription>Last 6 months, and what its buyers do over their lifetime.</SheetDescription>
+        </SheetHeader>
 
-        <Select
-          value={selectedProductId ?? undefined}
-          onValueChange={onProductChange}
-        >
-          <SelectTrigger className="w-full sm:w-[240px]">
-            <SelectValue placeholder="Select product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.product_id} value={product.product_id}>
-                {product.product_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading product trends...</p>
-        ) : !selectedProduct ? (
-          <p className="text-sm text-muted-foreground">
-            Select a product to view detailed analytics.
-          </p>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <MetricCard
-                label="Revenue this month"
-                value={formatCurrency(selectedProduct.total_revenue)}
-              />
-              <MetricCard
-                label="Return rate (lifetime)"
-                value={`${selectedProduct.repeat_customer_rate.toFixed(1)}%`}
-              />
-              <MetricCard
-                label="Lifetime buyers"
-                value={String(selectedProduct.unique_customers)}
-              />
-              <MetricCard
-                label="Avg spent per buyer"
-                value={formatCurrency(selectedProduct.customer_lifetime_value)}
-              />
+        <dl className="grid grid-cols-2 border-b">
+          {facts.map(([label, value], i) => (
+            <div
+              key={label}
+              className={cn('px-6 py-4', i % 2 === 0 && 'border-r', i < 2 && 'border-b')}
+            >
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-1 text-xl font-medium tabular-nums">{value}</dd>
             </div>
+          ))}
+        </dl>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <ChartCard title="Monthly sales">
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid {...chartGrid} />
-                    <XAxis dataKey="label" {...chartAxis} />
-                    <YAxis {...chartAxis} />
-                    <Tooltip {...chartTooltip} />
-                    <Legend {...chartLegend} />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      name="Revenue"
-                      stroke={CHART_COLORS.primary}
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="quantity_sold"
-                      name="Units sold"
-                      stroke={CHART_COLORS.secondary}
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-
-              <ChartCard title="Monthly return rate">
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid {...chartGrid} />
-                    <XAxis dataKey="label" {...chartAxis} />
-                    <YAxis {...chartAxis} />
-                    <Tooltip {...chartTooltip} />
-                    <Legend {...chartLegend} />
-                    <Line
-                      type="monotone"
-                      dataKey="repeat_customer_rate"
-                      name="Return rate %"
-                      stroke={CHART_COLORS.primary}
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-
-              <ChartCard title="First-time vs returning buyers">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid {...chartGrid} />
-                    <XAxis dataKey="label" {...chartAxis} />
-                    <YAxis {...chartAxis} />
-                    <Tooltip {...chartTooltip} />
-                    <Legend {...chartLegend} />
-                    <Bar
-                      dataKey="first_time_buyers"
-                      name="First-time buyers"
-                      fill={CHART_COLORS.secondary}
-                    />
-                    <Bar
-                      dataKey="returning_buyers"
-                      name="Returning buyers"
-                      fill={CHART_COLORS.primary}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-
-              <ChartCard title="Revenue and retention">
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid {...chartGrid} />
-                    <XAxis dataKey="label" {...chartAxis} />
-                    <YAxis yAxisId="left" {...chartAxis} />
-                    <YAxis yAxisId="right" orientation="right" {...chartAxis} />
-                    <Tooltip {...chartTooltip} />
-                    <Legend {...chartLegend} />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="revenue"
-                      name="Revenue"
-                      stroke={CHART_COLORS.primary}
-                      strokeWidth={2}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="repeat_customer_rate"
-                      name="Return rate %"
-                      stroke={CHART_COLORS.secondary}
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
+        <section className="border-b px-6 py-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">By month</h3>
+            <div role="tablist" aria-label="Metric" className="flex rounded-md bg-muted p-0.5 text-xs">
+              {METRICS.map((m) => (
+                <button
+                  key={m.value}
+                  role="tab"
+                  aria-selected={metric === m.value}
+                  onClick={() => setMetric(m.value)}
+                  className={cn(
+                    'rounded px-2.5 py-1 font-medium transition-colors',
+                    metric === m.value
+                      ? 'bg-card text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+          </div>
+          <div className="mt-3 h-[200px]">
+            {isLoading ? (
+              <Skeleton className="h-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid {...chartGrid} />
+                  <XAxis dataKey="short" {...chartAxis} interval={0} />
+                  <YAxis {...chartAxis} width={56} tickCount={5} tickFormatter={active.axis} />
+                  <Tooltip
+                    {...chartTooltip}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.month_label ?? ''}
+                    formatter={(v) => [active.format(Number(v)), active.label]}
+                  />
+                  <Line
+                    type="linear"
+                    dataKey={metric}
+                    stroke={CHART_COLORS.primary}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
 
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold mt-1">{value}</p>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border bg-card p-4">
-      <h3 className="font-medium mb-4">{title}</h3>
-      {children}
-    </div>
+        <section className="px-6 py-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Buyers by month</h3>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm" style={{ background: CHART_COLORS.primary }} />
+                Returning
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm" style={{ background: CHART_COLORS.primarySoft }} />
+                First-time
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 h-[180px]">
+            {isLoading ? (
+              <Skeleton className="h-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid {...chartGrid} />
+                  <XAxis dataKey="short" {...chartAxis} interval={0} />
+                  <YAxis {...chartAxis} width={56} tickCount={4} allowDecimals={false} />
+                  <Tooltip
+                    {...chartTooltip}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.month_label ?? ''}
+                  />
+                  <Bar
+                    dataKey="returning_buyers"
+                    name="Returning"
+                    stackId="buyers"
+                    fill={CHART_COLORS.primary}
+                    maxBarSize={32}
+                    isAnimationActive={false}
+                  />
+                  <Bar
+                    dataKey="first_time_buyers"
+                    name="First-time"
+                    stackId="buyers"
+                    fill={CHART_COLORS.primarySoft}
+                    maxBarSize={32}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+      </SheetContent>
+    </Sheet>
   );
 }
