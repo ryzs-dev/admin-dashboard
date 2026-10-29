@@ -6,7 +6,7 @@ import { formatCurrency } from '@/lib/utils/currency';
 import { Product } from './types';
 import { DeleteDialog } from '../utils/ui/DeleteDialog';
 
-const TH = 'px-6 py-3 text-xs font-medium uppercase tracking-wider text-gray-500';
+const TH = 'px-6 py-3 text-xs font-medium text-muted-foreground';
 
 export default function ProductTable({
   products,
@@ -22,7 +22,7 @@ export default function ProductTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px]">
-        <thead className="border-b bg-gray-50/80">
+        <thead className="border-b">
           <tr>
             <th className={`${TH} text-left`}>Product</th>
             <th className={`${TH} text-left`}>WhatsApp code</th>

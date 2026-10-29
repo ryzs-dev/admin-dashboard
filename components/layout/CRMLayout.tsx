@@ -11,7 +11,6 @@ import {
   ChevronDown,
   MessageCircle,
   Blocks,
-  Clock,
   Store,
 } from 'lucide-react';
 import {
@@ -75,7 +74,6 @@ function CRMSidebar() {
       icon: Store,
       href: '/distributors',
     },
-    { id: 'follow-ups', label: 'Follow-ups', icon: Clock, href: '/follow-ups' },
     {
       id: 'inbox',
       label: 'Inbox',

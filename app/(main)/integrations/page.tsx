@@ -39,7 +39,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
 export default function IntegrationsPage() {
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           title="Integrations"
           description="Services connected to the back office, and how each one is set up."
@@ -50,9 +50,7 @@ export default function IntegrationsPage() {
             <IntegrationCard key={integration.id} integration={integration} />
           ))}
           <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-5 text-center">
-            <div className="rounded-lg bg-gray-100 p-2">
-              <Plus className="h-4 w-4 text-gray-500" />
-            </div>
+            <Plus className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <p className="text-sm font-medium">More integrations coming</p>
             <p className="text-xs text-muted-foreground">They’ll appear here as they’re added.</p>
           </div>

@@ -390,9 +390,10 @@ export function OrderTable({
         onSubmit={handleCreateOrder}
         products={products ?? []}
         isSubmitting={isCreating}
+        audience={orderType === 'distributor' ? 'distributor' : 'customer'}
       />
 
-      <div className="mx-auto max-w-[1600px] space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader title={title} description={description}>
           <Button onClick={() => setIsCreateOpen(true)} className="gap-1.5">
             <Plus className="h-4 w-4" />
@@ -513,14 +514,14 @@ export function OrderTable({
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px] table-fixed">
-              <thead className="border-b bg-gray-50/80">
+              <thead className="border-b">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
                         className={cn(
-                          'whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
+                          'whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-muted-foreground',
                           COLUMN_WIDTHS[header.column.id],
                           header.column.id === 'select' && 'pl-6',
                           header.column.id === 'actions' && 'pr-6'

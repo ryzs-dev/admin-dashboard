@@ -136,7 +136,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <div className="space-y-3">
           <Link
             href="/orders"
@@ -149,7 +149,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="font-mono text-2xl font-semibold tracking-tight">
+                <h1 className="text-2xl font-semibold tracking-tight tabular-nums">
                   {order.order_number}
                 </h1>
                 <span
@@ -224,7 +224,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
           <div className="space-y-6 lg:col-span-2">
             <Card className="gap-0 overflow-hidden py-0">
               <CardHeader className="flex flex-row items-center justify-between border-b py-4">
-                <CardTitle className="text-base font-semibold">Items</CardTitle>
+                <CardTitle>Items</CardTitle>
                 <span className="text-xs text-muted-foreground">
                   {order_items.length}{' '}
                   {order_items.length === 1 ? 'product' : 'products'} · {units}{' '}
@@ -235,7 +235,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 {order_items.length > 0 ? (
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <tr className="border-b text-left text-xs font-medium text-muted-foreground">
                         <th className="px-5 py-3 font-medium">Product</th>
                         <th className="px-5 py-3 text-right font-medium">
                           Qty
@@ -340,7 +340,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <CardTitle className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   {marketplace ? `${marketplace} buyer` : 'Customer'}
                 </CardTitle>
@@ -400,7 +400,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   Shipping address
                 </CardTitle>
@@ -443,7 +443,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
             {order.shipment_description && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <CardTitle className="flex items-center gap-2">
                     <MessageSquareText className="h-4 w-4 text-muted-foreground" />
                     {marketplace ? 'Order code' : 'WhatsApp order code'}
                   </CardTitle>

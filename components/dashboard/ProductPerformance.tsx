@@ -9,7 +9,7 @@ import { ProductPerformanceDTO } from '@/types/stats';
 import { Change, Panel, PanelHeader } from './Panel';
 import { percentChange } from './pace';
 
-const TH = 'px-3 py-2 text-xs font-normal text-muted-foreground';
+const TH = 'px-3 py-2 text-xs font-medium text-muted-foreground';
 
 export function TopProductsTable({
   products,

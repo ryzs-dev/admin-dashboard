@@ -34,7 +34,7 @@ export default function TrackingCardTemplate({
     <Card id="tracking-card">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <CardTitle className="flex items-center gap-2">
             <Truck className="h-4 w-4 text-muted-foreground" />
             Shipping
           </CardTitle>

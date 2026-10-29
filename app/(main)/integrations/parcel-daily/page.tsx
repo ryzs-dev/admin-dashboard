@@ -2,18 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import {
-  AlertCircle,
-  AlertTriangle,
-  ArrowLeft,
-  CalendarClock,
-  ExternalLink,
-  KeyRound,
-  MapPin,
-  Pencil,
-  Settings2,
-  Wallet,
-} from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ExternalLink, KeyRound, MapPin, Pencil, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/layout/StatCard';
 import {
@@ -55,9 +44,7 @@ function SettingsCard({
     <Card className="gap-0 py-0">
       <div className="flex items-start justify-between gap-4 px-5 pt-5">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-gray-100 p-2">
-            <Icon className="h-4 w-4 text-gray-600" />
-          </div>
+          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-semibold">{title}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
@@ -103,7 +90,7 @@ export default function ParcelDailyIntegrationPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <Link
           href="/integrations"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -136,7 +123,6 @@ export default function ParcelDailyIntegrationPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard
             label="Credit balance"
-            icon={Wallet}
             isLoading={accountLoading}
             value={accountError ? '—' : formatCurrency(credit)}
             hint={
@@ -157,7 +143,6 @@ export default function ParcelDailyIntegrationPage() {
           />
           <StatCard
             label="Top-up package"
-            icon={CalendarClock}
             isLoading={accountLoading}
             value={<span className="capitalize">{account?.topupPackage ?? '—'}</span>}
             hint={account ? `${account.expiresIn} of ${account.packageValidDays} days left` : undefined}

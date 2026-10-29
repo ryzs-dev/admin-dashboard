@@ -23,7 +23,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerSummary } from '@/hooks/useCustomer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
-import { Repeat, Search, UserPlus, Users } from 'lucide-react';
+import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -33,14 +33,12 @@ function SummaryCard({
   label,
   value,
   hint,
-  icon: Icon,
   active,
   onClick,
 }: {
   label: string;
   value?: number;
   hint?: string;
-  icon: React.ElementType;
   active: boolean;
   onClick: () => void;
 }) {
@@ -52,16 +50,13 @@ function SummaryCard({
           active && 'border-[#662d91] ring-1 ring-[#662d91] hover:border-[#662d91]'
         )}
       >
-        <CardContent className="flex items-start justify-between gap-4 p-5">
+        <CardContent className="p-5">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold">
+            <p className="text-2xl font-semibold tabular-nums">
               {value === undefined ? '—' : value.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">{hint ?? '\u00A0'}</p>
-          </div>
-          <div className="rounded-lg bg-gray-100 p-2">
-            <Icon className="h-5 w-5 text-gray-600" />
           </div>
         </CardContent>
       </Card>
@@ -120,7 +115,6 @@ export default function CustomersPage() {
             label="All customers"
             value={summary?.total}
             hint="All time"
-            icon={Users}
             active={customerType === 'all'}
             onClick={() => selectType('all')}
           />
@@ -128,7 +122,6 @@ export default function CustomersPage() {
             label="Returning customers"
             value={summary?.returning}
             hint={returningShare ? `2+ orders · ${returningShare}` : '2+ orders'}
-            icon={Repeat}
             active={customerType === 'returning'}
             onClick={() => selectType('returning')}
           />
@@ -136,7 +129,6 @@ export default function CustomersPage() {
             label="New customers"
             value={summary?.new}
             hint="1 order so far"
-            icon={UserPlus}
             active={customerType === 'new'}
             onClick={() => selectType('new')}
           />

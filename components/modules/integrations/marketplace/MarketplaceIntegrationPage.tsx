@@ -102,9 +102,7 @@ function SheetSyncCard({ platform }: { platform: Marketplace }) {
     <Card className="gap-0 py-0">
       <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-5">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-gray-100 p-2">
-            <FileSpreadsheet className="h-4 w-4 text-gray-600" />
-          </div>
+          <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-semibold">Order sheet</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
@@ -240,9 +238,7 @@ function ShopRow({
     <div className="px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="rounded-lg bg-gray-100 p-2">
-            <Store className="h-4 w-4 text-gray-600" />
-          </div>
+          <Store className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{shop.shopName || `Shop ${shop.shopId}`}</p>
             <p className="text-xs text-muted-foreground">
@@ -297,9 +293,7 @@ function OrdersCard({ platform }: { platform: Marketplace }) {
     <Card className="gap-0 py-0">
       <div className="flex items-center justify-between gap-4 px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-gray-100 p-2">
-            <ShoppingBag className="h-4 w-4 text-gray-600" />
-          </div>
+          <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-semibold">Orders</h2>
             <p className="text-sm text-muted-foreground">
@@ -434,7 +428,7 @@ export function MarketplaceIntegrationPage({ platform }: { platform: Marketplace
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <Link
           href="/integrations"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -487,9 +481,7 @@ export function MarketplaceIntegrationPage({ platform }: { platform: Marketplace
             <Card className="gap-0 py-0">
               <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-gray-100 p-2">
-                    <Store className="h-4 w-4 text-gray-600" />
-                  </div>
+                  <Store className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div>
                     <h2 className="text-sm font-semibold">
                       Direct connection{' '}

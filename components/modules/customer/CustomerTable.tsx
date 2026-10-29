@@ -41,8 +41,8 @@ function SortHeader({
         type="button"
         onClick={() => onSortChange(field)}
         className={cn(
-          'inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider transition-colors hover:text-gray-900',
-          isActive ? 'text-gray-900' : 'text-gray-500'
+          'inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground',
+          isActive ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         {label}
@@ -99,15 +99,15 @@ export default function CustomerTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px]">
-        <thead className="border-b bg-gray-50/80">
+        <thead className="border-b">
           <tr>
             <SortHeader label="Customer" field="name" {...sortProps} />
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">
               Type
             </th>
             <SortHeader label="Orders" field="total_purchase_count" align="right" {...sortProps} />
             <SortHeader label="Total spent" field="total_amount_spent" align="right" {...sortProps} />
-            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground">
               Avg order
             </th>
             <SortHeader label="Last order" field="last_order_date" align="right" {...sortProps} />
@@ -177,7 +177,7 @@ export default function CustomerTable({
                             <span
                               title={COUNTRY_LABELS[c.country]}
                               className={cn(
-                                'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide',
+                                'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium leading-none',
                                 c.country === 'SG'
                                   ? 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20'
                                   : 'bg-gray-100 text-gray-500'

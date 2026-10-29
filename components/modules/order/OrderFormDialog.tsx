@@ -16,6 +16,9 @@ import {
 import { FormDialog, FormSection, errorMessage } from '@/components/forms/FormDialog';
 import { Field, MoneyInput, QuantityStepper, ChoiceField } from '@/components/forms/Field';
 import { getCustomerById, getCustomers } from '@/lib/api/customer';
+import { ensureDistributorCustomer } from '@/lib/api/distributor';
+import { useDistributors } from '@/hooks/useDistributors';
+import { Distributor } from '@/types/distributor';
 import { createAddress } from '@/lib/api/address';
 import {
   AddressDraft,
@@ -43,6 +46,8 @@ type OrderFormDialogProps = {
   products: Product[];
   trigger?: React.ReactNode;
   isSubmitting?: boolean;
+  // 'distributor' picks the buyer from the distributor list only.
+  audience?: 'customer' | 'distributor';
 };
 
 type Line = { product: Product; quantity: number };
@@ -222,6 +227,128 @@ function CustomerPicker({
   );
 }
 
+// Distributors are picked from the distributor list. A distributor with no
+// orders yet has no customer record, so one is created from its name and phone
+// (or the existing one is used when the phone is already a customer).
+function DistributorPicker({
+  onChange,
+  disabled,
+}: {
+  onChange: (customer: Customer) => void;
+  disabled?: boolean;
+}) {
+  const { distributors, isLoading } = useDistributors();
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const term = query.trim().toLowerCase();
+  const digits = term.replace(/\D/g, '');
+  const results = distributors.filter(
+    (d) =>
+      !term ||
+      (d.name ?? '').toLowerCase().includes(term) ||
+      (digits.length >= 3 && d.phone_number.includes(digits.replace(/^0/, '')))
+  );
+
+  const choose = async (distributor: Distributor) => {
+    setResolving(distributor.id);
+    setError(null);
+    try {
+      onChange(await ensureDistributorCustomer(distributor));
+    } catch (err) {
+      setError(errorMessage(err, 'Couldn’t use this distributor. Please try again.'));
+      return;
+    } finally {
+      setResolving(null);
+    }
+    setOpen(false);
+    setQuery('');
+  };
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverAnchor asChild>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="order-distributor"
+              value={query}
+              disabled={disabled}
+              autoComplete="off"
+              placeholder="Search distributors by name or phone"
+              onFocus={() => setOpen(true)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpen(true);
+              }}
+              className="pl-9"
+            />
+          </div>
+        </PopoverAnchor>
+        <PopoverContent
+          align="start"
+          sideOffset={4}
+          className="w-[var(--radix-popover-trigger-width)] p-1"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            if ((e.target as HTMLElement)?.id === 'order-distributor') e.preventDefault();
+          }}
+        >
+          {isLoading ? (
+            <p className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading distributors…
+            </p>
+          ) : results.length === 0 ? (
+            <p className="px-3 py-3 text-sm text-muted-foreground">
+              {distributors.length
+                ? `No distributors match “${query.trim()}”.`
+                : 'No distributors yet. Add them under Distributor list.'}
+            </p>
+          ) : (
+            <ul
+              className="max-h-64 overflow-y-auto overscroll-contain"
+              onWheel={(e) => {
+                e.currentTarget.scrollTop += e.deltaY;
+              }}
+            >
+              {results.map((distributor) => (
+                <li key={distributor.id}>
+                  <button
+                    type="button"
+                    disabled={resolving !== null}
+                    onClick={() => choose(distributor)}
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-muted disabled:opacity-60"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">
+                        {distributor.name || 'Unnamed distributor'}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {formatPhone(distributor.phone_number)}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {resolving === distributor.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        `${distributor.order_count} ${distributor.order_count === 1 ? 'order' : 'orders'}`
+                      )}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </PopoverContent>
+      </Popover>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 type SavedAddress = {
   id: UUID;
   full_address: string;
@@ -345,6 +472,7 @@ export default function OrderFormDialog({
   products,
   trigger,
   isSubmitting = false,
+  audience = 'customer',
 }: OrderFormDialogProps) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [orderDate, setOrderDate] = useState(todayInMalaysia());
@@ -443,7 +571,7 @@ export default function OrderFormDialog({
   const totalInvalid = total.trim() !== '' && !(totalNumber > 0);
   const canSubmit = !!customer && lines.length > 0 && totalNumber > 0;
   const missingHint = !customer
-    ? 'Choose a customer'
+    ? audience === 'distributor' ? 'Choose a distributor' : 'Choose a customer'
     : !lines.length
       ? 'Add at least one product'
       : !(totalNumber > 0)
@@ -510,8 +638,12 @@ export default function OrderFormDialog({
       error={error}
       footerNote={missingHint}
     >
-      <FormSection title="Customer" icon={User}>
-        <CustomerPicker value={customer} onChange={setCustomer} disabled={busy} />
+      <FormSection title={audience === 'distributor' ? 'Distributor' : 'Customer'} icon={User}>
+        {audience === 'distributor' && !customer ? (
+          <DistributorPicker onChange={setCustomer} disabled={busy} />
+        ) : (
+          <CustomerPicker value={customer} onChange={setCustomer} disabled={busy} />
+        )}
       </FormSection>
 
       {customer && (

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { UUID } from 'crypto';
-import { AlertCircle, Plus, Store, Trash2 } from 'lucide-react';
+import { AlertCircle, MapPin, Plus, Store, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,11 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDistributors } from '@/hooks/useDistributors';
 import { formatPhone } from '@/lib/utils/phone';
-import { DistributorInput } from '@/types/distributor';
+import { Distributor, DistributorInput } from '@/types/distributor';
 import { DeleteDialog } from '../utils/ui/DeleteDialog';
 import DistributorFormDialog from './DistributorFormDialog';
 
-const TH = 'px-6 py-3 text-xs font-medium uppercase tracking-wider text-gray-500';
+const TH = 'px-6 py-3 text-xs font-medium text-muted-foreground';
 
 type DistributorListProps = {
   subNav?: React.ReactNode;
@@ -34,6 +34,7 @@ export default function DistributorList({
     deleteDistributor,
   } = useDistributors();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [addressFor, setAddressFor] = useState<Distributor | null>(null);
 
   const handleCreate = async (data: DistributorInput) => {
     const result = await createDistributor(data);
@@ -44,6 +45,7 @@ export default function DistributorList({
     );
     await refresh();
     onDistributorsChanged?.();
+    return result.distributor;
   };
 
   const handleDelete = async (id: UUID) => {
@@ -60,7 +62,7 @@ export default function DistributorList({
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-[1600px] space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           title="Distributors"
           description="Phone numbers whose orders are kept apart from customer orders."
@@ -74,9 +76,14 @@ export default function DistributorList({
         {subNav}
 
         <DistributorFormDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
+          isOpen={isDialogOpen || addressFor !== null}
+          distributor={addressFor}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setAddressFor(null);
+          }}
           onSubmit={handleCreate}
+          onSaved={() => addressFor && toast.success('Address saved')}
         />
 
         <Card className="gap-0 overflow-hidden py-0">
@@ -91,13 +98,13 @@ export default function DistributorList({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px]">
-                <thead className="border-b bg-gray-50/80">
+                <thead className="border-b">
                   <tr>
                     <th className={`${TH} text-left`}>Distributor</th>
                     <th className={`${TH} text-left`}>Phone</th>
                     <th className={`${TH} text-right`}>Orders</th>
                     <th className={`${TH} text-right`}>Added</th>
-                    <th className={`${TH} w-20`}>
+                    <th className={`${TH} w-24`}>
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -161,7 +168,17 @@ export default function DistributorList({
                           })}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              aria-label={`Add an address for ${distributor.name || distributor.phone_number}`}
+                              title="Add delivery address"
+                              onClick={() => setAddressFor(distributor)}
+                            >
+                              <MapPin className="h-4 w-4" />
+                            </Button>
                             <DeleteDialog
                               title={`Remove ${distributor.name || formatPhone(distributor.phone_number)}?`}
                               description="Their orders move back to Orders as customer orders."

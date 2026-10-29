@@ -40,7 +40,7 @@ export default function FollowUpsPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader
           title="Follow-ups"
           description="Each customer is in one group, based on how long it has been since their last order."
@@ -88,7 +88,7 @@ export default function FollowUpsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b text-left text-xs font-medium text-muted-foreground">
                     <th className="px-5 py-2.5 font-medium">Customer</th>
                     <th className="px-3 py-2.5 font-medium">Last order</th>
                     <th className="px-3 py-2.5 font-medium">Quiet for</th>

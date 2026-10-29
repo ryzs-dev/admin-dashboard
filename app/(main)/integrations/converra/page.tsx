@@ -2,23 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-  AlertCircle,
-  AlertTriangle,
-  ArrowLeft,
-  Check,
-  ChevronsUpDown,
-  ExternalLink,
-  History,
-  Info,
-  Link2,
-  Loader2,
-  RefreshCw,
-  Settings2,
-  ShieldCheck,
-  Unplug,
-  Users,
-} from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Check, ChevronsUpDown, ExternalLink, History, Info, Link2, Loader2, RefreshCw, Settings2, ShieldCheck, Unplug } from 'lucide-react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
 import { StatCard } from '@/components/layout/StatCard';
@@ -90,9 +74,7 @@ function InfoCard({
     <Card className="gap-0 py-0">
       <div className="flex items-start justify-between gap-3 px-5 pt-5">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-gray-100 p-2">
-            <Icon className="h-4 w-4 text-gray-600" />
-          </div>
+          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-semibold">{title}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
@@ -600,7 +582,7 @@ export default function ConverraIntegrationPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <Link
           href="/integrations"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -688,7 +670,6 @@ export default function ConverraIntegrationPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard
                 label="Customers synced"
-                icon={Users}
                 value={
                   running && current
                     ? current.total.toLocaleString()
@@ -708,7 +689,6 @@ export default function ConverraIntegrationPage() {
               />
               <StatCard
                 label="Last full sync"
-                icon={RefreshCw}
                 value={
                   running
                     ? 'Running…'

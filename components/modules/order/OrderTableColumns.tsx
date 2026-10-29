@@ -162,7 +162,7 @@ function SortableHeader({
       }}
       className={cn(
         'inline-flex items-center gap-1.5 transition-colors hover:text-gray-900',
-        sorted ? 'text-gray-900' : 'text-gray-500',
+        sorted ? 'text-foreground' : 'text-muted-foreground',
         align === 'right' && 'ml-auto'
       )}
     >
@@ -216,7 +216,7 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
               {orderNumber}
             </span>
             {isRecent && (
-              <span className="rounded bg-[#662d91]/[0.08] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#662d91]">
+              <span className="rounded bg-[#662d91]/[0.08] px-1.5 py-0.5 text-[11px] font-medium text-[#662d91]">
                 New
               </span>
             )}
