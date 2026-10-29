@@ -87,9 +87,17 @@ const COLUMN_WIDTHS: Record<string, string> = {
 
 type OrderTableProps = {
   orderType?: OrderType;
+  title?: string;
+  description?: string;
+  subNav?: React.ReactNode;
 };
 
-export function OrderTable({ orderType = 'all' }: OrderTableProps) {
+export function OrderTable({
+  orderType = 'all',
+  title = 'Orders',
+  description = 'Track every order from payment to delivery.',
+  subNav,
+}: OrderTableProps) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -385,15 +393,14 @@ export function OrderTable({ orderType = 'all' }: OrderTableProps) {
       />
 
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <PageHeader
-          title="Orders"
-          description="Track every order from payment to delivery."
-        >
+        <PageHeader title={title} description={description}>
           <Button onClick={() => setIsCreateOpen(true)} className="gap-1.5">
             <Plus className="h-4 w-4" />
             New order
           </Button>
         </PageHeader>
+
+        {subNav}
 
         <Card className="gap-0 overflow-hidden py-0">
           <div className="overflow-x-auto border-b">

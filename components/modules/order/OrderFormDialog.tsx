@@ -171,7 +171,14 @@ function CustomerPicker({
             No existing customers match “{debounced}”.
           </p>
         ) : (
-          <ul className="max-h-64 overflow-y-auto">
+          <ul
+            className="max-h-64 overflow-y-auto overscroll-contain"
+            // The dialog's scroll lock swallows wheel events on portalled
+            // content, so scroll the list ourselves.
+            onWheel={(e) => {
+              e.currentTarget.scrollTop += e.deltaY;
+            }}
+          >
             {results.map((customer) => (
               <li key={customer.id}>
                 <button
