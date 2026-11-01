@@ -28,6 +28,7 @@ import { createAddress, updateAddress } from '@/lib/api/address';
 import { updateOrder } from '@/lib/api/order';
 import EditAddressDialog from '@/components/modules/order/EditAddressDialog';
 import Link from 'next/link';
+import { ReceiptCard } from '../receipts/ReceiptCard';
 import { getOrderShipmentStatus } from './OrderTableColumns';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -439,6 +440,8 @@ const OrderTemplate = ({ order }: { order: Order }) => {
                 )}
               </CardContent>
             </Card>
+
+            {!marketplace && <ReceiptCard orderId={order.id} />}
 
             {order.shipment_description && (
               <Card>

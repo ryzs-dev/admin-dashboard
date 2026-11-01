@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { UUID } from 'crypto';
+import { RECEIPT_STATUS } from '../receipts/ReceiptStatus';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { courierLabel } from '../parcel-daily/couriers';
@@ -364,11 +365,38 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
         <SortableHeader column={column} label="Amount" align="right" />
       </div>
     ),
-    cell: ({ row }) => (
-      <p className="text-right text-sm font-medium text-gray-900">
-        {formatCurrency(Number(row.original.total_amount ?? 0))}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const receipt = row.original.order_receipts?.[0];
+      const status = receipt ? RECEIPT_STATUS[receipt.check_status] : null;
+      const Icon = status?.icon;
+      return (
+        <div className="text-right">
+          <p className="text-sm font-medium text-gray-900">
+            {formatCurrency(Number(row.original.total_amount ?? 0))}
+          </p>
+          {status && Icon && (
+            <p
+              title={
+                receipt?.amount != null
+                  ? `${status.label}: ${formatCurrency(Number(receipt.amount))}`
+                  : status.label
+              }
+              className={cn(
+                'mt-0.5 inline-flex items-center gap-1 text-xs',
+                receipt?.check_status === 'mismatch'
+                  ? 'text-[#c4242a]'
+                  : receipt?.check_status === 'match'
+                    ? 'text-[#247b50]'
+                    : 'text-muted-foreground'
+              )}
+            >
+              <Icon className="h-3 w-3" />
+              {receipt?.check_status === 'mismatch' ? 'Receipt differs' : 'Receipt'}
+            </p>
+          )}
+        </div>
+      );
+    },
   },
   {
     id: 'actions',

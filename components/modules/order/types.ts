@@ -1,4 +1,5 @@
 import { UUID } from 'crypto';
+import { OrderReceiptSummary } from '@/types/receipt';
 import { Address, Customer } from '../customer/types';
 import { OrderTracking } from '../tracking/types';
 
@@ -21,6 +22,7 @@ export interface Order {
   buyer_name?: string | null;
   agent_name?: string | null;
   autopilot_hold?: boolean;
+  order_receipts?: OrderReceiptSummary[];
 }
 
 export type OrderSource = 'whatsapp' | 'shopee' | 'lazada';

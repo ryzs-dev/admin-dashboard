@@ -37,6 +37,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
 import { cn } from '@/lib/utils';
 import { setAutopilotHold } from '@/lib/api/autopilot';
+import { UnmatchedReceiptsButton } from '../receipts/UnmatchedReceipts';
 import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
 import { BOOKABLE_COURIERS } from '../parcel-daily/couriers';
 import { useParcelDailySettings } from '@/hooks/useParcelDaily';
@@ -410,6 +411,7 @@ export function OrderTable({
 
       <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader title={title} description={description}>
+          <UnmatchedReceiptsButton onAttached={() => refreshOrders()} />
           <Button onClick={() => setIsCreateOpen(true)} className="gap-1.5">
             <Plus className="h-4 w-4" />
             New order
