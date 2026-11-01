@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Receipt } from '@/types/receipt';
+import { Receipt, ReceiptModel, ReceiptSettings } from '@/types/receipt';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -39,5 +39,26 @@ export async function recheckReceipt(receiptId: string) {
     return data.receipt as Receipt;
   } catch (error) {
     throw apiError(error, 'Couldn’t check the receipt');
+  }
+}
+
+export async function getReceiptSettings() {
+  const { data } = await api.get('/settings');
+  return data.settings as ReceiptSettings;
+}
+
+export async function saveReceiptSettings(patch: {
+  enabled?: boolean;
+  api_key?: string;
+  clear_key?: boolean;
+  model?: ReceiptModel;
+  monthly_cap_usd?: number;
+  updated_by?: string | null;
+}) {
+  try {
+    const { data } = await api.put('/settings', patch);
+    return data.settings as ReceiptSettings;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t save the setting');
   }
 }

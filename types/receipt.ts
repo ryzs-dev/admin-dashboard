@@ -28,3 +28,16 @@ export interface Receipt {
 
 // The summary embedded on each order row.
 export type OrderReceiptSummary = Pick<Receipt, 'id' | 'check_status' | 'amount'>;
+
+export type ReceiptModel = 'claude-opus-5-5' | 'claude-sonnet-5-5' | 'claude-haiku-5-5';
+
+export interface ReceiptSettings {
+  enabled: boolean;
+  has_key: boolean;
+  key_hint: string | null;
+  model: ReceiptModel;
+  monthly_cap_usd: number;
+  month: { receipts_read: number; cost_usd: number };
+  updated_at: string;
+  updated_by: string | null;
+}

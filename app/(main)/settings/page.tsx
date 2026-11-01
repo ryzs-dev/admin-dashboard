@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -14,16 +15,18 @@ import {
 import { RulesCard } from '@/components/modules/autopilot/RulesCard';
 import { StepCard } from '@/components/modules/autopilot/StepCard';
 import { useAutopilotSettings, useSaveAutopilotSettings } from '@/hooks/useAutopilot';
+import { ReceiptSettingsSection } from '@/components/modules/receipts/ReceiptSettings';
 
 export default function SettingsPage() {
   const { settings, isLoading, isError, mutate } = useAutopilotSettings();
   const { save, saveState } = useSaveAutopilotSettings();
+  const [receiptSave, setReceiptSave] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <PageHeader title="Settings" description="How the back office runs. Changes save as you make them.">
-          <SaveState state={saveState} />
+          <SaveState state={saveState !== 'idle' ? saveState : receiptSave} />
         </PageHeader>
 
         <section className="space-y-4">
@@ -70,6 +73,16 @@ export default function SettingsPage() {
               <RulesCard settings={settings} onSave={save} />
             </>
           )}
+        </section>
+
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-base font-semibold">Receipts</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Payment receipts staff send on WhatsApp with each order.
+            </p>
+          </div>
+          <ReceiptSettingsSection onSaving={setReceiptSave} />
         </section>
       </div>
     </div>
