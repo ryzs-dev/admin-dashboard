@@ -38,10 +38,16 @@ export function useAutopilotPreview(step: AutopilotStep) {
 }
 
 // Saves one setting at a time: shows it at once, rolls back if the server refuses.
-export function useSaveAutopilotSettings() {
+export function useSaveAutopilotSettings(
+  onStateChange?: (state: 'idle' | 'saving' | 'saved') => void
+) {
   const { user } = useAuth();
   const { settings, mutate } = useAutopilotSettings();
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveState, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const setSaveState = (state: 'idle' | 'saving' | 'saved') => {
+    setState(state);
+    onStateChange?.(state);
+  };
 
   const save = async (patch: Partial<AutopilotSettings>) => {
     if (!settings) return;

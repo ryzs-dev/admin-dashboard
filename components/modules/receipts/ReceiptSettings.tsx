@@ -9,6 +9,13 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getReceiptSettings, saveReceiptSettings } from '@/lib/api/receipts';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-providers';
@@ -157,26 +164,27 @@ export function ReceiptSettingsSection({
         </div>
 
         {/* Model */}
-        <div className="space-y-2 px-5 py-4">
-          <p className="text-sm font-medium">Model</p>
-          <div role="radiogroup" aria-label="Model" className="grid gap-2 sm:grid-cols-3">
-            {MODELS.map((model) => (
-              <button
-                key={model.value}
-                type="button"
-                role="radio"
-                aria-checked={s.model === model.value}
-                onClick={() => s.model !== model.value && save({ model: model.value })}
-                className={cn(
-                  'rounded-lg border px-3 py-2.5 text-left transition-colors',
-                  s.model === model.value ? 'border-[#662d91] ring-1 ring-[#662d91]' : 'hover:border-gray-300'
-                )}
-              >
-                <p className="text-sm font-medium">{model.label}</p>
-                <p className="text-xs text-muted-foreground">{model.note}</p>
-              </button>
-            ))}
+        <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 max-w-lg">
+            <label htmlFor="receipt-model" className="text-sm font-medium">
+              Model
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {MODELS.find((m) => m.value === s.model)?.note}
+            </p>
           </div>
+          <Select value={s.model} onValueChange={(value) => save({ model: value as ReceiptModel })}>
+            <SelectTrigger id="receipt-model" className="w-60">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MODELS.map((model) => (
+                <SelectItem key={model.value} value={model.value}>
+                  {model.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Monthly limit and spend */}
