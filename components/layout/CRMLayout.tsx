@@ -13,6 +13,7 @@ import {
   Blocks,
   Store,
   Bot,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -185,19 +186,13 @@ function CRMSidebar() {
               <DropdownMenuContent side="top" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Link>
-                </DropdownMenuItem> */}
-                {/* <DropdownMenuSeparator /> */}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout

@@ -18,18 +18,22 @@ const DESCRIPTIONS: Record<AutopilotStep, string> = {
   tracking: 'Sends each customer their tracking number on WhatsApp once the shipment has one.',
 };
 
+// 'settings' edits the step (Settings page); 'status' summarises it and offers
+// Run now (Autopilot page).
 export function StepCard({
   step,
   settings,
+  variant,
   lastRun,
   onSave,
   onRan,
 }: {
   step: AutopilotStep;
   settings: AutopilotSettings;
+  variant: 'settings' | 'status';
   lastRun?: AutopilotRun;
-  onSave: (patch: Partial<AutopilotSettings>) => Promise<void>;
-  onRan: () => void;
+  onSave?: (patch: Partial<AutopilotSettings>) => Promise<void>;
+  onRan?: () => void;
 }) {
   const enabledKey = step === 'ship' ? 'ship_enabled' : 'tracking_enabled';
   const timeKey = step === 'ship' ? 'ship_time' : 'tracking_time';
@@ -58,7 +62,7 @@ export function StepCard({
             ? runOutcome(run)
             : 'Running now'
       );
-      onRan();
+      onRan?.();
       mutate();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Couldn’t start the run');
@@ -68,19 +72,37 @@ export function StepCard({
   };
 
   return (
-    <Card className={cn('gap-0 py-0', !on && 'bg-muted/30')}>
+    <Card className={cn('gap-0 py-0', !on && variant === 'settings' && 'bg-muted/30')}>
       <div className="flex items-start justify-between gap-4 px-5 pt-5">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">{STEP_LABELS[step]}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{DESCRIPTIONS[step]}</p>
         </div>
-        <Switch
-          checked={on}
-          onCheckedChange={(value) => onSave({ [enabledKey]: value })}
-          aria-label={`${STEP_LABELS[step]} on or off`}
-        />
+        {variant === 'settings' ? (
+          <Switch
+            checked={on}
+            onCheckedChange={(value) => onSave?.({ [enabledKey]: value })}
+            aria-label={`${STEP_LABELS[step]} on or off`}
+          />
+        ) : (
+          <span
+            className={cn(
+              'flex-none whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium',
+              on && settings.enabled ? 'bg-[#dcfae5] text-[#04250e]' : 'bg-gray-100 text-gray-700'
+            )}
+          >
+            {!on ? 'Off' : settings.enabled ? 'On' : 'Paused'}
+          </span>
+        )}
       </div>
 
+      {variant === 'status' ? (
+        <p className="mt-3 px-5 text-sm">
+          {on
+            ? `Every day at ${formatClock(settings[timeKey])}, ${mode === 'review' ? 'waits for approval' : 'runs automatically'}`
+            : 'Switched off in Settings'}
+        </p>
+      ) : (
       <div className="mt-4 grid gap-4 px-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <label htmlFor={`${step}-time`} className="text-sm font-medium">
@@ -92,7 +114,7 @@ export function StepCard({
             value={time}
             disabled={!on}
             onChange={(e) => setTime(e.target.value)}
-            onBlur={() => time && time !== settings[timeKey] && onSave({ [timeKey]: time })}
+            onBlur={() => time && time !== settings[timeKey] && onSave?.({ [timeKey]: time })}
             className="w-36 tabular-nums"
           />
         </div>
@@ -111,7 +133,7 @@ export function StepCard({
                 role="radio"
                 aria-checked={mode === value}
                 disabled={!on}
-                onClick={() => mode !== value && onSave({ [modeKey]: value })}
+                onClick={() => mode !== value && onSave?.({ [modeKey]: value })}
                 className={cn(
                   'rounded px-2.5 py-1.5 font-medium transition-colors disabled:opacity-50',
                   mode === value ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
@@ -123,6 +145,7 @@ export function StepCard({
           </div>
         </div>
       </div>
+      )}
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t px-5 py-3">
         <div className="min-w-0 text-xs text-muted-foreground">
@@ -147,10 +170,12 @@ export function StepCard({
             {lastRun && ` · Last run ${formatWhen(lastRun.created_at)}`}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5" disabled={running} onClick={runNow}>
-          {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-          Run now
-        </Button>
+        {variant === 'status' && (
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={running} onClick={runNow}>
+            {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            Run now
+          </Button>
+        )}
       </div>
     </Card>
   );
