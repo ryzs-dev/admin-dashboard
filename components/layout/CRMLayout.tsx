@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Blocks,
   Store,
+  Bot,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -74,6 +75,7 @@ function CRMSidebar() {
       icon: Store,
       href: '/distributors',
     },
+    { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
     {
       id: 'inbox',
       label: 'Inbox',

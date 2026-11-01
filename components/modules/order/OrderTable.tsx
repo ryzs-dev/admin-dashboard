@@ -36,6 +36,7 @@ import { UUID } from 'crypto';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from './types';
 import { cn } from '@/lib/utils';
+import { setAutopilotHold } from '@/lib/api/autopilot';
 import { createBulkOrder, getOrderSummary, OrderStatusGroup } from '@/lib/api/order';
 import { BOOKABLE_COURIERS } from '../parcel-daily/couriers';
 import { useParcelDailySettings } from '@/hooks/useParcelDaily';
@@ -314,8 +315,22 @@ export function OrderTable({
           navigator.clipboard.writeText(value);
           toast.success(`${label} copied`);
         },
+        onToggleHold: async (order) => {
+          const hold = !order.autopilot_hold;
+          try {
+            await setAutopilotHold(order.id, hold);
+            toast.success(
+              hold
+                ? `${order.order_number} is on hold. Autopilot will skip it.`
+                : `${order.order_number} is back with Autopilot.`
+            );
+            await refreshOrders();
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Couldn’t change the hold');
+          }
+        },
       }),
-    [router, handleSendTracking]
+    [router, handleSendTracking, refreshOrders]
   );
 
   const total = data?.pagination?.total ?? 0;

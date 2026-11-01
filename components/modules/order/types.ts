@@ -20,6 +20,7 @@ export interface Order {
   source?: OrderSource;
   buyer_name?: string | null;
   agent_name?: string | null;
+  autopilot_hold?: boolean;
 }
 
 export type OrderSource = 'whatsapp' | 'shopee' | 'lazada';

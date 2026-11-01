@@ -18,6 +18,8 @@ import {
   ShoppingBag,
   Trash2,
   Truck,
+  PauseCircle,
+  PlayCircle,
 } from 'lucide-react';
 import { isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
 import {
@@ -38,6 +40,7 @@ interface ColumnActions {
   onDeleteOrder: (orderId: UUID) => void;
   onCopy: (value: string, label: string) => void;
   onSendTracking: (orderId: string) => void;
+  onToggleHold: (order: Order) => void;
 }
 
 // Mirrors ORDER_STATUS_GROUPS in lunaa-agent's orders module.
@@ -220,6 +223,15 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                 New
               </span>
             )}
+            {order.autopilot_hold && (
+              <span
+                title="Autopilot skips this order until it is released"
+                className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700"
+              >
+                <PauseCircle className="h-3 w-3" />
+                On hold
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             {new Date(order.order_date ?? order.created_at).toLocaleDateString(
@@ -385,6 +397,16 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                 <Send className="mr-2 h-4 w-4" />
                 Send tracking to customer
               </DropdownMenuItem>
+              {!isMarketplaceOrder(order) && (
+                <DropdownMenuItem onClick={() => actions.onToggleHold(order)}>
+                  {order.autopilot_hold ? (
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                  ) : (
+                    <PauseCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {order.autopilot_hold ? 'Release to Autopilot' : 'Hold from Autopilot'}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={() =>
                   actions.onCopy(order.order_number || order.id, 'Order number')
