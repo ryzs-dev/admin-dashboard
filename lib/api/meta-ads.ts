@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { MetaAdsSettings, MetaCampaign } from '@/types/meta-ads';
+import { MetaAdAccount, MetaAdsSettings, MetaCampaign, MetaDataset } from '@/types/meta-ads';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -53,4 +53,41 @@ export async function syncMetaAds() {
 export async function getMetaCampaigns(month: string) {
   const { data } = await api.get('/campaigns', { params: { month } });
   return data.campaigns as MetaCampaign[];
+}
+
+// Where the "Continue with Facebook" button sends the browser.
+export function facebookSignInUrl(returnTo: string) {
+  return `${API_BASE_URL}/api/meta-ads/oauth/start?return_to=${encodeURIComponent(returnTo)}`;
+}
+
+export async function getMetaAdAccounts() {
+  try {
+    const { data } = await api.get('/oauth/accounts');
+    return data as { user: string | null; accounts: MetaAdAccount[] };
+  } catch (error) {
+    throw apiError(error, 'Couldn’t list your ad accounts');
+  }
+}
+
+export async function getMetaDatasets(adAccountId: string) {
+  try {
+    const { data } = await api.get('/oauth/datasets', { params: { account: adAccountId } });
+    return data.datasets as MetaDataset[];
+  } catch (error) {
+    throw apiError(error, 'Couldn’t list datasets');
+  }
+}
+
+export async function finishMetaSignIn(adAccountId: string, datasetId: string | null) {
+  try {
+    const { data } = await api.post('/oauth/finish', { ad_account_id: adAccountId, dataset_id: datasetId ?? '' });
+    return data.settings as MetaAdsSettings;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t connect the ad account');
+  }
+}
+
+export async function cancelMetaSignIn() {
+  const { data } = await api.post('/oauth/cancel');
+  return data.settings as MetaAdsSettings;
 }

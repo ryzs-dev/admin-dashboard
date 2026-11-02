@@ -1,4 +1,4 @@
-export type IntegrationId = 'parcel-daily' | 'shopee' | 'lazada' | 'converra';
+export type IntegrationId = 'parcel-daily' | 'shopee' | 'lazada' | 'converra' | 'meta-ads';
 
 export type Integration = {
   id: IntegrationId;
@@ -46,6 +46,15 @@ export const INTEGRATIONS: Integration[] = [
     logo: '/images/integrations/converra.png',
     href: '/integrations/converra',
     portalUrl: 'https://app.converra.app',
+  },
+  {
+    id: 'meta-ads',
+    name: 'Meta ads',
+    category: 'Advertising',
+    description: 'Ad spend and ROAS beside your sales, and WhatsApp orders sent back to Meta for each campaign.',
+    logo: '/images/integrations/meta.png',
+    href: '/integrations/meta-ads',
+    portalUrl: 'https://adsmanager.facebook.com',
   },
 ];
 

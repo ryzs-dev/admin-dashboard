@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useMarketplaces, useSheetSync } from '@/hooks/useMarketplaces';
 import { useParcelDailyAccount } from '@/hooks/useParcelDaily';
 import { useConverraStatus } from '@/hooks/useConverra';
+import { useMetaAdsSettings } from '@/hooks/useMetaAds';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationId } from './registry';
 
@@ -14,6 +15,7 @@ export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
   const marketplaces = useMarketplaces();
   const sheetSync = useSheetSync();
   const converra = useConverraStatus();
+  const metaAds = useMetaAdsSettings();
   switch (id) {
     case 'parcel-daily':
       if (parcelDaily.isLoading) return 'checking';
@@ -31,6 +33,14 @@ export function useIntegrationStatus(id: IntegrationId): IntegrationStatus {
       if (converra.isError || !converra.status?.connected) return 'disconnected';
       if (converra.status.connection && !converra.status.connection.ok) return 'error';
       return converra.status.sync.last?.status === 'failed' ? 'attention' : 'connected';
+    }
+    case 'meta-ads': {
+      if (metaAds.isLoading) return 'checking';
+      const s = metaAds.settings;
+      if (!s?.connected) return 'disconnected';
+      const expiresSoon =
+        s.token_expires_at && new Date(s.token_expires_at).getTime() - Date.now() < 7 * 86400000;
+      return s.last_sync_error || expiresSoon || s.last_conversion_error ? 'attention' : 'connected';
     }
   }
 }

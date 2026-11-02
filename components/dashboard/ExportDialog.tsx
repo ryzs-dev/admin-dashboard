@@ -210,7 +210,7 @@ export function ExportDialog({ selectedMonth, adsConnected }: { selectedMonth: s
                     s.id === 'daily' && period === 'day'
                       ? 'Only for a month'
                       : s.id === 'ads' && !adsConnected
-                        ? 'Connect Meta ads in Settings first'
+                        ? 'Connect Meta ads in Integrations first'
                         : s.hint
                   }
                 >

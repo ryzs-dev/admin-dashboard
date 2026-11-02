@@ -48,7 +48,7 @@ export function AdsPanel({
           </p>
         </div>
         <Link
-          href="/settings?section=ads"
+          href="/integrations/meta-ads"
           className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:underline"
         >
           Connect
@@ -67,13 +67,13 @@ export function AdsPanel({
     <Panel>
       <PanelHeader
         title="Meta ads"
-        meta={settings.last_sync_error ? 'last sync failed, see Settings' : settings.account_name ?? undefined}
+        meta={settings.last_sync_error ? 'last sync failed, see Integrations' : settings.account_name ?? undefined}
       >
         <Link
-          href="/settings?section=ads"
+          href="/integrations/meta-ads"
           className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          Settings
+          Manage
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </PanelHeader>
@@ -150,7 +150,7 @@ export function AdsPanel({
           {!settings.send_conversions && (
             <p className="px-5 pb-4 text-xs text-muted-foreground">
               Purchases and ROAS per campaign appear once orders are sent to Meta.{' '}
-              <Link href="/settings?section=ads" className="font-medium text-foreground hover:underline">
+              <Link href="/integrations/meta-ads" className="font-medium text-foreground hover:underline">
                 Turn it on
               </Link>
             </p>

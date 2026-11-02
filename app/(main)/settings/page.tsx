@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Bot, Megaphone, Receipt, Truck } from 'lucide-react';
+import { Bot, Receipt, Truck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Select,
@@ -15,7 +15,6 @@ import { AutopilotSettings } from '@/components/modules/autopilot/AutopilotSetti
 import { SaveState } from '@/components/modules/autopilot/AutopilotSwitch';
 import { ReceiptSettingsSection } from '@/components/modules/receipts/ReceiptSettings';
 import { ShippingSettings } from '@/components/modules/settings/ShippingSettings';
-import { MetaAdsSettingsSection } from '@/components/modules/settings/MetaAdsSettings';
 import { cn } from '@/lib/utils';
 
 const SECTIONS = [
@@ -37,12 +36,6 @@ const SECTIONS = [
     icon: Receipt,
     description: 'Payment receipts staff send on WhatsApp with each order.',
   },
-  {
-    id: 'ads',
-    label: 'Meta ads',
-    icon: Megaphone,
-    description: 'Ad spend and ROAS from your Meta ad account, and sales sent back to Meta.',
-  },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]['id'];
@@ -58,6 +51,11 @@ function SettingsContent() {
     : 'autopilot';
   const current = SECTIONS.find((s) => s.id === section)!;
   const [saveState, setSaveState] = useState<Save>('idle');
+
+  // Meta ads moved to Integrations; old links still land in the right place.
+  useEffect(() => {
+    if (requested === 'ads') router.replace('/integrations/meta-ads');
+  }, [requested, router]);
 
   const go = (id: SectionId) => router.replace(`${pathname}?section=${id}`, { scroll: false });
 
@@ -118,7 +116,6 @@ function SettingsContent() {
             {section === 'autopilot' && <AutopilotSettings onSaving={setSaveState} />}
             {section === 'shipping' && <ShippingSettings onSaving={setSaveState} />}
             {section === 'receipts' && <ReceiptSettingsSection onSaving={setSaveState} />}
-            {section === 'ads' && <MetaAdsSettingsSection onSaving={setSaveState} />}
           </section>
         </div>
       </div>
