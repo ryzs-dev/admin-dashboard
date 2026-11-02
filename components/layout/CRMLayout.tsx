@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Blocks,
   Megaphone,
+  FileSpreadsheet,
   Store,
   Bot,
   Settings,
@@ -86,6 +87,7 @@ function CRMSidebar() {
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
     { id: 'ads', label: 'Ads', icon: Megaphone, href: '/ads' },
+    { id: 'sales-report', label: 'Sales report', icon: FileSpreadsheet, href: '/sales-report' },
     { id: 'integrations', label: 'Integrations', icon: Blocks, href: '/integrations' },
     // {
     //   id: 'import',
