@@ -55,9 +55,9 @@ export async function getMetaCampaigns(month: string) {
   return data.campaigns as MetaCampaign[];
 }
 
-export async function getMetaAdsReport(from: string, to: string) {
+export async function getMetaAdsReport(from: string, to: string, account: string) {
   try {
-    const { data } = await api.get('/report', { params: { from, to } });
+    const { data } = await api.get('/report', { params: { from, to, account } });
     return data as MetaAdsReport;
   } catch (error) {
     throw apiError(error, 'Couldn’t load the ads report');
@@ -99,4 +99,23 @@ export async function finishMetaSignIn(adAccountId: string, datasetId: string | 
 export async function cancelMetaSignIn() {
   const { data } = await api.post('/oauth/cancel');
   return data.settings as MetaAdsSettings;
+}
+
+// Every ad account the saved sign-in can open.
+export async function getAvailableAdAccounts() {
+  try {
+    const { data } = await api.get('/accounts/available');
+    return data.accounts as MetaAdAccount[];
+  } catch (error) {
+    throw apiError(error, 'Couldn’t list your ad accounts');
+  }
+}
+
+export async function saveExtraAdAccounts(ids: string[]) {
+  try {
+    const { data } = await api.put('/accounts', { extra: ids });
+    return data.settings as MetaAdsSettings;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t save the ad accounts');
+  }
 }

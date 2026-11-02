@@ -41,6 +41,7 @@ import {
 } from '@/lib/api/meta-ads';
 import { cn } from '@/lib/utils';
 import { MetaAdsSettings } from '@/types/meta-ads';
+import { ExtraAccounts } from './ExtraAccounts';
 
 // Password managers fill any login-looking pair of fields. These aren't a
 // login, so tell Chrome, Safari, 1Password and LastPass to leave them alone.
@@ -95,7 +96,7 @@ function AccountPicker({ settings, onDone }: { settings: MetaAdsSettings; onDone
     setSaving(true);
     try {
       const saved = await finishMetaSignIn(account, dataset === NONE ? null : dataset);
-      toast.success(`Connected to ${saved.account_name ?? saved.ad_account_id}. Pulling the last 90 days…`);
+      toast.success(`Connected to ${saved.account_name ?? saved.ad_account_id}. Pulling the last 13 months…`);
       onDone(saved);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Couldn’t connect');
@@ -415,7 +416,7 @@ export function MetaAdsConnection() {
                     <p className="text-xs text-muted-foreground">
                       {s.last_sync_at
                         ? `${formatDistanceToNow(new Date(s.last_sync_at))} ago · syncs every hour`
-                        : 'Pulling the last 90 days…'}
+                        : 'Pulling the last 13 months…'}
                     </p>
                   )}
                 </div>
@@ -480,6 +481,8 @@ export function MetaAdsConnection() {
           </div>
         </div>
       </Card>
+
+      {s.connected && <ExtraAccounts settings={s} onSaved={(next) => mutate(next, { revalidate: false })} />}
 
       {s.connected && (
         <Card className="gap-0 py-0">

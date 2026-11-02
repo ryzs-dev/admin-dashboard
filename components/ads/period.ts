@@ -1,5 +1,6 @@
 import { addDays, format, parseISO } from 'date-fns';
 import { MetaAdsReportDay } from '@/types/meta-ads';
+import { formatCurrency } from '@/lib/utils/currency';
 
 export type RangeKind = 'month' | '30d' | '90d' | '12m';
 
@@ -85,3 +86,13 @@ export function bucketDays(days: MetaAdsReportDay[], byMonth: boolean): Bucket[]
 
 export const ratio = (top: number, bottom: number) => (bottom ? top / bottom : null);
 export const times = (n: number | null) => (n == null ? '—' : `${n.toFixed(2)}×`);
+
+// Ad money in the ad account's own currency (most are ringgit).
+export function adMoney(n: number, currency: string | null | undefined) {
+  if (!currency || currency === 'MYR') return formatCurrency(n);
+  return `${currency} ${n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// ROAS and cost per customer compare ad money with ringgit sales, so only for
+// ringgit accounts.
+export const comparable = (currency: string | null | undefined) => !currency || currency === 'MYR';

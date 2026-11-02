@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 import { MetaAdsReport } from '@/types/meta-ads';
 import { Panel } from '@/components/dashboard/Panel';
-import { ratio, times } from './period';
+import { adMoney, comparable, ratio, times } from './period';
 
 function Cell({
   label,
@@ -40,15 +40,17 @@ function Cell({
 
 export function AdsSummary({ report, isLoading }: { report?: MetaAdsReport; isLoading?: boolean }) {
   const t = report?.totals;
+  const cur = report?.currency;
+  const same = comparable(cur);
   const ran = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
-  const roas = t ? ratio(t.chat_revenue, t.spend) : null;
-  const allRoas = t ? ratio(t.revenue, t.spend) : null;
+  const roas = t && same ? ratio(t.chat_revenue, t.spend) : null;
+  const allRoas = t && same ? ratio(t.revenue, t.spend) : null;
   const perChat = t?.spend ? ratio(t.spend, t.conversations) : null;
-  const perNew = t?.spend ? ratio(t.spend, t.new_customers) : null;
+  const perNew = t?.spend && same ? ratio(t.spend, t.new_customers) : null;
 
   return (
     <Panel className="grid grid-cols-2 gap-px overflow-hidden bg-border lg:grid-cols-4 [&>*]:bg-card">
-      <Cell label="Ad spend" value={formatCurrency(t?.spend ?? 0)} lead isLoading={isLoading}>
+      <Cell label="Ad spend" value={adMoney(t?.spend ?? 0, cur)} lead isLoading={isLoading}>
         {ran === 1 ? '1 campaign ran' : `${ran} campaigns ran`}
         {t && t.clicks > 0 && ` · ${t.clicks.toLocaleString()} clicks`}
       </Cell>
@@ -57,9 +59,10 @@ export function AdsSummary({ report, isLoading }: { report?: MetaAdsReport; isLo
           WhatsApp sales {formatCurrency(t?.chat_revenue ?? 0)}
         </span>
         {allRoas != null && <> · all channels {times(allRoas)}</>}
+        {!same && <> · not compared, account is in {cur}</>}
       </Cell>
       <Cell label="Chats started" value={(t?.conversations ?? 0).toLocaleString()} isLoading={isLoading}>
-        {perChat != null ? `${formatCurrency(perChat)} per chat` : 'From ads that open WhatsApp'}
+        {perChat != null ? `${adMoney(perChat, cur)} per chat` : 'From ads that open WhatsApp'}
       </Cell>
       <Cell label="New customers" value={(t?.new_customers ?? 0).toLocaleString()} isLoading={isLoading}>
         {perNew != null ? `${formatCurrency(perNew)} ad spend each` : 'First order in this period'}

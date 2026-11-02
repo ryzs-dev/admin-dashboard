@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CHART_COLORS, chartAxis, chartGrid, chartTooltip } from '@/lib/chartTheme';
 import { formatCurrency, formatCurrencyShort } from '@/lib/utils/currency';
 import { Panel, PanelHeader } from '@/components/dashboard/Panel';
-import { Bucket } from './period';
+import { Bucket, adMoney } from './period';
 
 function Key({ color, label, bar }: { color: string; label: string; bar?: boolean }) {
   return (
@@ -32,12 +32,16 @@ function Key({ color, label, bar }: { color: string; label: string; bar?: boolea
 export function SpendChart({
   buckets,
   byMonth,
+  currency,
   isLoading,
 }: {
   buckets: Bucket[];
   byMonth: boolean;
+  currency?: string | null;
   isLoading?: boolean;
 }) {
+  const short = (n: number) =>
+    !currency || currency === 'MYR' ? formatCurrencyShort(n) : formatCurrencyShort(n).replace('RM', currency);
   const every = byMonth ? 0 : Math.max(0, Math.ceil(buckets.length / 8) - 1);
 
   return (
@@ -61,7 +65,7 @@ export function SpendChart({
                 {...chartAxis}
                 width={64}
                 tickCount={5}
-                tickFormatter={formatCurrencyShort}
+                tickFormatter={short}
               />
               <YAxis
                 yAxisId="sales"
@@ -75,7 +79,7 @@ export function SpendChart({
                 {...chartTooltip}
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.label ?? ''}
                 formatter={(v, name) => [
-                  formatCurrency(Number(v)),
+                  name === 'spend' ? adMoney(Number(v), currency) : formatCurrency(Number(v)),
                   name === 'spend' ? 'Ad spend' : 'WhatsApp sales',
                 ]}
               />

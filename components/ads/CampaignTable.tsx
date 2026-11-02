@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ArrowDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 import { MetaCampaign } from '@/types/meta-ads';
 import { Panel, PanelHeader } from '@/components/dashboard/Panel';
+import { adMoney } from './period';
 
 type SortKey =
   | 'spend'
@@ -54,10 +54,17 @@ function ran(c: MetaCampaign) {
 
 export function CampaignTable({
   campaigns,
+  currency,
+  showAccount,
+  accountNames,
   isLoading,
   sendingOn,
 }: {
   campaigns: MetaCampaign[];
+  currency?: string | null;
+  // With more than one account in view, say which each campaign is from.
+  showAccount?: boolean;
+  accountNames?: Record<string, string>;
   isLoading?: boolean;
   sendingOn: boolean;
 }) {
@@ -140,15 +147,20 @@ export function CampaignTable({
                           >
                             {c.campaign_name ?? c.campaign_id}
                           </p>
-                          {ran(c) && (
-                            <p className="text-xs text-muted-foreground">
-                              Ran {ran(c)}
-                            </p>
-                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {[
+                              showAccount && c.ad_account_id
+                                ? accountNames?.[c.ad_account_id]
+                                : null,
+                              ran(c) ? `Ran ${ran(c)}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
                         </td>
                         <td className={TD}>
                           <span className="font-medium">
-                            {formatCurrency(c.spend)}
+                            {adMoney(c.spend, currency)}
                           </span>
                           <div className="ml-auto mt-1 h-1 w-20 rounded-full bg-muted">
                             <div
@@ -170,7 +182,7 @@ export function CampaignTable({
                         <td className={TD}>
                           {c.cost_per_conversation == null
                             ? dash
-                            : formatCurrency(c.cost_per_conversation)}
+                            : adMoney(c.cost_per_conversation, currency)}
                         </td>
                         <td className={TD}>
                           {c.purchases ? c.purchases.toLocaleString() : dash}

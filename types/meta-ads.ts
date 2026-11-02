@@ -1,7 +1,16 @@
+export type TrackedAdAccount = {
+  id: string;
+  name: string | null;
+  currency: string | null;
+  timezone: string | null;
+};
+
 export type MetaAdsSettings = {
   connected: boolean;
   ad_account_id: string | null;
   account_name: string | null;
+  // The main account first, then extra ones synced for the Ads page.
+  accounts: TrackedAdAccount[];
   currency: string | null;
   timezone: string | null;
   token_hint: string | null;
@@ -33,6 +42,7 @@ export type MetaDataset = { id: string; name: string };
 
 export type MetaCampaign = {
   campaign_id: string;
+  ad_account_id?: string | null;
   campaign_name: string | null;
   spend: number;
   impressions: number;
@@ -66,6 +76,9 @@ export type MetaAdsReportDay = {
 export type MetaAdsReport = {
   from: string;
   to: string;
+  account: string;
+  accounts: TrackedAdAccount[];
+  currency: string | null;
   data_since: string | null;
   last_spend_day: string | null;
   totals: Omit<MetaAdsReportDay, 'date'> & { purchases: number; purchase_value: number };

@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 import { Panel, PanelHeader } from '@/components/dashboard/Panel';
-import { Bucket, ratio, times } from './period';
+import { Bucket, adMoney, comparable, ratio, times } from './period';
 
 // Same pinned header and total row as the dashboard's day-by-day table.
 const TH =
@@ -18,13 +18,17 @@ export function PeriodTable({
   buckets,
   byMonth,
   today,
+  currency,
   isLoading,
 }: {
   buckets: Bucket[];
   byMonth: boolean;
   today: string;
+  currency?: string | null;
   isLoading?: boolean;
 }) {
+  const ad = (n: number) => (n ? adMoney(n, currency) : dash);
+  const same = comparable(currency);
   const rows = [...buckets].reverse();
   const sum = (k: keyof Bucket) => buckets.reduce((n, b) => n + (b[k] as number), 0);
   const total = {
@@ -36,10 +40,10 @@ export function PeriodTable({
   };
   const cpc = (b: { spend: number; conversations: number }) => {
     const v = ratio(b.spend, b.conversations);
-    return v == null ? dash : formatCurrency(v);
+    return v == null ? dash : adMoney(v, currency);
   };
   const roas = (b: { spend: number; chat_revenue: number }) => {
-    const v = ratio(b.chat_revenue, b.spend);
+    const v = same ? ratio(b.chat_revenue, b.spend) : null;
     return v == null ? dash : times(v);
   };
 
@@ -87,7 +91,7 @@ export function PeriodTable({
                           </span>
                         )}
                       </td>
-                      <td className={TD}>{money(b.spend)}</td>
+                      <td className={TD}>{ad(b.spend)}</td>
                       <td className={TD}>{count(b.conversations)}</td>
                       <td className={TD}>{cpc(b)}</td>
                       <td className={TD}>{count(b.chat_orders)}</td>
@@ -101,7 +105,7 @@ export function PeriodTable({
               <tfoot>
                 <tr className="font-semibold">
                   <td className={cn(FOOT, 'px-3 py-2.5')}>Total</td>
-                  <td className={cn(FOOT, TD)}>{formatCurrency(total.spend)}</td>
+                  <td className={cn(FOOT, TD)}>{adMoney(total.spend, currency)}</td>
                   <td className={cn(FOOT, TD)}>{total.conversations.toLocaleString()}</td>
                   <td className={cn(FOOT, TD)}>{cpc(total)}</td>
                   <td className={cn(FOOT, TD)}>{total.chat_orders.toLocaleString()}</td>
