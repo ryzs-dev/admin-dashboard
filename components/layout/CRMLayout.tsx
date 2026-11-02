@@ -11,6 +11,7 @@ import {
   ChevronDown,
   MessageCircle,
   Blocks,
+  Megaphone,
   Store,
   Bot,
   Settings,
@@ -84,6 +85,7 @@ function CRMSidebar() {
       href: '/inbox',
     },
     { id: 'products', label: 'Products', icon: Package, href: '/products' },
+    { id: 'ads', label: 'Ads', icon: Megaphone, href: '/ads' },
     { id: 'integrations', label: 'Integrations', icon: Blocks, href: '/integrations' },
     // {
     //   id: 'import',

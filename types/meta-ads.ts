@@ -43,4 +43,32 @@ export type MetaCampaign = {
   purchase_value: number;
   cost_per_conversation: number | null;
   roas: number | null;
+  ctr: number | null;
+  // First and last day with spend in the period asked for.
+  first_day: string | null;
+  last_day: string | null;
+};
+
+export type MetaAdsReportDay = {
+  date: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversations: number;
+  orders: number;
+  revenue: number;
+  // WhatsApp orders that aren't distributor orders: the sales ads can bring in.
+  chat_orders: number;
+  chat_revenue: number;
+  new_customers: number;
+};
+
+export type MetaAdsReport = {
+  from: string;
+  to: string;
+  data_since: string | null;
+  last_spend_day: string | null;
+  totals: Omit<MetaAdsReportDay, 'date'> & { purchases: number; purchase_value: number };
+  days: MetaAdsReportDay[];
+  campaigns: MetaCampaign[];
 };

@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { getMetaAdsSettings, getMetaCampaigns } from '@/lib/api/meta-ads';
+import { getMetaAdsReport, getMetaAdsSettings, getMetaCampaigns } from '@/lib/api/meta-ads';
 
 export function useMetaAdsSettings() {
   const { data, isLoading, mutate } = useSWR('meta-ads-settings', getMetaAdsSettings, {
@@ -15,4 +15,13 @@ export function useMetaCampaigns(month: string, enabled: boolean) {
     { revalidateOnFocus: false }
   );
   return { campaigns: data ?? [], isLoading };
+}
+
+export function useMetaAdsReport(from: string, to: string, enabled: boolean) {
+  const { data, error, isLoading } = useSWR(
+    enabled ? ['meta-ads-report', from, to] : null,
+    () => getMetaAdsReport(from, to),
+    { revalidateOnFocus: false, keepPreviousData: true }
+  );
+  return { report: data, error: error as Error | undefined, isLoading };
 }

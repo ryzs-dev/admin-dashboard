@@ -70,10 +70,10 @@ export function AdsPanel({
         meta={settings.last_sync_error ? 'last sync failed, see Integrations' : settings.account_name ?? undefined}
       >
         <Link
-          href="/integrations/meta-ads"
+          href="/ads"
           className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          Manage
+          Ads page
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </PanelHeader>
@@ -124,7 +124,16 @@ export function AdsPanel({
                 {active.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                      {settings.last_sync_at ? 'No ad spend in this month.' : 'Pulling numbers from Meta…'}
+                      {settings.last_sync_at ? (
+                        <>
+                          No ad spend in this month.{' '}
+                          <Link href="/ads" className="font-medium text-foreground hover:underline">
+                            See past months
+                          </Link>
+                        </>
+                      ) : (
+                        'Pulling numbers from Meta…'
+                      )}
                     </td>
                   </tr>
                 ) : (

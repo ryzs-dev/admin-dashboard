@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { MetaAdAccount, MetaAdsSettings, MetaCampaign, MetaDataset } from '@/types/meta-ads';
+import { MetaAdAccount, MetaAdsReport, MetaAdsSettings, MetaCampaign, MetaDataset } from '@/types/meta-ads';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -53,6 +53,15 @@ export async function syncMetaAds() {
 export async function getMetaCampaigns(month: string) {
   const { data } = await api.get('/campaigns', { params: { month } });
   return data.campaigns as MetaCampaign[];
+}
+
+export async function getMetaAdsReport(from: string, to: string) {
+  try {
+    const { data } = await api.get('/report', { params: { from, to } });
+    return data as MetaAdsReport;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t load the ads report');
+  }
 }
 
 // Where the "Continue with Facebook" button sends the browser.
