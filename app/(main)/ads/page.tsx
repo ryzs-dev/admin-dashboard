@@ -163,8 +163,6 @@ export default function AdsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Segmented label="Period" value={kind} onChange={setKind} options={RANGE_OPTIONS} />
-                {kind === 'month' && <MonthPicker value={month} max={today.slice(0, 7)} onChange={setMonth} />}
               </>
             )}
             <Button variant="outline" asChild className="gap-1.5">
@@ -174,6 +172,12 @@ export default function AdsPage() {
               </a>
             </Button>
           </PageHeader>
+          {connected && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Segmented label="Period" value={kind} onChange={setKind} options={RANGE_OPTIONS} />
+              {kind === 'month' && <MonthPicker value={month} max={today.slice(0, 7)} onChange={setMonth} />}
+            </div>
+          )}
         </div>
 
         {settingsLoading ? (
