@@ -41,7 +41,6 @@ import {
 } from '@/lib/api/meta-ads';
 import { cn } from '@/lib/utils';
 import { MetaAdsSettings } from '@/types/meta-ads';
-import { ExtraAccounts } from './ExtraAccounts';
 
 // Password managers fill any login-looking pair of fields. These aren't a
 // login, so tell Chrome, Safari, 1Password and LastPass to leave them alone.
@@ -481,8 +480,6 @@ export function MetaAdsConnection() {
           </div>
         </div>
       </Card>
-
-      {s.connected && <ExtraAccounts settings={s} onSaved={(next) => mutate(next, { revalidate: false })} />}
 
       {s.connected && (
         <Card className="gap-0 py-0">

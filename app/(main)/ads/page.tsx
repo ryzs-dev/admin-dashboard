@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, ExternalLink, Megaphone } from 'lucide-react';
+import { ChevronRight, ExternalLink, Loader2, Megaphone } from 'lucide-react';
+import useSWR from 'swr';
+import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +30,7 @@ import {
   todayInMalaysia,
 } from '@/components/ads/period';
 import { useMetaAdsReport, useMetaAdsSettings } from '@/hooks/useMetaAds';
+import { addAdAccount, getAvailableAdAccounts } from '@/lib/api/meta-ads';
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function AdsPage() {
@@ -35,39 +38,85 @@ export default function AdsPage() {
   const [kind, setKind] = useState<RangeKind>('month');
   const [month, setMonth] = useState(today.slice(0, 7));
 
-  const [account, setAccount] = useState('all');
+  // '' means the main account until the settings arrive.
+  const [account, setAccount] = useState('');
+  const [switching, setSwitching] = useState(false);
+  const [polling, setPolling] = useState(false);
 
-  const { settings, isLoading: settingsLoading } = useMetaAdsSettings();
+  const { settings, isLoading: settingsLoading, mutate } = useMetaAdsSettings(polling ? 4000 : 0);
   const connected = Boolean(settings?.connected);
-  const accounts = settings?.accounts ?? [];
-  const mainCurrency = settings?.currency ?? null;
-  const sameCurrency = accounts.filter((a) => a.currency === mainCurrency);
-  const accountNames = Object.fromEntries(accounts.map((a) => [a.id, a.name ?? a.id]));
+  const tracked = useMemo(() => settings?.accounts ?? [], [settings?.accounts]);
+  const available = useSWR(connected ? 'meta-ad-accounts-available' : null, getAvailableAdAccounts, {
+    revalidateOnFocus: false,
+  });
 
-  // Remember the account per browser; fall back to all if it was removed.
+  // Remember the account per browser.
   useEffect(() => {
     try {
       const saved = localStorage.getItem('ads-account');
       if (saved) setAccount(saved);
     } catch {}
   }, []);
-  const known = account === 'all' || accounts.some((a) => a.id === account);
-  const activeAccount = known ? account : 'all';
-  const chooseAccount = (value: string) => {
-    setAccount(value);
+
+  // Every account the sign-in can see, the main one first; plus any synced
+  // account the sign-in has since lost access to.
+  const options = useMemo(() => {
+    const main = settings?.ad_account_id;
+    const list = (available.data ?? []).map((a) => ({
+      id: a.id,
+      name: a.name,
+      currency: a.currency,
+      business: a.business,
+      active: a.active,
+    }));
+    for (const t of tracked) {
+      if (!list.some((a) => a.id === t.id)) {
+        list.push({ id: t.id, name: t.name ?? t.id, currency: t.currency ?? '', business: null, active: true });
+      }
+    }
+    return list.sort((x, y) => (x.id === main ? -1 : y.id === main ? 1 : 0));
+  }, [available.data, tracked, settings?.ad_account_id]);
+
+  const activeId =
+    account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
+  const active = tracked.find((a) => a.id === activeId);
+  const pulling = Boolean(active && !active.synced_at);
+
+  useEffect(() => {
+    setPolling(pulling);
+  }, [pulling]);
+
+  const chooseAccount = async (id: string) => {
+    setAccount(id);
     try {
-      localStorage.setItem('ads-account', value);
+      localStorage.setItem('ads-account', id);
     } catch {}
+    if (tracked.some((a) => a.id === id)) return;
+    setSwitching(true);
+    try {
+      mutate(await addAdAccount(id), { revalidate: false });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Couldn’t switch to that ad account');
+      setAccount(settings?.ad_account_id ?? '');
+    } finally {
+      setSwitching(false);
+    }
   };
 
   const { from, to } = rangeFor(kind, month, today);
-  const { report, error, isLoading } = useMetaAdsReport(from, to, activeAccount, connected && (known || !settings));
-  const currency = report?.currency ?? mainCurrency;
+  const { report, error, isLoading } = useMetaAdsReport(
+    from,
+    to,
+    activeId,
+    connected && Boolean(active) && !pulling,
+    active?.synced_at
+  );
+  const currency = report?.currency ?? active?.currency ?? settings?.currency ?? null;
 
   const byMonth = kind === '12m';
   const buckets = useMemo(() => bucketDays(report?.days ?? [], byMonth), [report, byMonth]);
   const label = rangeLabel(kind, from, to);
-  const loading = isLoading || !report;
+  const loading = isLoading || !report || pulling;
 
   const t = report?.totals;
   const lastSpend = report?.last_spend_day ?? null;
@@ -90,31 +139,30 @@ export default function AdsPage() {
           <PageHeader title="Ads" description={description}>
             {connected && (
               <>
-                {accounts.length > 1 && (
-                  <Select value={activeAccount} onValueChange={chooseAccount}>
-                    <SelectTrigger className="w-56" aria-label="Ad account">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* With one ringgit account, "all" is just that account. */}
-                      <SelectItem value="all">
-                        {sameCurrency.length === 1
-                          ? (sameCurrency[0].name ?? sameCurrency[0].id)
-                          : sameCurrency.length === accounts.length
-                            ? 'All ad accounts'
-                            : `All ${mainCurrency} accounts`}
+                <Select value={activeId} onValueChange={chooseAccount} disabled={switching}>
+                  <SelectTrigger className="w-60" aria-label="Ad account">
+                    {switching ? (
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Switching…
+                      </span>
+                    ) : (
+                      <SelectValue placeholder="Ad account" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options.map((a) => (
+                      <SelectItem key={a.id} value={a.id} disabled={!a.active}>
+                        <span>{a.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {[a.business, a.currency !== 'MYR' ? a.currency : null, !a.active ? 'not active' : null]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
                       </SelectItem>
-                      {(sameCurrency.length === 1 ? accounts.filter((a) => a.currency !== mainCurrency) : accounts).map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name ?? a.id}
-                          {a.currency !== mainCurrency && (
-                            <span className="ml-2 text-xs text-muted-foreground">{a.currency}</span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Segmented label="Period" value={kind} onChange={setKind} options={RANGE_OPTIONS} />
                 {kind === 'month' && <MonthPicker value={month} max={today.slice(0, 7)} onChange={setMonth} />}
               </>
@@ -176,26 +224,26 @@ export default function AdsPage() {
               </Panel>
             )}
 
-            <AdsSummary report={report} isLoading={loading} />
+            {pulling && (
+              <Panel className="flex items-center gap-2 px-5 py-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Pulling the last 13 months for {active?.name ?? 'this account'} from Meta. This takes a minute.
+              </Panel>
+            )}
+
+            <AdsSummary report={pulling ? undefined : report} isLoading={loading} />
             {!noSpend && <SpendChart buckets={buckets} byMonth={byMonth} currency={currency} isLoading={loading} />}
             <CampaignTable
               campaigns={report?.campaigns ?? []}
               currency={currency}
-              showAccount={(report?.accounts.length ?? 0) > 1}
-              accountNames={accountNames}
               isLoading={loading}
               sendingOn={Boolean(settings?.send_conversions)}
             />
             <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
 
             <p className="px-1 text-xs text-muted-foreground">
-              {report?.accounts.map((a) => a.name ?? a.id).join(', ') ?? settings?.account_name ?? 'Ad account'}
-              {accounts.length === 1 && (
-                <>
-                  {' '}
-                  (<Link href="/integrations/meta-ads" className="underline-offset-2 hover:underline">add another ad account</Link>)
-                </>
-              )}{' '}
+              {active?.name ?? 'Ad account'}
+              {activeId !== settings?.ad_account_id && ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
               · numbers from Meta, refreshed every hour
               {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended ROAS is
               every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it includes

@@ -3,6 +3,8 @@ export type TrackedAdAccount = {
   name: string | null;
   currency: string | null;
   timezone: string | null;
+  // When its numbers were last pulled from Meta; null while the first pull runs.
+  synced_at?: string | null;
 };
 
 export type MetaAdsSettings = {

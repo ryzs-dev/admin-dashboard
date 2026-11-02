@@ -119,3 +119,13 @@ export async function saveExtraAdAccounts(ids: string[]) {
     throw apiError(error, 'Couldn’t save the ad accounts');
   }
 }
+
+// Switching to an ad account on the Ads page that isn't synced yet adds it.
+export async function addAdAccount(id: string) {
+  try {
+    const { data } = await api.post('/accounts/add', { id });
+    return data.settings as MetaAdsSettings;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t switch to that ad account');
+  }
+}
