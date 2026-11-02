@@ -37,7 +37,7 @@ export function useDailyBreakdown(month: string) {
     { revalidateOnFocus: false }
   );
 
-  return { days: data?.days ?? [], isLoading, isError: error };
+  return { days: data?.days ?? [], totals: data?.totals ?? null, isLoading, isError: error };
 }
 
 export function useProductPerformance(month: string) {

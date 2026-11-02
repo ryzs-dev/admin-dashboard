@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {
   ChannelTotalsDTO,
+  CustomerMixDTO,
   DailyBreakdownDTO,
   DashboardStatsDTO,
   ProductMonthlyTrendDTO,
@@ -33,7 +34,7 @@ export async function getDashboardStats(month: string) {
 
 export async function getDailyBreakdown(month: string) {
   const { data } = await api.get(`/daily?month=${month}`);
-  return data as { days: DailyBreakdownDTO[] };
+  return data as { days: DailyBreakdownDTO[]; totals: CustomerMixDTO };
 }
 
 export async function getProductPerformance(month: string) {
@@ -60,7 +61,7 @@ export type ReportRequest = {
   period: 'day' | 'month';
   month: string;
   date: string;
-  sections: ('summary' | 'daily' | 'orders' | 'products' | 'new_customers' | 'returns' | 'ads')[];
+  sections: ('summary' | 'daily' | 'orders' | 'products' | 'new_customers' | 'returning_customers' | 'ads')[];
   columns: string[];
   format: 'xlsx' | 'csv';
 };

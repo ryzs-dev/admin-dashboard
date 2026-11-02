@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
-import { DailyBreakdownDTO } from '@/types/stats';
+import { CustomerMixDTO, DailyBreakdownDTO } from '@/types/stats';
 import { Panel, PanelHeader } from './Panel';
 
 const TH = 'sticky top-0 z-10 bg-card px-3 py-2 text-xs font-medium text-muted-foreground';
@@ -25,10 +25,12 @@ function Count({ value }: { value: number }) {
 
 export function DailyBreakdown({
   days,
+  totals,
   isLoading,
   showAds,
 }: {
   days: DailyBreakdownDTO[];
+  totals: CustomerMixDTO | null;
   isLoading?: boolean;
   showAds?: boolean;
 }) {
@@ -41,12 +43,9 @@ export function DailyBreakdown({
     (sum, d) => ({
       orders: sum.orders + d.orders,
       revenue: sum.revenue + d.revenue,
-      new_customers: sum.new_customers + d.new_customers,
-      returns: sum.returns + d.returns,
-      returned_value: sum.returned_value + d.returned_value,
       ad_spend: sum.ad_spend + (d.ad_spend ?? 0),
     }),
-    { orders: 0, revenue: 0, new_customers: 0, returns: 0, returned_value: 0, ad_spend: 0 }
+    { orders: 0, revenue: 0, ad_spend: 0 }
   );
 
   const roas = (revenue: number, spend: number | null) =>
@@ -67,9 +66,9 @@ export function DailyBreakdown({
               </th>
               <th
                 className={cn(TH, 'text-right')}
-                title="Parcels the courier marked returned on this day"
+                title="Customers who had ordered before and ordered again on this day"
               >
-                Returns
+                Returning customers
               </th>
               {showAds && (
                 <>
@@ -123,10 +122,10 @@ export function DailyBreakdown({
                     <Count value={d.new_customers} />
                   </td>
                   <td className={cn(TD, 'whitespace-nowrap')}>
-                    <Count value={d.returns} />
-                    {d.returns > 0 && (
+                    <Count value={d.returning_customers} />
+                    {d.returning_customers > 0 && (
                       <span className="ml-1.5 text-xs text-muted-foreground">
-                        {formatCurrency(d.returned_value)}
+                        {formatCurrency(d.returning_revenue)}
                       </span>
                     )}
                   </td>
@@ -148,12 +147,17 @@ export function DailyBreakdown({
                 <td className="px-3 py-2.5">Total</td>
                 <td className={TD}>{total.orders.toLocaleString()}</td>
                 <td className={cn(TD, 'whitespace-nowrap')}>{formatCurrency(total.revenue)}</td>
-                <td className={TD}>{total.new_customers.toLocaleString()}</td>
-                <td className={cn(TD, 'whitespace-nowrap')}>
-                  {total.returns.toLocaleString()}
-                  {total.returns > 0 && (
+                <td className={TD} title="Each customer counted once for the month">
+                  {totals ? totals.new_customers.toLocaleString() : '—'}
+                </td>
+                <td
+                  className={cn(TD, 'whitespace-nowrap')}
+                  title="Each customer counted once for the month, so this can be less than the days added up"
+                >
+                  {totals ? totals.returning_customers.toLocaleString() : '—'}
+                  {totals && totals.returning_customers > 0 && (
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                      {formatCurrency(total.returned_value)}
+                      {formatCurrency(totals.returning_revenue)}
                     </span>
                   )}
                 </td>

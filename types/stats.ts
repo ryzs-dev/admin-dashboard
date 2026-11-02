@@ -82,7 +82,16 @@ export type DailyBreakdownDTO = {
   orders: number;
   revenue: number;
   new_customers: number;
-  returns: number;
-  returned_value: number;
+  returning_customers: number;
+  returning_revenue: number;
   ad_spend: number | null;
+};
+
+// The month as a whole, each customer counted once.
+export type CustomerMixDTO = {
+  customers: number;
+  new_customers: number;
+  returning_customers: number;
+  returning_orders: number;
+  returning_revenue: number;
 };

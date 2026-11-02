@@ -23,12 +23,12 @@ import { cn } from '@/lib/utils';
 type Section = ReportRequest['sections'][number];
 
 const SECTIONS: { id: Section; label: string; hint: string }[] = [
-  { id: 'summary', label: 'Summary', hint: 'Orders, revenue, average order, new customers, returns, and ad spend with ROAS when connected' },
+  { id: 'summary', label: 'Summary', hint: 'Orders, revenue, average order, new and returning customers, and ad spend with ROAS when connected' },
   { id: 'daily', label: 'Day by day', hint: 'One row per day of the month' },
   { id: 'orders', label: 'Orders', hint: 'Every order, with the columns you choose' },
   { id: 'products', label: 'Products', hint: 'Units, orders and revenue per product' },
   { id: 'new_customers', label: 'New customers', hint: 'Customers whose first order falls in the period' },
-  { id: 'returns', label: 'Returns', hint: 'Parcels the courier marked returned' },
+  { id: 'returning_customers', label: 'Returning customers', hint: 'Customers who had ordered before, with their order in the period' },
   { id: 'ads', label: 'Meta ads', hint: 'Spend and results for each campaign' },
 ];
 
@@ -114,7 +114,8 @@ export function ExportDialog({ selectedMonth, adsConnected }: { selectedMonth: s
   useEffect(() => {
     const saved = loadChoices();
     if (saved) {
-      setSections(saved.sections);
+      // Drop parts that no longer exist (e.g. the old parcel “Returns”).
+      setSections(saved.sections.filter((id) => SECTIONS.some((s) => s.id === id)));
       setColumns(saved.columns);
       setFormat(saved.format);
     }

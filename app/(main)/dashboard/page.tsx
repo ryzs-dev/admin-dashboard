@@ -50,7 +50,7 @@ const CRMDashboard = () => {
     revenueChart: previousRevenueChart,
     isLoading: previousLoading,
   } = useStats(previousMonth);
-  const { days, isLoading: daysLoading } = useDailyBreakdown(selectedMonth);
+  const { days, totals: dayTotals, isLoading: daysLoading } = useDailyBreakdown(selectedMonth);
   const { settings: adSettings } = useMetaAdsSettings();
   const adsConnected = Boolean(adSettings?.connected);
   const { campaigns, isLoading: campaignsLoading } = useMetaCampaigns(selectedMonth, adsConnected);
@@ -156,7 +156,7 @@ const CRMDashboard = () => {
           </div>
         </div>
 
-        <DailyBreakdown days={days} isLoading={daysLoading} showAds={adsConnected} />
+        <DailyBreakdown days={days} totals={dayTotals} isLoading={daysLoading} showAds={adsConnected} />
 
         <AdsPanel
           settings={adSettings}
