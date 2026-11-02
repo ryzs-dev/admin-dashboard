@@ -26,10 +26,13 @@ function Count({ value }: { value: number }) {
 export function DailyBreakdown({
   days,
   isLoading,
+  showAds,
 }: {
   days: DailyBreakdownDTO[];
   isLoading?: boolean;
+  showAds?: boolean;
 }) {
+  const cols = showAds ? 7 : 5;
   const today = todayInMalaysia();
   // Newest first, and no rows for days that haven't happened yet.
   const rows = days.filter((d) => d.day <= today).reverse();
@@ -41,9 +44,13 @@ export function DailyBreakdown({
       new_customers: sum.new_customers + d.new_customers,
       returns: sum.returns + d.returns,
       returned_value: sum.returned_value + d.returned_value,
+      ad_spend: sum.ad_spend + (d.ad_spend ?? 0),
     }),
-    { orders: 0, revenue: 0, new_customers: 0, returns: 0, returned_value: 0 }
+    { orders: 0, revenue: 0, new_customers: 0, returns: 0, returned_value: 0, ad_spend: 0 }
   );
+
+  const roas = (revenue: number, spend: number | null) =>
+    spend ? `${(revenue / spend).toFixed(2)}×` : <span className="text-muted-foreground/60">—</span>;
 
   return (
     <Panel>
@@ -64,20 +71,28 @@ export function DailyBreakdown({
               >
                 Returns
               </th>
+              {showAds && (
+                <>
+                  <th className={cn(TH, 'text-right')}>Ad spend</th>
+                  <th className={cn(TH, 'text-right')} title="Revenue ÷ ad spend for the day">
+                    ROAS
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={5} className="px-3 py-3">
+                  <td colSpan={cols} className="px-3 py-3">
                     <Skeleton className="h-4 w-full" />
                   </td>
                 </tr>
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={cols} className="px-3 py-8 text-center text-sm text-muted-foreground">
                   No days to show for this month yet.
                 </td>
               </tr>
@@ -115,6 +130,14 @@ export function DailyBreakdown({
                       </span>
                     )}
                   </td>
+                  {showAds && (
+                    <>
+                      <td className={cn(TD, 'whitespace-nowrap')}>
+                        {d.ad_spend ? formatCurrency(d.ad_spend) : <span className="text-muted-foreground/60">—</span>}
+                      </td>
+                      <td className={TD}>{roas(d.revenue, d.ad_spend)}</td>
+                    </>
+                  )}
                 </tr>
               ))
             )}
@@ -134,6 +157,12 @@ export function DailyBreakdown({
                     </span>
                   )}
                 </td>
+                {showAds && (
+                  <>
+                    <td className={cn(TD, 'whitespace-nowrap')}>{formatCurrency(total.ad_spend)}</td>
+                    <td className={TD}>{roas(total.revenue, total.ad_spend)}</td>
+                  </>
+                )}
               </tr>
             </tfoot>
           )}

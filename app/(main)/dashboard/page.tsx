@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/currency';
 import {
   useDailyBreakdown,
@@ -16,17 +16,18 @@ import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { ChannelBreakdown } from '@/components/dashboard/ChannelBreakdown';
 import { RepeatOrderValueCard } from '@/components/dashboard/RepeatOrderValue';
 import { DailyBreakdown } from '@/components/dashboard/DailyBreakdown';
+import { AdsPanel } from '@/components/dashboard/AdsPanel';
+import { ExportDialog } from '@/components/dashboard/ExportDialog';
+import { useMetaAdsSettings, useMetaCampaigns } from '@/hooks/useMetaAds';
 import { NewCustomersChart } from '@/components/dashboard/NewCustomersChart';
 import { TopProductsTable } from '@/components/dashboard/ProductPerformance';
 import { ProductDetailSheet } from '@/components/dashboard/ProductDeepDive';
 import { buildPace } from '@/components/dashboard/pace';
-import { downloadMonthExport } from '@/lib/api/stats';
 import { getCurrentMonthKey, parseMonthKey } from '@/lib/utils/date';
 import { addMonths, format } from 'date-fns';
 
 const CRMDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthKey());
-  const [exporting, setExporting] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const currentDate = parseMonthKey(selectedMonth);
@@ -50,6 +51,9 @@ const CRMDashboard = () => {
     isLoading: previousLoading,
   } = useStats(previousMonth);
   const { days, isLoading: daysLoading } = useDailyBreakdown(selectedMonth);
+  const { settings: adSettings } = useMetaAdsSettings();
+  const adsConnected = Boolean(adSettings?.connected);
+  const { campaigns, isLoading: campaignsLoading } = useMetaCampaigns(selectedMonth, adsConnected);
   const { products, isLoading: productsLoading } = useProductPerformance(selectedMonth);
   const { trends, isLoading: trendsLoading } = useProductMonthlyTrends(
     selectedProductId,
@@ -92,22 +96,7 @@ const CRMDashboard = () => {
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="pb-2">
           <PageHeader title="Dashboard" description={finding}>
-            <Button
-              variant="outline"
-              className="gap-1.5"
-              disabled={exporting}
-              onClick={async () => {
-                setExporting(true);
-                try {
-                  await downloadMonthExport(selectedMonth);
-                } finally {
-                  setExporting(false);
-                }
-              }}
-            >
-              <Download className="h-4 w-4" />
-              {exporting ? 'Preparing…' : 'Download'}
-            </Button>
+            <ExportDialog selectedMonth={selectedMonth} adsConnected={adsConnected} />
             <div className="flex items-center rounded-lg border bg-card">
               <Button
                 variant="ghost"
@@ -167,7 +156,15 @@ const CRMDashboard = () => {
           </div>
         </div>
 
-        <DailyBreakdown days={days} isLoading={daysLoading} />
+        <DailyBreakdown days={days} isLoading={daysLoading} showAds={adsConnected} />
+
+        <AdsPanel
+          settings={adSettings}
+          campaigns={campaigns}
+          isLoading={campaignsLoading}
+          revenue={Number(stats.total_revenue ?? 0)}
+          newCustomers={monthCustomers(currentDate)}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">

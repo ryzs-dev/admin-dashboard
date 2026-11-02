@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Bot, Receipt, Truck } from 'lucide-react';
+import { Bot, Megaphone, Receipt, Truck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Select,
@@ -15,6 +15,7 @@ import { AutopilotSettings } from '@/components/modules/autopilot/AutopilotSetti
 import { SaveState } from '@/components/modules/autopilot/AutopilotSwitch';
 import { ReceiptSettingsSection } from '@/components/modules/receipts/ReceiptSettings';
 import { ShippingSettings } from '@/components/modules/settings/ShippingSettings';
+import { MetaAdsSettingsSection } from '@/components/modules/settings/MetaAdsSettings';
 import { cn } from '@/lib/utils';
 
 const SECTIONS = [
@@ -35,6 +36,12 @@ const SECTIONS = [
     label: 'Receipts',
     icon: Receipt,
     description: 'Payment receipts staff send on WhatsApp with each order.',
+  },
+  {
+    id: 'ads',
+    label: 'Meta ads',
+    icon: Megaphone,
+    description: 'Ad spend and ROAS from your Meta ad account, and sales sent back to Meta.',
   },
 ] as const;
 
@@ -111,6 +118,7 @@ function SettingsContent() {
             {section === 'autopilot' && <AutopilotSettings onSaving={setSaveState} />}
             {section === 'shipping' && <ShippingSettings onSaving={setSaveState} />}
             {section === 'receipts' && <ReceiptSettingsSection onSaving={setSaveState} />}
+            {section === 'ads' && <MetaAdsSettingsSection onSaving={setSaveState} />}
           </section>
         </div>
       </div>

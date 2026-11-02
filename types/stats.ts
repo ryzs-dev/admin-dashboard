@@ -84,4 +84,5 @@ export type DailyBreakdownDTO = {
   new_customers: number;
   returns: number;
   returned_value: number;
+  ad_spend: number | null;
 };
