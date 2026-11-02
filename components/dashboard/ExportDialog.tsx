@@ -6,7 +6,6 @@ import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Segmented } from '@/components/modules/settings/Segmented';
+import { DayPicker, MonthPicker } from './PeriodPickers';
 import { downloadReport, ReportRequest } from '@/lib/api/stats';
 import { cn } from '@/lib/utils';
 
@@ -189,23 +189,9 @@ export function ExportDialog({ selectedMonth, adsConnected }: { selectedMonth: s
               ]}
             />
             {period === 'day' ? (
-              <Input
-                type="date"
-                aria-label="Day"
-                value={day}
-                max={todayInMalaysia()}
-                onChange={(e) => e.target.value && setDay(e.target.value)}
-                className="w-44"
-              />
+              <DayPicker value={day} max={todayInMalaysia()} onChange={setDay} />
             ) : (
-              <Input
-                type="month"
-                aria-label="Month"
-                value={month}
-                max={todayInMalaysia().slice(0, 7)}
-                onChange={(e) => e.target.value && setMonth(e.target.value)}
-                className="w-44"
-              />
+              <MonthPicker value={month} max={todayInMalaysia().slice(0, 7)} onChange={setMonth} />
             )}
           </div>
 
