@@ -1,4 +1,5 @@
 import {
+  getDailyBreakdown,
   getDashboardStats,
   getProductMonthlyTrends,
   getProductPerformance,
@@ -27,6 +28,16 @@ export function useStats(month: string) {
     isError: error,
     refresh: mutate,
   };
+}
+
+export function useDailyBreakdown(month: string) {
+  const { data, error, isLoading } = useSWR(
+    ['daily-breakdown', month],
+    () => getDailyBreakdown(month),
+    { revalidateOnFocus: false }
+  );
+
+  return { days: data?.days ?? [], isLoading, isError: error };
 }
 
 export function useProductPerformance(month: string) {

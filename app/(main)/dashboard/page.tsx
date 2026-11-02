@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/currency';
 import {
+  useDailyBreakdown,
   useProductMonthlyTrends,
   useProductPerformance,
   useStats,
@@ -14,6 +15,7 @@ import { StatsCards } from '@/components/dashboard/StatsCard';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { ChannelBreakdown } from '@/components/dashboard/ChannelBreakdown';
 import { RepeatOrderValueCard } from '@/components/dashboard/RepeatOrderValue';
+import { DailyBreakdown } from '@/components/dashboard/DailyBreakdown';
 import { NewCustomersChart } from '@/components/dashboard/NewCustomersChart';
 import { TopProductsTable } from '@/components/dashboard/ProductPerformance';
 import { ProductDetailSheet } from '@/components/dashboard/ProductDeepDive';
@@ -47,6 +49,7 @@ const CRMDashboard = () => {
     revenueChart: previousRevenueChart,
     isLoading: previousLoading,
   } = useStats(previousMonth);
+  const { days, isLoading: daysLoading } = useDailyBreakdown(selectedMonth);
   const { products, isLoading: productsLoading } = useProductPerformance(selectedMonth);
   const { trends, isLoading: trendsLoading } = useProductMonthlyTrends(
     selectedProductId,
@@ -163,6 +166,8 @@ const CRMDashboard = () => {
             />
           </div>
         </div>
+
+        <DailyBreakdown days={days} isLoading={daysLoading} />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">

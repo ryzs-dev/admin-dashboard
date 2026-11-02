@@ -76,3 +76,12 @@ export const EMPTY_REPEAT_ORDER_VALUE: RepeatOrderValueDTO = {
   new_revenue: 0,
   new_average_order_value: 0,
 };
+
+export type DailyBreakdownDTO = {
+  day: string;
+  orders: number;
+  revenue: number;
+  new_customers: number;
+  returns: number;
+  returned_value: number;
+};
