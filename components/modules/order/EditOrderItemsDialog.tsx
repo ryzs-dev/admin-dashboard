@@ -52,10 +52,6 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
       })),
     [order.order_items]
   );
-  // Bundle deals make the paid total lower than the list price; keep that
-  // discount when items change so the total doesn't jump to full price.
-  const originalDiscount = listTotal(originalLines) - (Number(order.total_amount) || 0);
-
   useEffect(() => {
     if (!isOpen) return;
     setLines(originalLines);
@@ -65,12 +61,9 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
     setError(null);
   }, [isOpen, originalLines, order.total_amount]);
 
-  const updateLines = (next: Line[]) => {
-    setLines(next);
-    if (!totalTouched) {
-      setTotal(String(round2(Math.max(0, listTotal(next) - originalDiscount))));
-    }
-  };
+  // Lunaa sells at package prices, so swapping items doesn't change what the
+  // customer paid. The total only changes when staff type a new one.
+  const updateLines = (next: Line[]) => setLines(next);
 
   const available = useMemo(() => {
     const seen = new Set(lines.map((line) => line.product.id));
@@ -296,9 +289,7 @@ const EditOrderDialog = ({ order, isOpen, onOpenChange, onUpdateOrder }: EditOrd
                 ? 'Enter the amount the customer paid.'
                 : totalTouched
                   ? 'Set manually'
-                  : originalDiscount > 0
-                    ? 'Keeps the original bundle discount'
-                    : 'Follows list prices'}
+                  : 'What the customer paid. Changing items doesn’t change it.'}
             </p>
           </div>
           <MoneyInput
