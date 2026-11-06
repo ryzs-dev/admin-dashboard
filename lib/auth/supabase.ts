@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { AUTH_URL } from './config';
 
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  AUTH_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
     auth: {

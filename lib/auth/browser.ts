@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { AUTH_COOKIE, AUTH_URL } from './config';
 
 // Reads the session from the cookies the server-side login (lib/auth/actions.ts) sets.
 let client: SupabaseClient | null = null;
@@ -7,8 +8,9 @@ let client: SupabaseClient | null = null;
 export function getBrowserSupabase(): SupabaseClient {
   if (!client) {
     client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      AUTH_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookieOptions: { name: AUTH_COOKIE } }
     );
   }
   return client;

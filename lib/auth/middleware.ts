@@ -1,6 +1,7 @@
 // lib/auth/middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { AUTH_COOKIE, AUTH_URL } from './config';
 
 // Define your route protection rules
 const PUBLIC_ROUTES = ['/login', '/forget-password', '/reset-password'];
@@ -13,9 +14,10 @@ export async function updateSession(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    AUTH_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: AUTH_COOKIE },
       cookies: {
         getAll() {
           return request.cookies.getAll();
