@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Bot, Receipt, Truck } from 'lucide-react';
+import { Bot, Phone, Receipt, Truck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Select,
@@ -15,6 +15,7 @@ import { AutopilotSettings } from '@/components/modules/autopilot/AutopilotSetti
 import { SaveState } from '@/components/modules/autopilot/AutopilotSwitch';
 import { ReceiptSettingsSection } from '@/components/modules/receipts/ReceiptSettings';
 import { ShippingSettings } from '@/components/modules/settings/ShippingSettings';
+import { StaffPhonesSettings } from '@/components/modules/settings/StaffPhonesSettings';
 import { cn } from '@/lib/utils';
 
 const SECTIONS = [
@@ -35,6 +36,12 @@ const SECTIONS = [
     label: 'Receipts',
     icon: Receipt,
     description: 'Payment receipts staff send on WhatsApp with each order.',
+  },
+  {
+    id: 'staff',
+    label: 'Staff numbers',
+    icon: Phone,
+    description: 'The staff WhatsApp numbers the bot takes orders from.',
   },
 ] as const;
 
@@ -116,6 +123,7 @@ function SettingsContent() {
             {section === 'autopilot' && <AutopilotSettings onSaving={setSaveState} />}
             {section === 'shipping' && <ShippingSettings onSaving={setSaveState} />}
             {section === 'receipts' && <ReceiptSettingsSection onSaving={setSaveState} />}
+            {section === 'staff' && <StaffPhonesSettings onSaving={setSaveState} />}
           </section>
         </div>
       </div>
