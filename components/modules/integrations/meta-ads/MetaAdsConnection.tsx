@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import useSWR from 'swr';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, ChevronDown, KeyRound, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,13 +9,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,18 +21,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useMetaAdsSettings } from '@/hooks/useMetaAds';
-import {
-  cancelMetaSignIn,
-  disconnectMetaAds,
-  facebookSignInUrl,
-  finishMetaSignIn,
-  getMetaAdAccounts,
-  getMetaDatasets,
-  saveMetaAdsSettings,
-  syncMetaAds,
-} from '@/lib/api/meta-ads';
+import { disconnectMetaAds, facebookSignInUrl, saveMetaAdsSettings, syncMetaAds } from '@/lib/api/meta-ads';
 import { cn } from '@/lib/utils';
-import { MetaAdsSettings } from '@/types/meta-ads';
 
 // Password managers fill any login-looking pair of fields. These aren't a
 // login, so tell Chrome, Safari, 1Password and LastPass to leave them alone.
@@ -50,8 +32,6 @@ const NO_AUTOFILL = {
   'data-lpignore': 'true',
   'data-form-type': 'other',
 } as const;
-
-const NONE = '__none__';
 
 function FacebookButton({ disabled, label = 'Continue with Facebook' }: { disabled?: boolean; label?: string }) {
   return (
@@ -68,125 +48,6 @@ function FacebookButton({ disabled, label = 'Continue with Facebook' }: { disabl
       </svg>
       {label}
     </Button>
-  );
-}
-
-// After signing in with Facebook: choose which ad account (and dataset) to use.
-function AccountPicker({ settings, onDone }: { settings: MetaAdsSettings; onDone: (s: MetaAdsSettings) => void }) {
-  const { data, error, isLoading } = useSWR('meta-ad-accounts', getMetaAdAccounts, { revalidateOnFocus: false });
-  const [account, setAccount] = useState('');
-  const [dataset, setDataset] = useState(NONE);
-  const [saving, setSaving] = useState(false);
-  const datasets = useSWR(account ? ['meta-datasets', account] : null, () => getMetaDatasets(account), {
-    revalidateOnFocus: false,
-  });
-
-  useEffect(() => {
-    const active = data?.accounts.filter((a) => a.active) ?? [];
-    if (!account && active.length === 1) setAccount(active[0].id);
-  }, [data, account]);
-
-  useEffect(() => {
-    if (datasets.data?.length === 1) setDataset(datasets.data[0].id);
-    else setDataset(NONE);
-  }, [datasets.data]);
-
-  const connect = async () => {
-    setSaving(true);
-    try {
-      const saved = await finishMetaSignIn(account, dataset === NONE ? null : dataset);
-      toast.success(`Connected to ${saved.account_name ?? saved.ad_account_id}. Pulling the last 13 months…`);
-      onDone(saved);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Couldn’t connect');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Card className="gap-0 py-0">
-      <div className="px-5 pt-5">
-        <h2 className="text-sm font-semibold">Choose the ad account</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Signed in as {settings.pending_user}. Pick the account Lunaa’s ads run from.
-        </p>
-      </div>
-      <div className="mt-4 space-y-4 border-t px-5 py-4">
-        {isLoading ? (
-          <Skeleton className="h-9 w-full" />
-        ) : error ? (
-          <p className="flex items-start gap-1.5 text-sm text-red-600">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {error.message}
-          </p>
-        ) : data && data.accounts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            This Facebook account can’t see any ad accounts. Sign in with someone who has access in Business
-            settings, or give this person access first.
-          </p>
-        ) : (
-          <>
-            <div className="space-y-1.5">
-              <label htmlFor="meta-account-pick" className="text-sm font-medium">
-                Ad account
-              </label>
-              <Select value={account} onValueChange={setAccount}>
-                <SelectTrigger id="meta-account-pick" className="w-full">
-                  <SelectValue placeholder="Choose an ad account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data?.accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id} disabled={!a.active}>
-                      <span className="font-medium">{a.name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {a.business ? `${a.business} · ` : ''}
-                        {a.currency}
-                        {!a.active && ' · not active'}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {account && (
-              <div className="space-y-1.5">
-                <label htmlFor="meta-dataset-pick" className="text-sm font-medium">
-                  Dataset (pixel) <span className="font-normal text-muted-foreground">for sending orders to Meta</span>
-                </label>
-                <Select value={dataset} onValueChange={setDataset} disabled={datasets.isLoading}>
-                  <SelectTrigger id="meta-dataset-pick" className="w-full">
-                    <SelectValue placeholder={datasets.isLoading ? 'Loading…' : 'Choose a dataset'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>None for now</SelectItem>
-                    {datasets.data?.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name} <span className="ml-1 text-xs text-muted-foreground">{d.id}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </>
-        )}
-        <div className="flex gap-2">
-          <Button onClick={connect} disabled={!account || saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? 'Connecting…' : 'Connect'}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={async () => {
-              onDone(await cancelMetaSignIn());
-            }}
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </Card>
   );
 }
 
@@ -278,12 +139,16 @@ export function MetaAdsConnection() {
     if (settings) setDataset(settings.dataset_id ?? '');
   }, [settings]);
 
-  // Coming back from Facebook: show why it failed, then tidy the address bar.
+  // Coming back from Facebook: say how it went, then tidy the address bar.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const result = params.get('meta');
     if (!result) return;
-    if (result === 'error') toast.error(params.get('reason') || 'Facebook sign-in didn’t finish');
+    if (result === 'error') {
+      toast.error(params.get('reason') || 'Facebook sign-in didn’t finish', { duration: 20000 });
+    } else if (result === 'connected') {
+      toast.success('Connected to Meta. Syncing the ad numbers now.');
+    }
     mutate();
     window.history.replaceState(null, '', window.location.pathname);
   }, [mutate]);
@@ -301,10 +166,6 @@ export function MetaAdsConnection() {
 
   if (isLoading || !settings) return <Skeleton className="h-72" />;
   const s = settings;
-
-  if (s.pending_user) {
-    return <AccountPicker settings={s} onDone={(next) => mutate(next, { revalidate: false })} />;
-  }
 
   const expires = s.token_expires_at ? new Date(s.token_expires_at) : null;
   const expiresSoon = expires && expires.getTime() - Date.now() < 7 * 86400000;
@@ -326,7 +187,7 @@ export function MetaAdsConnection() {
               <FacebookButton disabled={!s.login_available} />
               <p className="text-xs text-muted-foreground">
                 {s.login_available
-                  ? 'Sign in with a Facebook account that can see Lunaa’s ad account, then pick it.'
+                  ? 'Sign in with a Facebook account that can see Lunaa’s ad account. You can add more accounts on the Ads page.'
                   : 'Facebook sign-in isn’t switched on for this CRM yet. Use an access token for now.'}
               </p>
             </div>
