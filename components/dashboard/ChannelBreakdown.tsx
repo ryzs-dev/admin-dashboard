@@ -1,13 +1,12 @@
 import Image from 'next/image';
-import { MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CHART_COLORS } from '@/lib/chartTheme';
 import { formatCurrency } from '@/lib/utils/currency';
 import { ChannelTotalsDTO, SalesChannel } from '@/types/stats';
 import { Panel, PanelHeader } from './Panel';
 
-const CHANNELS: { key: SalesChannel; label: string; logo?: string }[] = [
-  { key: 'whatsapp', label: 'WhatsApp' },
+const CHANNELS: { key: SalesChannel; label: string; logo: string }[] = [
+  { key: 'whatsapp', label: 'WhatsApp', logo: '/images/integrations/whatsapp.png' },
   { key: 'shopee', label: 'Shopee', logo: '/images/integrations/shopee.png' },
   { key: 'lazada', label: 'Lazada', logo: '/images/integrations/lazada.png' },
 ];
@@ -41,11 +40,7 @@ export function ChannelBreakdown({
           return (
             <li key={key}>
               <div className="flex items-center gap-2.5 text-sm">
-                {logo ? (
-                  <Image src={logo} alt="" width={18} height={18} className="shrink-0 rounded" />
-                ) : (
-                  <MessageCircle className="h-[18px] w-[18px] shrink-0 text-muted-foreground" />
-                )}
+                <Image src={logo} alt="" width={18} height={18} className="shrink-0 rounded" />
                 <span className="font-medium text-foreground">{label}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {orders.toLocaleString()} {orders === 1 ? 'order' : 'orders'}
