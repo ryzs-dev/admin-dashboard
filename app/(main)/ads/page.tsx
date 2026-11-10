@@ -12,7 +12,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Panel } from '@/components/dashboard/Panel';
 import { MonthPicker } from '@/components/dashboard/PeriodPickers';
 import { Segmented } from '@/components/modules/settings/Segmented';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { AdsSummary } from '@/components/ads/AdsSummary';
 import { SpendChart } from '@/components/ads/SpendChart';
 import { CampaignTable } from '@/components/ads/CampaignTable';
@@ -76,6 +85,21 @@ export default function AdsPage() {
     }
     return list.sort((x, y) => (x.id === main ? -1 : y.id === main ? 1 : 0));
   }, [available.data, tracked, settings?.ad_account_id]);
+
+  // Lunaa's own accounts first, then everything else the sign-in can see,
+  // then the closed or disabled ones.
+  const groups = useMemo(() => {
+    const isLunaa = (a: (typeof options)[number]) =>
+      a.id === settings?.ad_account_id || tracked.some((t) => t.id === a.id) || /lunaa/i.test(a.name);
+    const byName = (x: { name: string }, y: { name: string }) => x.name.localeCompare(y.name);
+    const lunaa = options.filter((a) => isLunaa(a));
+    const rest = options.filter((a) => !isLunaa(a));
+    return [
+      { label: 'Lunaa', items: lunaa },
+      { label: 'Other ad accounts', items: rest.filter((a) => a.active).sort(byName) },
+      { label: 'Not active', items: rest.filter((a) => !a.active).sort(byName) },
+    ].filter((g) => g.items.length > 0);
+  }, [options, tracked, settings?.ad_account_id]);
 
   const activeId =
     account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
@@ -151,15 +175,19 @@ export default function AdsPage() {
                     )}
                   </SelectTrigger>
                   <SelectContent>
-                    {options.map((a) => (
-                      <SelectItem key={a.id} value={a.id} disabled={!a.active}>
-                        <span>{a.name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {[a.business, a.currency !== 'MYR' ? a.currency : null, !a.active ? 'not active' : null]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                      </SelectItem>
+                    {groups.map((g, i) => (
+                      <SelectGroup key={g.label}>
+                        {i > 0 && <SelectSeparator />}
+                        <SelectLabel>{g.label}</SelectLabel>
+                        {g.items.map((a) => (
+                          <SelectItem key={a.id} value={a.id} disabled={!a.active}>
+                            <span>{a.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {[a.business, a.currency !== 'MYR' ? a.currency : null].filter(Boolean).join(' · ')}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
