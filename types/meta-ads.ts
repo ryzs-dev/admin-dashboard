@@ -87,3 +87,42 @@ export type MetaAdsReport = {
   days: MetaAdsReportDay[];
   campaigns: MetaCampaign[];
 };
+
+export type FacebookPage = {
+  id: string;
+  name: string;
+  followers: number | null;
+  picture: string | null;
+  link: string | null;
+};
+
+export type FacebookPageDay = {
+  date: string;
+  views: number;
+  viewers: number;
+  engagements: number;
+  visits: number;
+  follows: number;
+  unfollows: number;
+  video_views: number;
+};
+
+export type FacebookPagePost = {
+  id: string;
+  message: string | null;
+  created_time: string;
+  permalink: string | null;
+  picture: string | null;
+  reactions: number;
+  comments: number;
+  shares: number;
+};
+
+export type FacebookPageReport = {
+  page: FacebookPage;
+  from: string;
+  to: string;
+  days: FacebookPageDay[];
+  totals: Omit<FacebookPageDay, 'date' | 'viewers'>;
+  posts: FacebookPagePost[];
+};

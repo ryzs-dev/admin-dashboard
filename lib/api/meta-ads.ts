@@ -1,5 +1,13 @@
 import axios from 'axios';
-import { MetaAdAccount, MetaAdsReport, MetaAdsSettings, MetaCampaign, MetaDataset } from '@/types/meta-ads';
+import {
+  FacebookPage,
+  FacebookPageReport,
+  MetaAdAccount,
+  MetaAdsReport,
+  MetaAdsSettings,
+  MetaCampaign,
+  MetaDataset,
+} from '@/types/meta-ads';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -127,5 +135,23 @@ export async function addAdAccount(id: string) {
     return data.settings as MetaAdsSettings;
   } catch (error) {
     throw apiError(error, 'Couldn’t switch to that ad account');
+  }
+}
+
+export async function getFacebookPages() {
+  try {
+    const { data } = await api.get('/pages');
+    return data.pages as FacebookPage[];
+  } catch (error) {
+    throw apiError(error, 'Couldn’t list your Facebook pages');
+  }
+}
+
+export async function getFacebookPageReport(pageId: string, from: string, to: string) {
+  try {
+    const { data } = await api.get(`/pages/${pageId}/report`, { params: { from, to } });
+    return data.report as FacebookPageReport;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t load the page insights');
   }
 }
