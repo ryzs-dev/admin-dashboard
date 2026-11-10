@@ -8,6 +8,7 @@ import {
   MetaAdsSettings,
   MetaCampaign,
   MetaDataset,
+  PostComment,
 } from '@/types/meta-ads';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -163,5 +164,14 @@ export async function getAdComments(account: string, from: string, to: string) {
     return data.comments as AdComment[];
   } catch (error) {
     throw apiError(error, 'Couldn’t load the ad comments');
+  }
+}
+
+export async function getPostComments(pageId: string, postId: string) {
+  try {
+    const { data } = await api.get(`/pages/${pageId}/posts/${postId}/comments`);
+    return data.comments as PostComment[];
+  } catch (error) {
+    throw apiError(error, 'Couldn’t load the comments');
   }
 }

@@ -143,3 +143,13 @@ export type AdComment = {
   ads: string[];
   campaign: string | null;
 };
+
+export type PostComment = {
+  id: string;
+  message: string;
+  from: string | null;
+  created_time: string;
+  replies: number;
+  likes: number;
+  permalink: string | null;
+};
