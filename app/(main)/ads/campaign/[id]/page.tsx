@@ -32,7 +32,7 @@ function CampaignPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="mx-auto max-w-7xl space-y-4">
         <Link
           href="/ads"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
