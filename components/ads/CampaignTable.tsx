@@ -75,7 +75,6 @@ export function CampaignTable({
 }) {
   const [sort, setSort] = useState<SortKey>('spend');
   const router = useRouter();
-  const total = campaigns.reduce((n, c) => n + c.spend, 0);
   const column = COLUMNS.find((c) => c.key === sort)!;
 
   const rows = useMemo(() => {
@@ -140,7 +139,6 @@ export function CampaignTable({
                     </tr>
                   ))
                 : rows.map((c) => {
-                    const share = total ? (c.spend / total) * 100 : 0;
                     const href = drill
                       ? `/ads/campaign/${c.campaign_id}?${new URLSearchParams(drill)}`
                       : null;
@@ -190,12 +188,6 @@ export function CampaignTable({
                           <span className="font-medium">
                             {adMoney(c.spend, currency)}
                           </span>
-                          <div className="ml-auto mt-1 h-1 w-20 rounded-full bg-muted">
-                            <div
-                              className="h-1 rounded-full bg-primary/70"
-                              style={{ width: `${share}%` }}
-                            />
-                          </div>
                         </td>
                         <td className={TD}>{c.impressions.toLocaleString()}</td>
                         <td className={TD}>{c.clicks.toLocaleString()}</td>
