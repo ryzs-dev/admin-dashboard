@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {
   AdCommentGroup,
+  AdDetail,
   CampaignAd,
   FacebookPage,
   FacebookPageReport,
@@ -180,8 +181,20 @@ export async function getPostComments(pageId: string, postId: string) {
 export async function getCampaignAds(account: string, campaignId: string, from: string, to: string) {
   try {
     const { data } = await api.get(`/campaigns/${campaignId}/ads`, { params: { account, from, to } });
-    return data.ads as CampaignAd[];
+    return {
+      campaign: data.campaign as { id: string; name: string; status: string | null } | null,
+      ads: data.ads as CampaignAd[],
+    };
   } catch (error) {
     throw apiError(error, 'Couldn’t load the campaign’s ads');
+  }
+}
+
+export async function getAdDetail(adId: string, from: string, to: string) {
+  try {
+    const { data } = await api.get(`/ads/${adId}`, { params: { from, to } });
+    return data.ad as AdDetail;
+  } catch (error) {
+    throw apiError(error, 'Couldn’t load the ad');
   }
 }

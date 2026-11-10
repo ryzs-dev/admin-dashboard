@@ -1,6 +1,8 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { ArrowDown, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,7 +10,6 @@ import { cn } from '@/lib/utils';
 import { MetaCampaign } from '@/types/meta-ads';
 import { Panel, PanelHeader } from '@/components/dashboard/Panel';
 import { adMoney } from './period';
-import { CampaignAds } from './CampaignAds';
 
 type SortKey =
   | 'spend'
@@ -69,11 +70,11 @@ export function CampaignTable({
   accountNames?: Record<string, string>;
   isLoading?: boolean;
   sendingOn: boolean;
-  // With an account and period, a campaign opens to its ads.
+  // With an account and period, a campaign opens its own page with its ads.
   drill?: { account: string; from: string; to: string };
 }) {
   const [sort, setSort] = useState<SortKey>('spend');
-  const [openId, setOpenId] = useState<string | null>(null);
+  const router = useRouter();
   const total = campaigns.reduce((n, c) => n + c.spend, 0);
   const column = COLUMNS.find((c) => c.key === sort)!;
 
@@ -140,106 +141,86 @@ export function CampaignTable({
                   ))
                 : rows.map((c) => {
                     const share = total ? (c.spend / total) * 100 : 0;
-                    const opened = openId === c.campaign_id;
+                    const href = drill
+                      ? `/ads/campaign/${c.campaign_id}?${new URLSearchParams(drill)}`
+                      : null;
                     return (
-                      <Fragment key={c.campaign_id}>
-                        <tr
-                          className={cn(
-                            'border-b border-border/60 last:border-0',
-                            drill && 'cursor-pointer hover:bg-muted/40',
-                            opened && 'bg-muted/40'
-                          )}
-                          onClick={
-                            drill
-                              ? () => setOpenId(opened ? null : c.campaign_id)
-                              : undefined
-                          }
-                          aria-expanded={drill ? opened : undefined}
-                        >
-                          <td className="max-w-[300px] px-3 py-2.5">
-                            <p
-                              className="flex items-center gap-1 truncate font-medium"
-                              title={c.campaign_name ?? ''}
-                            >
-                              {drill && (
-                                <ChevronRight
-                                  className={cn(
-                                    'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
-                                    opened && 'rotate-90'
-                                  )}
-                                />
-                              )}
+                      <tr
+                        key={c.campaign_id}
+                        className={cn(
+                          'border-b border-border/60 last:border-0',
+                          href && 'cursor-pointer hover:bg-muted/40'
+                        )}
+                        onClick={href ? () => router.push(href) : undefined}
+                      >
+                        <td className="max-w-[300px] px-3 py-2.5">
+                          <p
+                            className="flex items-center gap-1 truncate font-medium"
+                            title={c.campaign_name ?? ''}
+                          >
+                            {href ? (
+                              <Link
+                                href={href}
+                                className="truncate hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {c.campaign_name ?? c.campaign_id}
+                              </Link>
+                            ) : (
                               <span className="truncate">
                                 {c.campaign_name ?? c.campaign_id}
                               </span>
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {[
-                                showAccount && c.ad_account_id
-                                  ? accountNames?.[c.ad_account_id]
-                                  : null,
-                                ran(c) ? `Ran ${ran(c)}` : null,
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </p>
-                          </td>
-                          <td className={TD}>
-                            <span className="font-medium">
-                              {adMoney(c.spend, currency)}
-                            </span>
-                            <div className="ml-auto mt-1 h-1 w-20 rounded-full bg-muted">
-                              <div
-                                className="h-1 rounded-full bg-primary/70"
-                                style={{ width: `${share}%` }}
-                              />
-                            </div>
-                          </td>
-                          <td className={TD}>
-                            {c.impressions.toLocaleString()}
-                          </td>
-                          <td className={TD}>{c.clicks.toLocaleString()}</td>
-                          <td className={TD}>
-                            {c.ctr == null ? dash : `${c.ctr.toFixed(2)}%`}
-                          </td>
-                          <td className={TD}>
-                            {c.conversations
-                              ? c.conversations.toLocaleString()
-                              : dash}
-                          </td>
-                          <td className={TD}>
-                            {c.cost_per_conversation == null
-                              ? dash
-                              : adMoney(c.cost_per_conversation, currency)}
-                          </td>
-                          <td className={TD}>
-                            {c.purchases ? c.purchases.toLocaleString() : dash}
-                          </td>
-                          <td className={TD}>
-                            {c.purchases &&
-                            c.purchase_value > 0 &&
-                            c.roas != null
-                              ? `${c.roas.toFixed(2)}×`
-                              : dash}
-                          </td>
-                        </tr>
-                        {drill && opened && (
-                          <tr className="border-b border-border/60 bg-muted/20">
-                            <td
-                              colSpan={COLUMNS.length + 1}
-                              className="px-3 py-3"
-                            >
-                              <CampaignAds
-                                account={drill.account}
-                                campaignId={c.campaign_id}
-                                from={drill.from}
-                                to={drill.to}
-                                currency={currency}
-                              />
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
+                            )}
+                            {href && (
+                              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {[
+                              showAccount && c.ad_account_id
+                                ? accountNames?.[c.ad_account_id]
+                                : null,
+                              ran(c) ? `Ran ${ran(c)}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        </td>
+                        <td className={TD}>
+                          <span className="font-medium">
+                            {adMoney(c.spend, currency)}
+                          </span>
+                          <div className="ml-auto mt-1 h-1 w-20 rounded-full bg-muted">
+                            <div
+                              className="h-1 rounded-full bg-primary/70"
+                              style={{ width: `${share}%` }}
+                            />
+                          </div>
+                        </td>
+                        <td className={TD}>{c.impressions.toLocaleString()}</td>
+                        <td className={TD}>{c.clicks.toLocaleString()}</td>
+                        <td className={TD}>
+                          {c.ctr == null ? dash : `${c.ctr.toFixed(2)}%`}
+                        </td>
+                        <td className={TD}>
+                          {c.conversations
+                            ? c.conversations.toLocaleString()
+                            : dash}
+                        </td>
+                        <td className={TD}>
+                          {c.cost_per_conversation == null
+                            ? dash
+                            : adMoney(c.cost_per_conversation, currency)}
+                        </td>
+                        <td className={TD}>
+                          {c.purchases ? c.purchases.toLocaleString() : dash}
+                        </td>
+                        <td className={TD}>
+                          {c.purchases && c.purchase_value > 0 && c.roas != null
+                            ? `${c.roas.toFixed(2)}×`
+                            : dash}
+                        </td>
+                      </tr>
                     );
                   })}
             </tbody>

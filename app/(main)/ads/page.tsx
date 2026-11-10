@@ -26,7 +26,6 @@ import { AdsSummary } from '@/components/ads/AdsSummary';
 import { SpendChart } from '@/components/ads/SpendChart';
 import { CampaignTable } from '@/components/ads/CampaignTable';
 import { PeriodTable } from '@/components/ads/PeriodTable';
-import { AdComments } from '@/components/ads/AdComments';
 import {
   RANGE_OPTIONS,
   RangeKind,
@@ -40,16 +39,15 @@ import {
   todayInMalaysia,
 } from '@/components/ads/period';
 import { useMetaAdsReport, useMetaAdsSettings } from '@/hooks/useMetaAds';
-import { addAdAccount, getAdComments, getAvailableAdAccounts } from '@/lib/api/meta-ads';
+import { addAdAccount, getAvailableAdAccounts } from '@/lib/api/meta-ads';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 
-type Tab = 'overview' | 'campaigns' | 'days' | 'comments';
+type Tab = 'overview' | 'campaigns' | 'days';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'campaigns', label: 'Campaigns' },
   { value: 'days', label: 'Day by day' },
-  { value: 'comments', label: 'Comments' },
 ];
 
 export default function AdsPage() {
@@ -165,13 +163,6 @@ export default function AdsPage() {
     connected && Boolean(active) && !pulling,
     active?.synced_at
   );
-  // Same request the Comments tab makes, so the tab can show the count.
-  const comments = useSWR(
-    connected && !pulling && activeId ? ['ad-comments', activeId, from, to] : null,
-    () => getAdComments(activeId, from, to),
-    { revalidateOnFocus: false }
-  );
-  const commentCount = comments.data ? comments.data.reduce((n, g) => n + g.comments.length, 0) : null;
   const ranCampaigns = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
   const currency = report?.currency ?? active?.currency ?? settings?.currency ?? null;
 
@@ -321,9 +312,6 @@ export default function AdsPage() {
                   {t.value === 'campaigns' && report && (
                     <span className="ml-1.5 text-xs text-muted-foreground">{ranCampaigns}</span>
                   )}
-                  {t.value === 'comments' && commentCount != null && (
-                    <span className="ml-1.5 text-xs text-muted-foreground">{commentCount}</span>
-                  )}
                 </button>
               ))}
             </div>
@@ -346,7 +334,6 @@ export default function AdsPage() {
             {tab === 'days' && (
               <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
             )}
-            {tab === 'comments' && !pulling && activeId && <AdComments account={activeId} from={from} to={to} />}
           </>
         )}
       </div>

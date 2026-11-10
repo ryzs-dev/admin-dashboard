@@ -96,3 +96,29 @@ export function adMoney(n: number, currency: string | null | undefined) {
 // ROAS and cost per customer compare ad money with ringgit sales, so only for
 // ringgit accounts.
 export const comparable = (currency: string | null | undefined) => !currency || currency === 'MYR';
+
+// "1 – 10 Nov 2026" for a from/to pair.
+export function spanLabel(from: string, to: string) {
+  const a = parseISO(from);
+  const b = parseISO(to);
+  if (from === to) return format(b, 'd MMM yyyy');
+  const sameYear = from.slice(0, 4) === to.slice(0, 4);
+  const sameMonth = sameYear && from.slice(0, 7) === to.slice(0, 7);
+  return `${format(a, sameMonth ? 'd' : sameYear ? 'd MMM' : 'd MMM yyyy')} – ${format(b, 'd MMM yyyy')}`;
+}
+
+export const AD_STATUS: Record<string, string> = {
+  ACTIVE: 'Active',
+  PAUSED: 'Paused',
+  ADSET_PAUSED: 'Ad set paused',
+  CAMPAIGN_PAUSED: 'Campaign paused',
+  ARCHIVED: 'Archived',
+  DELETED: 'Deleted',
+  DISAPPROVED: 'Rejected',
+  WITH_ISSUES: 'Has issues',
+  IN_PROCESS: 'In review',
+  PENDING_REVIEW: 'In review',
+};
+
+export const statusLabel = (s: string | null | undefined) =>
+  s ? (AD_STATUS[s] ?? s.toLowerCase().replace(/_/g, ' ')) : null;

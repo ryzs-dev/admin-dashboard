@@ -165,3 +165,20 @@ export type PostComment = {
   likes: number;
   permalink: string | null;
 };
+
+export type AdDetail = {
+  ad_id: string;
+  name: string;
+  status: string | null;
+  campaign: { id: string; name: string } | null;
+  thumbnail: string | null;
+  post_id: string | null;
+  page_id: string | null;
+  permalink: string | null;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversations: number;
+  total_comments: number;
+  comments: PostComment[];
+};
