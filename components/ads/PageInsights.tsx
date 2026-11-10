@@ -334,12 +334,6 @@ export function PageInsights({
           )}
         </div>
       </Panel>
-
-      <p className="px-1 text-xs text-muted-foreground">
-        {report?.page.name ?? 'Facebook page'} · numbers from Meta, refreshed every 10 minutes. Meta counts days in US
-        Pacific time, so each day starts around 3–4pm Malaysia time. Posts lists what the page published; ads without a
-        page post aren’t included.
-      </p>
     </>
   );
 }
