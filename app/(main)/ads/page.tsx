@@ -40,14 +40,24 @@ import {
   todayInMalaysia,
 } from '@/components/ads/period';
 import { useMetaAdsReport, useMetaAdsSettings } from '@/hooks/useMetaAds';
-import { addAdAccount, getAvailableAdAccounts } from '@/lib/api/meta-ads';
+import { addAdAccount, getAdComments, getAvailableAdAccounts } from '@/lib/api/meta-ads';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
+
+type Tab = 'overview' | 'campaigns' | 'days' | 'comments';
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'campaigns', label: 'Campaigns' },
+  { value: 'days', label: 'Day by day' },
+  { value: 'comments', label: 'Comments' },
+];
 
 export default function AdsPage() {
   const today = todayInMalaysia();
   const [kind, setKind] = useState<RangeKind>('month');
   const [month, setMonth] = useState(today.slice(0, 7));
 
+  const [tab, setTab] = useState<Tab>('overview');
   // '' means the main account until the settings arrive.
   const [account, setAccount] = useState('');
   const [switching, setSwitching] = useState(false);
@@ -60,13 +70,21 @@ export default function AdsPage() {
     revalidateOnFocus: false,
   });
 
-  // Remember the account per browser.
+  // Remember the account and tab per browser.
   useEffect(() => {
     try {
       const saved = localStorage.getItem('ads-account');
       if (saved) setAccount(saved);
+      const savedTab = localStorage.getItem('ads-tab') as Tab | null;
+      if (savedTab && TABS.some((t) => t.value === savedTab)) setTab(savedTab);
     } catch {}
   }, []);
+  const chooseTab = (t: Tab) => {
+    setTab(t);
+    try {
+      localStorage.setItem('ads-tab', t);
+    } catch {}
+  };
 
   // Every account the sign-in can see, the main one first; plus any synced
   // account the sign-in has since lost access to.
@@ -114,8 +132,7 @@ export default function AdsPage() {
     ].filter((g) => g.items.length > 0);
   }, [options, settings?.ad_account_id]);
 
-  const activeId =
-    account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
+  const activeId = account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
   const active = tracked.find((a) => a.id === activeId);
   const pulling = Boolean(active && !active.synced_at);
 
@@ -148,6 +165,14 @@ export default function AdsPage() {
     connected && Boolean(active) && !pulling,
     active?.synced_at
   );
+  // Same request the Comments tab makes, so the tab can show the count.
+  const comments = useSWR(
+    connected && !pulling && activeId ? ['ad-comments', activeId, from, to] : null,
+    () => getAdComments(activeId, from, to),
+    { revalidateOnFocus: false }
+  );
+  const commentCount = comments.data?.length ?? null;
+  const ranCampaigns = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
   const currency = report?.currency ?? active?.currency ?? settings?.currency ?? null;
 
   const byMonth = kind === '12m';
@@ -277,23 +302,60 @@ export default function AdsPage() {
             )}
 
             <AdsSummary report={pulling ? undefined : report} isLoading={loading} />
-            {!noSpend && <SpendChart buckets={buckets} byMonth={byMonth} currency={currency} isLoading={loading} />}
-            <CampaignTable
-              campaigns={report?.campaigns ?? []}
-              currency={currency}
-              isLoading={loading}
-              sendingOn={Boolean(settings?.send_conversions)}
-            />
-            <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
-            {!pulling && activeId && <AdComments account={activeId} from={from} to={to} />}
+            <div role="tablist" aria-label="Ads sections" className="flex gap-1 overflow-x-auto border-b">
+              {TABS.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t.value}
+                  onClick={() => chooseTab(t.value)}
+                  className={cn(
+                    '-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                    tab === t.value
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {t.label}
+                  {t.value === 'campaigns' && report && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">{ranCampaigns}</span>
+                  )}
+                  {t.value === 'comments' && commentCount != null && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">{commentCount}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {tab === 'overview' &&
+              (noSpend ? (
+                <Panel className="px-5 py-4 text-sm text-muted-foreground">No ad spend in this period.</Panel>
+              ) : (
+                <SpendChart buckets={buckets} byMonth={byMonth} currency={currency} isLoading={loading} />
+              ))}
+            {tab === 'campaigns' && (
+              <CampaignTable
+                campaigns={report?.campaigns ?? []}
+                currency={currency}
+                isLoading={loading}
+                sendingOn={Boolean(settings?.send_conversions)}
+              />
+            )}
+            {tab === 'days' && (
+              <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
+            )}
+            {tab === 'comments' && !pulling && activeId && <AdComments account={activeId} from={from} to={to} />}
 
             <p className="px-1 text-xs text-muted-foreground">
-              {active?.name ?? 'Ad account'}
-              {activeId !== settings?.ad_account_id && ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
+              {active?.name ?? options.find((o) => o.id === activeId)?.name ?? 'Ad account'}
+              {activeId !== settings?.ad_account_id &&
+                ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
               · numbers from Meta, refreshed every hour
-              {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended ROAS is
-              every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it includes
-              customers who didn’t come from an ad. Campaign ROAS counts only purchases Meta matched to that campaign.
+              {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended
+              ROAS is every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it
+              includes customers who didn’t come from an ad. Campaign ROAS counts only purchases Meta matched to that
+              campaign.
             </p>
           </>
         )}
