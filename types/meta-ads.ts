@@ -94,6 +94,9 @@ export type FacebookPage = {
   followers: number | null;
   picture: string | null;
   link: string | null;
+  // False for a business page the signed-in person has no role on.
+  access: boolean;
+  business: string | null;
 };
 
 export type FacebookPageDay = {

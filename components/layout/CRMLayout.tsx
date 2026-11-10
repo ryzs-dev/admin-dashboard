@@ -24,6 +24,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -64,41 +65,37 @@ function CRMSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
-  const menuItems: MenuItem[] = [
+  // Grouped by what the team is doing; the first group has no heading.
+  const menuGroups: { label?: string; items: MenuItem[] }[] = [
+    { items: [{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' }] },
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      href: '/dashboard',
+      label: 'Sales',
+      items: [
+        { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
+        { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+        { id: 'distributors', label: 'Distributors', icon: Store, href: '/distributors' },
+        { id: 'products', label: 'Products', icon: Package, href: '/products' },
+        { id: 'sales-report', label: 'Sales report', icon: FileSpreadsheet, href: '/sales-report' },
+      ],
     },
-    { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
-    { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/orders' },
     {
-      id: 'distributors',
-      label: 'Distributors',
-      icon: Store,
-      href: '/distributors',
+      label: 'Messaging',
+      items: [
+        { id: 'inbox', label: 'Inbox', icon: MessageCircle, href: '/inbox' },
+        { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
+      ],
     },
-    { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
     {
-      id: 'inbox',
-      label: 'Inbox',
-      icon: MessageCircle,
-      href: '/inbox',
+      label: 'Marketing',
+      items: [
+        { id: 'ads', label: 'Ads', icon: Megaphone, href: '/ads' },
+        { id: 'pages', label: 'Pages', icon: ThumbsUp, href: '/pages' },
+      ],
     },
-    { id: 'products', label: 'Products', icon: Package, href: '/products' },
-    { id: 'ads', label: 'Ads', icon: Megaphone, href: '/ads' },
-    { id: 'facebook-page', label: 'Facebook page', icon: ThumbsUp, href: '/facebook-page' },
-    { id: 'sales-report', label: 'Sales report', icon: FileSpreadsheet, href: '/sales-report' },
-    { id: 'integrations', label: 'Integrations', icon: Blocks, href: '/integrations' },
-    // {
-    //   id: 'import',
-    //   label: 'Import',
-    //   icon: FileUp,
-    //   href: '/import',
-    //   badge: 'NEW',
-    // },
-    // { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+    {
+      label: 'Setup',
+      items: [{ id: 'integrations', label: 'Integrations', icon: Blocks, href: '/integrations' }],
+    },
   ];
 
   const isActive = (href: string) => {
@@ -139,27 +136,34 @@ function CRMSidebar() {
       <Separator className="my-2 bg-sidebar-border" />
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                    tooltip={item.label}
-                    className="h-9 text-sidebar-foreground/75 hover:text-white data-[active=true]:text-white"
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {menuGroups.map((group, i) => (
+          <SidebarGroup key={group.label ?? i} className="py-1">
+            {group.label && (
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.14em] text-sidebar-foreground/45">
+                {group.label}
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      tooltip={item.label}
+                      className="h-9 text-sidebar-foreground/75 hover:text-white data-[active=true]:text-white"
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>
