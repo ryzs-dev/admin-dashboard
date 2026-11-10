@@ -126,3 +126,17 @@ export type FacebookPageReport = {
   totals: Omit<FacebookPageDay, 'date' | 'viewers'>;
   posts: FacebookPagePost[];
 };
+
+export type AdComment = {
+  id: string;
+  message: string;
+  from: string | null;
+  created_time: string;
+  replies: number;
+  likes: number;
+  permalink: string | null;
+  post_id: string;
+  post_permalink: string | null;
+  ads: string[];
+  campaign: string | null;
+};

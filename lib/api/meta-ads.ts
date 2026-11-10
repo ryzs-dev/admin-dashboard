@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+  AdComment,
   FacebookPage,
   FacebookPageReport,
   MetaAdAccount,
@@ -153,5 +154,14 @@ export async function getFacebookPageReport(pageId: string, from: string, to: st
     return data.report as FacebookPageReport;
   } catch (error) {
     throw apiError(error, 'Couldn’t load the page insights');
+  }
+}
+
+export async function getAdComments(account: string, from: string, to: string) {
+  try {
+    const { data } = await api.get('/comments', { params: { account, from, to } });
+    return data.comments as AdComment[];
+  } catch (error) {
+    throw apiError(error, 'Couldn’t load the ad comments');
   }
 }

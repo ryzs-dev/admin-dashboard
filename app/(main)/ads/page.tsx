@@ -26,7 +26,7 @@ import { AdsSummary } from '@/components/ads/AdsSummary';
 import { SpendChart } from '@/components/ads/SpendChart';
 import { CampaignTable } from '@/components/ads/CampaignTable';
 import { PeriodTable } from '@/components/ads/PeriodTable';
-import { PageInsights } from '@/components/ads/PageInsights';
+import { AdComments } from '@/components/ads/AdComments';
 import {
   RANGE_OPTIONS,
   RangeKind,
@@ -40,15 +40,13 @@ import {
   todayInMalaysia,
 } from '@/components/ads/period';
 import { useMetaAdsReport, useMetaAdsSettings } from '@/hooks/useMetaAds';
-import { addAdAccount, getAvailableAdAccounts, getFacebookPageReport, getFacebookPages } from '@/lib/api/meta-ads';
+import { addAdAccount, getAvailableAdAccounts } from '@/lib/api/meta-ads';
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function AdsPage() {
   const today = todayInMalaysia();
   const [kind, setKind] = useState<RangeKind>('month');
   const [month, setMonth] = useState(today.slice(0, 7));
-  const [view, setView] = useState<'ads' | 'page'>('ads');
-  const [pageId, setPageId] = useState('');
 
   // '' means the main account until the settings arrive.
   const [account, setAccount] = useState('');
@@ -83,13 +81,7 @@ export default function AdsPage() {
     }));
     for (const t of tracked) {
       if (!list.some((a) => a.id === t.id)) {
-        list.push({
-          id: t.id,
-          name: t.name ?? t.id,
-          currency: t.currency ?? '',
-          business: null,
-          active: true,
-        });
+        list.push({ id: t.id, name: t.name ?? t.id, currency: t.currency ?? '', business: null, active: true });
       }
     }
     return list.sort((x, y) => (x.id === main ? -1 : y.id === main ? 1 : 0));
@@ -122,12 +114,8 @@ export default function AdsPage() {
     ].filter((g) => g.items.length > 0);
   }, [options, settings?.ad_account_id]);
 
-  const pages = useSWR(connected && view === 'page' ? 'facebook-pages' : null, getFacebookPages, {
-    revalidateOnFocus: false,
-  });
-  const activePage = pages.data?.find((p) => p.id === pageId) ?? pages.data?.[0];
-
-  const activeId = account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
+  const activeId =
+    account && options.some((o) => o.id === account) ? account : (settings?.ad_account_id ?? '');
   const active = tracked.find((a) => a.id === activeId);
   const pulling = Boolean(active && !active.synced_at);
 
@@ -153,11 +141,6 @@ export default function AdsPage() {
   };
 
   const { from, to } = rangeFor(kind, month, today);
-  const pageReport = useSWR(
-    view === 'page' && activePage ? ['facebook-page-report', activePage.id, from, to] : null,
-    () => getFacebookPageReport(activePage!.id, from, to),
-    { revalidateOnFocus: false, keepPreviousData: true }
-  );
   const { report, error, isLoading } = useMetaAdsReport(
     from,
     to,
@@ -178,7 +161,6 @@ export default function AdsPage() {
 
   const description = (() => {
     if (!connected) return 'Ad spend, chats and ROAS from your Meta ad account, beside your sales.';
-    if (view === 'page') return `Followers, views and posts for ${activePage?.name ?? 'your Facebook page'}, ${label}.`;
     if (!t) return `Meta ads for ${label}.`;
     if (noSpend) return `No ad spend in ${kind === 'month' ? label : 'this period'}.`;
     const ran = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
@@ -192,21 +174,7 @@ export default function AdsPage() {
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="pb-2">
           <PageHeader title="Ads" description={description}>
-            {connected && view === 'page' && (pages.data?.length ?? 0) > 1 && (
-              <Select value={activePage?.id ?? ''} onValueChange={setPageId}>
-                <SelectTrigger className="w-60" aria-label="Facebook page">
-                  <SelectValue placeholder="Facebook page" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pages.data!.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {connected && view === 'ads' && (
+            {connected && (
               <>
                 <Select value={activeId} onValueChange={chooseAccount} disabled={switching}>
                   <SelectTrigger className="w-60" aria-label="Ad account">
@@ -247,15 +215,6 @@ export default function AdsPage() {
           </PageHeader>
           {connected && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Segmented
-                label="View"
-                value={view}
-                onChange={setView}
-                options={[
-                  { value: 'ads', label: 'Ads' },
-                  { value: 'page', label: 'Facebook page' },
-                ]}
-              />
               <Segmented label="Period" value={kind} onChange={setKind} options={RANGE_OPTIONS} />
               {kind === 'month' && <MonthPicker value={month} max={today.slice(0, 7)} onChange={setMonth} />}
             </div>
@@ -277,21 +236,6 @@ export default function AdsPage() {
               <Link href="/integrations/meta-ads">Connect Meta ads</Link>
             </Button>
           </Panel>
-        ) : view === 'page' ? (
-          pages.error || pageReport.error ? (
-            <Panel className="px-5 py-4 text-sm text-destructive">{(pages.error ?? pageReport.error).message}</Panel>
-          ) : pages.data && pages.data.length === 0 ? (
-            <Panel className="px-5 py-4 text-sm text-muted-foreground">
-              {settings?.connected_by ?? 'The person who signed in'} doesn’t manage any Facebook page. Sign in with
-              Facebook again as someone who manages the LUNAA page.
-            </Panel>
-          ) : (
-            <PageInsights
-              report={pageReport.data}
-              byMonth={kind === '12m'}
-              isLoading={!pageReport.data || pageReport.isLoading}
-            />
-          )
         ) : error ? (
           <Panel className="px-5 py-4 text-sm text-destructive">{error.message}</Panel>
         ) : (
@@ -341,16 +285,15 @@ export default function AdsPage() {
               sendingOn={Boolean(settings?.send_conversions)}
             />
             <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
+            {!pulling && activeId && <AdComments account={activeId} from={from} to={to} />}
 
             <p className="px-1 text-xs text-muted-foreground">
               {active?.name ?? 'Ad account'}
-              {activeId !== settings?.ad_account_id &&
-                ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
+              {activeId !== settings?.ad_account_id && ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
               · numbers from Meta, refreshed every hour
-              {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended
-              ROAS is every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it
-              includes customers who didn’t come from an ad. Campaign ROAS counts only purchases Meta matched to that
-              campaign.
+              {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended ROAS is
+              every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it includes
+              customers who didn’t come from an ad. Campaign ROAS counts only purchases Meta matched to that campaign.
             </p>
           </>
         )}
