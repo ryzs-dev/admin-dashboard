@@ -171,7 +171,7 @@ export default function AdsPage() {
     () => getAdComments(activeId, from, to),
     { revalidateOnFocus: false }
   );
-  const commentCount = comments.data?.length ?? null;
+  const commentCount = comments.data ? comments.data.reduce((n, g) => n + g.comments.length, 0) : null;
   const ranCampaigns = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
   const currency = report?.currency ?? active?.currency ?? settings?.currency ?? null;
 
@@ -340,6 +340,7 @@ export default function AdsPage() {
                 currency={currency}
                 isLoading={loading}
                 sendingOn={Boolean(settings?.send_conversions)}
+                drill={activeId ? { account: activeId, from, to } : undefined}
               />
             )}
             {tab === 'days' && (

@@ -130,18 +130,30 @@ export type FacebookPageReport = {
   posts: FacebookPagePost[];
 };
 
-export type AdComment = {
-  id: string;
-  message: string;
-  from: string | null;
-  created_time: string;
-  replies: number;
-  likes: number;
+export type CampaignAd = {
+  ad_id: string;
+  name: string;
+  status: string | null;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversations: number;
+  thumbnail: string | null;
+  post_id: string | null;
+  page_id: string | null;
   permalink: string | null;
+  comments: number;
+};
+
+export type AdCommentGroup = {
   post_id: string;
-  post_permalink: string | null;
+  page_id: string;
   ads: string[];
-  campaign: string | null;
+  campaigns: string[];
+  thumbnail: string | null;
+  permalink: string | null;
+  total: number;
+  comments: PostComment[];
 };
 
 export type PostComment = {
