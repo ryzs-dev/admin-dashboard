@@ -302,7 +302,7 @@ export default function AdsPage() {
             )}
 
             <AdsSummary report={pulling ? undefined : report} isLoading={loading} />
-            <div role="tablist" aria-label="Ads sections" className="flex gap-1 overflow-x-auto border-b">
+            <div role="tablist" aria-label="Ads sections" className="flex flex-wrap gap-1 border-b">
               {TABS.map((t) => (
                 <button
                   key={t.value}
@@ -346,17 +346,6 @@ export default function AdsPage() {
               <PeriodTable buckets={buckets} byMonth={byMonth} today={today} currency={currency} isLoading={loading} />
             )}
             {tab === 'comments' && !pulling && activeId && <AdComments account={activeId} from={from} to={to} />}
-
-            <p className="px-1 text-xs text-muted-foreground">
-              {active?.name ?? options.find((o) => o.id === activeId)?.name ?? 'Ad account'}
-              {activeId !== settings?.ad_account_id &&
-                ` (the dashboard uses ${settings?.account_name ?? 'the main account'})`}{' '}
-              · numbers from Meta, refreshed every hour
-              {report?.data_since && `, available from ${format(parseISO(report.data_since), 'd MMM yyyy')}`}. Blended
-              ROAS is every WhatsApp sale (not distributor, Shopee or Lazada) ÷ ad spend over the same days, so it
-              includes customers who didn’t come from an ad. Campaign ROAS counts only purchases Meta matched to that
-              campaign.
-            </p>
           </>
         )}
       </div>
