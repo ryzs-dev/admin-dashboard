@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE, AUTH_URL } from './config';
 
 // Define your route protection rules
-const PUBLIC_ROUTES = ['/login', '/forget-password', '/reset-password'];
+const PUBLIC_ROUTES = ['/login', '/forget-password', '/reset-password', '/privacy'];
 const AUTH_ROUTES = ['/login', '/forget-password', '/reset-password']; // Routes auth users shouldn't access
 const PROTECTED_ROUTES = ['/dashboard', '/orders', '/customers', '/settings']; // Add your protected routes
 
