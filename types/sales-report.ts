@@ -1,6 +1,8 @@
 export type SalesReportRow = {
   ad_spend: number;
   messages: number;
+  // Comments people left on the ads that day.
+  ad_comments: number;
   wa_orders: number;
   wa_new: number;
   wa_repeat: number;

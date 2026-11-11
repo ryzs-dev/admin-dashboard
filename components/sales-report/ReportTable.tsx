@@ -25,6 +25,7 @@ const GROUPS: { label: string; cols: Col[] }[] = [
     cols: [
       { key: 'ad_spend', label: 'Ad spend (RM)', value: (r) => money(r.ad_spend) },
       { key: 'messages', label: 'Messages', title: 'Chats started from ads', value: (r) => count(r.messages) },
+      { key: 'ad_comments', label: 'Comments', title: 'Comments left on the ads', value: (r) => count(r.ad_comments) },
       { key: 'cpm', label: 'Cost / msg', value: (r) => money(r.cost_per_message) },
     ],
   },
