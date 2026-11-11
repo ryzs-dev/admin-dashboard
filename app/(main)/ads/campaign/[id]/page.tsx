@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Panel, PanelHeader } from '@/components/dashboard/Panel';
@@ -102,10 +102,20 @@ function CampaignPage() {
                               .join(' · ')}
                           </p>
                         </div>
-                        <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
-                          <MessageCircle className="h-3.5 w-3.5" />
-                          {ad.comments.toLocaleString()}
-                        </span>
+                        <div className="flex shrink-0 items-center gap-4 text-xs tabular-nums text-muted-foreground">
+                          <span className="flex items-center gap-1" title="Reactions">
+                            <Heart className="h-3.5 w-3.5" />
+                            {ad.reactions.toLocaleString()}
+                          </span>
+                          <span className="flex items-center gap-1" title="Comments">
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {ad.comments.toLocaleString()}
+                          </span>
+                          <span className="flex items-center gap-1" title="Shares">
+                            <Share2 className="h-3.5 w-3.5" />
+                            {ad.shares.toLocaleString()}
+                          </span>
+                        </div>
                         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                       </Link>
                     </li>

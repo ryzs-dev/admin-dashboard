@@ -142,7 +142,10 @@ export type CampaignAd = {
   post_id: string | null;
   page_id: string | null;
   permalink: string | null;
+  // Totals on the ad's post since it was published.
   comments: number;
+  reactions: number;
+  shares: number;
 };
 
 export type AdCommentGroup = {
@@ -180,5 +183,9 @@ export type AdDetail = {
   clicks: number;
   conversations: number;
   total_comments: number;
+  reactions: number;
+  shares: number;
+  // Meta's ad numbers for the period.
+  engagement: { total: number; reactions: number; comments: number; shares: number; saves: number };
   comments: PostComment[];
 };

@@ -98,6 +98,23 @@ function AdPage() {
             </Panel>
 
             <Panel>
+              <PanelHeader title="Engagement" meta={from && to ? spanLabel(from, to) : undefined} />
+              <div className="grid grid-cols-2 gap-px overflow-hidden bg-border sm:grid-cols-5 [&>*]:bg-card">
+                <Stat label="Engagements" value={(ad?.engagement.total ?? 0).toLocaleString()} isLoading={loading} />
+                <Stat label="Reactions" value={(ad?.engagement.reactions ?? 0).toLocaleString()} isLoading={loading} />
+                <Stat label="Comments" value={(ad?.engagement.comments ?? 0).toLocaleString()} isLoading={loading} />
+                <Stat label="Shares" value={(ad?.engagement.shares ?? 0).toLocaleString()} isLoading={loading} />
+                <Stat label="Saves" value={(ad?.engagement.saves ?? 0).toLocaleString()} isLoading={loading} />
+              </div>
+              {ad && (
+                <p className="border-t px-5 py-3 text-xs text-muted-foreground">
+                  On the post since it was published: {ad.reactions.toLocaleString()} reactions ·{' '}
+                  {ad.total_comments.toLocaleString()} comments · {ad.shares.toLocaleString()} shares
+                </p>
+              )}
+            </Panel>
+
+            <Panel>
               <PanelHeader
                 title="Comments"
                 meta={
