@@ -9,7 +9,6 @@ import {
   Package,
   LogOut,
   ChevronDown,
-  MessageCircle,
   Blocks,
   Megaphone,
   ThumbsUp,
@@ -81,7 +80,6 @@ function CRMSidebar() {
     {
       label: 'Messaging',
       items: [
-        { id: 'inbox', label: 'Inbox', icon: MessageCircle, href: '/inbox' },
         { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
       ],
     },
