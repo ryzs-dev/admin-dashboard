@@ -104,3 +104,36 @@ export async function createBulkParcelDailyShipments(
     throw new Error(body?.error || 'Failed to create bulk shipments');
   }
 }
+
+export type VoucherSession = {
+  state: 'signed_out' | 'expired' | 'signed_in';
+  account: string | null;
+  signedInAt: string | null;
+  expiresAt: string | null;
+};
+
+export type ParcelDailyVoucher = {
+  name?: string;
+  type?: 'amount' | 'percent';
+  amount?: number;
+  percent?: number;
+  minSpend?: number;
+  couriers: string[];
+  maxWeightKg: number | null;
+  left: number;
+  nextExpiry: string | null;
+};
+
+export async function getParcelDailyVouchers() {
+  const { data } = await api.get('/vouchers');
+  return data.data as { session: VoucherSession; vouchers: ParcelDailyVoucher[] };
+}
+
+export async function signInParcelDaily(login: string, password: string) {
+  const { data } = await api.post('/vouchers/sign-in', { login, password });
+  return data.data.session as VoucherSession;
+}
+
+export async function signOutParcelDaily() {
+  await api.post('/vouchers/sign-out');
+}

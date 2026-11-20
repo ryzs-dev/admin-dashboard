@@ -11,6 +11,7 @@ import {
   Loader2,
   MapPin,
   Package2,
+  Ticket,
   Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
-import { useParcelDailySettings } from '@/hooks/useParcelDaily';
+import { useParcelDailySettings, useParcelDailyVouchers } from '@/hooks/useParcelDaily';
+import { VoucherSignInDialog } from '@/components/modules/integrations/parcel-daily/VoucherSignInDialog';
 import { ChoiceField, ChoiceOption } from '@/components/forms/Field';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
 import { createParcelDailyShipment, getCourierQuotes } from '@/lib/api/parcel-daily';
@@ -100,6 +102,9 @@ export default function CreateShipmentDialog({
   const [error, setError] = useState<string | null>(null);
   const [courier, setCourier] = useState<string | undefined>();
   const { settings } = useParcelDailySettings();
+  const { session: voucherSession } = useParcelDailyVouchers();
+  const [voucherSignIn, setVoucherSignIn] = useState(false);
+  const vouchersOff = !!voucherSession && voucherSession.state !== 'signed_in';
   const defaults = settings?.defaults;
   const weightKg = defaults?.kg ?? FALLBACK_WEIGHT_KG;
   const defaultDelivery: DeliveryType = defaults?.isDropoff ? 'dropoff' : 'pickup';
@@ -423,6 +428,24 @@ export default function CreateShipmentDialog({
             )}
           </section>
 
+          {vouchersOff && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+              <span className="flex items-center gap-2">
+                <Ticket className="h-4 w-4 shrink-0" />
+                {voucherSession?.state === 'expired' ? 'Signed out of Parcel Daily. Vouchers are off.' : 'Vouchers are off.'}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 bg-white"
+                onClick={() => setVoucherSignIn(true)}
+                disabled={isLoading}
+              >
+                Sign in
+              </Button>
+            </div>
+          )}
+
           {error && (
             <div
               role="alert"
@@ -456,6 +479,7 @@ export default function CreateShipmentDialog({
             </Button>
           </div>
         </div>
+        <VoucherSignInDialog open={voucherSignIn} onOpenChange={setVoucherSignIn} />
       </DialogContent>
     </Dialog>
   );

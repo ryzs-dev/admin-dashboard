@@ -1,6 +1,7 @@
 import {
   getParcelDailyAccountInfo,
   getParcelDailySettings,
+  getParcelDailyVouchers,
   ParcelDailyAccount,
 } from '@/lib/api/parcel-daily';
 import useSWR from 'swr';
@@ -22,4 +23,17 @@ export function useParcelDailySettings() {
     revalidateOnFocus: false,
   });
   return { settings: data, isLoading, isError: !!error, refresh: mutate };
+}
+
+export function useParcelDailyVouchers() {
+  const { data, error, isLoading, mutate } = useSWR('parcel-daily-vouchers', getParcelDailyVouchers, {
+    revalidateOnFocus: false,
+  });
+  return {
+    session: data?.session,
+    vouchers: data?.vouchers ?? [],
+    isLoading,
+    isError: !!error,
+    refresh: mutate,
+  };
 }

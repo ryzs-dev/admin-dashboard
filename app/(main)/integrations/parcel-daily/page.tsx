@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { AlertCircle, AlertTriangle, ArrowLeft, ExternalLink, KeyRound, MapPin, Pencil, Settings2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ExternalLink, KeyRound, MapPin, Pencil, Settings2, Ticket } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/layout/StatCard';
 import {
@@ -13,13 +13,14 @@ import {
 import { getIntegration } from '@/components/modules/integrations/registry';
 import { PickupAddressDialog } from '@/components/modules/integrations/parcel-daily/PickupAddressDialog';
 import { ShippingDefaultsDialog } from '@/components/modules/integrations/parcel-daily/ShippingDefaultsDialog';
+import { VoucherSignInDialog } from '@/components/modules/integrations/parcel-daily/VoucherSignInDialog';
 import { CourierLogo } from '@/components/modules/parcel-daily/CourierPicker';
 import { courierInfo } from '@/components/modules/parcel-daily/couriers';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useParcelDailyAccount, useParcelDailySettings } from '@/hooks/useParcelDaily';
-import { ParcelDailySettings } from '@/lib/api/parcel-daily';
+import { useParcelDailyAccount, useParcelDailySettings, useParcelDailyVouchers } from '@/hooks/useParcelDaily';
+import { ParcelDailySettings, ParcelDailyVoucher, signOutParcelDaily } from '@/lib/api/parcel-daily';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatFriendlyDateTime } from '@/lib/utils/date';
 import { formatPhone } from '@/lib/utils/phone';
@@ -32,13 +33,15 @@ function SettingsCard({
   title,
   description,
   onEdit,
+  action,
   children,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
   onEdit?: () => void;
-  children: React.ReactNode;
+  action?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <Card className="gap-0 py-0">
@@ -56,8 +59,9 @@ function SettingsCard({
             Edit
           </Button>
         )}
+        {action}
       </div>
-      <dl className="mt-4 divide-y border-t">{children}</dl>
+      {children ? <dl className="mt-4 divide-y border-t">{children}</dl> : <div className="pb-5" />}
     </Card>
   );
 }
@@ -68,6 +72,82 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="min-w-0 text-sm">{children}</dd>
     </div>
+  );
+}
+
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : '—';
+
+const voucherOff = (v: ParcelDailyVoucher) =>
+  v.type === 'percent' ? `${v.percent}% off` : `${formatCurrency(Number(v.amount ?? 0))} off`;
+
+function VouchersCard() {
+  const { session, vouchers, isLoading, refresh } = useParcelDailyVouchers();
+  const [signingIn, setSigningIn] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOutParcelDaily();
+      await refresh();
+      toast.success('Vouchers off');
+    } catch {
+      toast.error('Couldn’t sign out');
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  if (isLoading && !session) return <Skeleton className="h-32 w-full rounded-xl" />;
+
+  const signedIn = session?.state === 'signed_in';
+  const expired = session?.state === 'expired';
+
+  return (
+    <>
+      <SettingsCard
+        icon={Ticket}
+        title="Vouchers"
+        description={
+          signedIn
+            ? 'Taken off each shipment automatically.'
+            : expired
+              ? 'Parcel Daily signed the CRM out. Sign in again to keep using vouchers.'
+              : 'Sign in to take vouchers off each shipment.'
+        }
+        action={
+          signedIn ? (
+            <Button variant="outline" size="sm" className="shrink-0" onClick={handleSignOut} disabled={signingOut}>
+              Sign out
+            </Button>
+          ) : (
+            <Button size="sm" className="shrink-0" onClick={() => setSigningIn(true)}>
+              Sign in
+            </Button>
+          )
+        }
+      >
+        {signedIn ? (
+          <>
+            <Row label="Signed in as">{session?.account}</Row>
+            <Row label="Signed in until">{formatFriendlyDateTime(session?.expiresAt ?? '')}</Row>
+            {vouchers.length === 0 ? (
+              <Row label="Vouchers">None left</Row>
+            ) : (
+              vouchers.map((v, i) => (
+                <Row key={`${v.name}-${i}`} label={v.name ?? 'Voucher'}>
+                  <span className="tabular-nums">
+                    {voucherOff(v)} · {v.left} left · until {shortDate(v.nextExpiry)}
+                  </span>
+                </Row>
+              ))
+            )}
+          </>
+        ) : null}
+      </SettingsCard>
+      <VoucherSignInDialog open={signingIn} onOpenChange={setSigningIn} />
+    </>
   );
 }
 
@@ -212,6 +292,8 @@ export default function ParcelDailyIntegrationPage() {
                 <span className="tabular-nums">{defaults.kg} kg</span>
               </Row>
             </SettingsCard>
+
+            <VouchersCard />
 
             {settings.connection && (
               <SettingsCard
