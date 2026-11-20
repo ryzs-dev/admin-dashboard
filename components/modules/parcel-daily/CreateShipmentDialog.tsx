@@ -29,7 +29,7 @@ import { useParcelDailySettings, useParcelDailyVouchers } from '@/hooks/useParce
 import { VoucherSignInDialog } from '@/components/modules/integrations/parcel-daily/VoucherSignInDialog';
 import { ChoiceField, ChoiceOption } from '@/components/forms/Field';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
-import { createParcelDailyShipment, getCourierQuotes } from '@/lib/api/parcel-daily';
+import { createParcelDailyShipment, getCourierQuotes, ParcelDailyVoucher } from '@/lib/api/parcel-daily';
 import { Order } from '../order/types';
 import { BOOKABLE_COURIERS, courierInfo } from './couriers';
 import { CourierOption, CourierPicker } from './CourierPicker';
@@ -71,6 +71,35 @@ function errorMessage(err: unknown): string {
   );
 }
 
+// Mirrors the rules Parcel Daily checks at checkout.
+const EAST_MALAYSIA: [number, number][] = [
+  [86999, 91310],
+  [92999, 98860],
+];
+const inEastMalaysia = (postcode?: string) => {
+  const n = Number(postcode);
+  return !Number.isNaN(n) && EAST_MALAYSIA.some(([lo, hi]) => n >= lo && n <= hi);
+};
+
+function voucherDiscount(
+  v: ParcelDailyVoucher,
+  s: { courier?: string; price?: number; kg: number; country: string; postcode: string; pickupPostcode?: string }
+) {
+  if (!v.id || v.left < 1 || !s.courier || s.price === undefined) return 0;
+  if (v.couriers.length && !v.couriers.includes(s.courier.toLowerCase())) return 0;
+  if (v.maxWeightKg != null && s.kg > v.maxWeightKg) return 0;
+  if (v.region) {
+    if (v.region !== 'WTW' || s.country !== 'Malaysia') return 0;
+    if (inEastMalaysia(s.postcode) || inEastMalaysia(s.pickupPostcode)) return 0;
+  }
+  if (v.minSpend && s.price < v.minSpend) return 0;
+  const raw = v.type === 'percent' ? (s.price * Number(v.percent ?? 0)) / 100 : Number(v.amount ?? 0);
+  return Math.round(Math.min(Math.max(raw, 0), s.price) * 100) / 100;
+}
+
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : '';
+
 function SectionTitle({
   icon: Icon,
   children,
@@ -102,7 +131,8 @@ export default function CreateShipmentDialog({
   const [error, setError] = useState<string | null>(null);
   const [courier, setCourier] = useState<string | undefined>();
   const { settings } = useParcelDailySettings();
-  const { session: voucherSession } = useParcelDailyVouchers();
+  const { session: voucherSession, vouchers } = useParcelDailyVouchers();
+  const [voucherChoice, setVoucherChoice] = useState<string | undefined>();
   const [voucherSignIn, setVoucherSignIn] = useState(false);
   const vouchersOff = !!voucherSession && voucherSession.state !== 'signed_in';
   const defaults = settings?.defaults;
@@ -116,6 +146,7 @@ export default function CreateShipmentDialog({
     if (!isOpen) return;
     setError(null);
     setCourier(undefined);
+    setVoucherChoice(undefined);
     setDeliveryType(defaultDelivery);
     setCodEnabled(false);
     setCodAmount(String(contentValue ?? ''));
@@ -167,6 +198,46 @@ export default function CreateShipmentDialog({
 
   const selectedCourier = couriers.find((c) => c.code === courier);
 
+  // Vouchers that fit this courier and parcel, best saving (then earliest expiry) first.
+  const fittingVouchers = useMemo(() => {
+    if (voucherSession?.state !== 'signed_in') return [];
+    return vouchers
+      .map((v) => ({
+        voucher: v,
+        discount: voucherDiscount(v, {
+          courier,
+          price: selectedCourier?.price,
+          kg: weightKg,
+          country,
+          postcode,
+          pickupPostcode: settings?.pickupAddress.postcode,
+        }),
+      }))
+      .filter((f) => f.discount > 0)
+      .sort(
+        (a, b) =>
+          b.discount - a.discount ||
+          String(a.voucher.nextExpiry).localeCompare(String(b.voucher.nextExpiry))
+      );
+  }, [voucherSession?.state, vouchers, courier, selectedCourier?.price, weightKg, country, postcode, settings?.pickupAddress.postcode]);
+
+  // Pre-select the best voucher; keep the staff's pick while it still fits.
+  useEffect(() => {
+    if (voucherChoice === 'none') return;
+    if (fittingVouchers.some((f) => f.voucher.id === voucherChoice)) return;
+    setVoucherChoice(fittingVouchers[0]?.voucher.id ?? undefined);
+  }, [fittingVouchers, voucherChoice]);
+
+  const chosenVoucher = fittingVouchers.find((f) => f.voucher.id === voucherChoice);
+  const voucherOptions: ChoiceOption<string>[] = [
+    ...fittingVouchers.map(({ voucher, discount }) => ({
+      value: voucher.id as string,
+      label: `${voucher.name ?? 'Voucher'} · ${formatCurrency(discount)} off`,
+      hint: `${voucher.left} left · until ${shortDate(voucher.nextExpiry)}`,
+    })),
+    { value: 'none', label: 'No voucher' },
+  ];
+
   const missing = useMemo(() => {
     const items: string[] = [];
     if (!customer?.phone_number) items.push('phone number');
@@ -204,6 +275,7 @@ export default function CreateShipmentDialog({
       content,
       content_value: contentValue,
       isDropoff: deliveryType === 'dropoff',
+      voucherId: chosenVoucher?.voucher.id ?? 'none',
     };
 
     try {
@@ -222,7 +294,10 @@ export default function CreateShipmentDialog({
 
   const summary = [
     selectedCourier?.label,
-    selectedCourier?.price !== undefined ? formatCurrency(selectedCourier.price) : null,
+    selectedCourier?.price !== undefined
+      ? formatCurrency(Math.max(selectedCourier.price - (chosenVoucher?.discount ?? 0), 0))
+      : null,
+    chosenVoucher ? 'Voucher' : null,
     deliveryType === 'pickup' ? 'Pickup' : 'Drop-off',
     codEnabled && cod > 0 ? `COD ${formatCurrency(cod)}` : null,
   ]
@@ -354,6 +429,22 @@ export default function CreateShipmentDialog({
                 disabled={isLoading}
               />
             </div>
+
+            {fittingVouchers.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <Ticket className="h-4 w-4 text-muted-foreground" />
+                  Voucher
+                </p>
+                <ChoiceField
+                  label="Voucher"
+                  value={voucherChoice ?? 'none'}
+                  onChange={setVoucherChoice}
+                  options={voucherOptions}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
           </section>
 
           <section>

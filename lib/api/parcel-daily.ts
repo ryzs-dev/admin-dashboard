@@ -113,6 +113,7 @@ export type VoucherSession = {
 };
 
 export type ParcelDailyVoucher = {
+  id: string | null;
   name?: string;
   type?: 'amount' | 'percent';
   amount?: number;
@@ -120,6 +121,7 @@ export type ParcelDailyVoucher = {
   minSpend?: number;
   couriers: string[];
   maxWeightKg: number | null;
+  region: string | null;
   left: number;
   nextExpiry: string | null;
 };

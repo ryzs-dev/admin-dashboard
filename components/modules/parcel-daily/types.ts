@@ -18,4 +18,6 @@ export interface ShipmentInput {
   content: string;
   content_value: number;
   isDropoff: boolean;
+  // A Parcel Daily voucher type id, or 'none' to pay without one.
+  voucherId?: string;
 }
