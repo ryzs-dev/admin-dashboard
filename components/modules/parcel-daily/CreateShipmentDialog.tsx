@@ -43,6 +43,29 @@ interface CreateShipmentDialogProps {
 
 type DeliveryType = 'pickup' | 'dropoff';
 
+// C1b layout: label on the left, a borderless dropdown on the right, no lines.
+const ROW_TRIGGER =
+  'h-auto w-auto max-w-full justify-end gap-2 border-0 bg-transparent px-2 py-1.5 shadow-none hover:bg-muted/60 data-[size=default]:h-auto';
+
+function ListRow({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-12 items-center gap-3">
+      <label htmlFor={htmlFor} className="w-36 shrink-0 text-sm text-muted-foreground">
+        {label}
+      </label>
+      <div className="flex min-w-0 flex-1 justify-end -mr-2">{children}</div>
+    </div>
+  );
+}
+
 type ShipmentErrorBody = {
   message?: string;
   error?: string;
@@ -264,7 +287,7 @@ export default function CreateShipmentDialog({
   const total =
     selectedCourier?.price !== undefined ? Math.max(selectedCourier.price - voucherOff, 0) : undefined;
 
-  // Best voucher saving for a courier card (0 when staff picked "No voucher").
+  // Best voucher saving for a courier (0 when staff picked "No voucher").
   const cardDiscount = (c: CourierOption) => {
     if (voucherChoice === 'none' || voucherSession?.state !== 'signed_in') return 0;
     return Math.max(
@@ -281,18 +304,6 @@ export default function CreateShipmentDialog({
       )
     );
   };
-
-  // Three cheapest as cards; the picked courier always stays visible.
-  const [showAllCouriers, setShowAllCouriers] = useState(false);
-  useEffect(() => {
-    if (!isOpen) setShowAllCouriers(false);
-  }, [isOpen]);
-  const cardCouriers = useMemo(() => {
-    if (showAllCouriers || couriers.length <= 3) return couriers;
-    const top = couriers.slice(0, 3);
-    if (!selectedCourier || top.some((c) => c.code === selectedCourier.code)) return top;
-    return [...top.slice(0, 2), selectedCourier];
-  }, [couriers, showAllCouriers, selectedCourier]);
 
   const initials = (customer?.name || '?')
     .split(/\s+/)
@@ -352,141 +363,128 @@ export default function CreateShipmentDialog({
             </div>
           )}
 
-          <section>
-            <div className="mb-2.5 flex items-baseline justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
-                Courier
-                {quoteRefreshing && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-              </h3>
-              {couriers.length > 3 && (
+          {!postcodeValid ? (
+            <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+              Add a valid postcode to see which couriers deliver there.
+            </p>
+          ) : quote && quote.couriers.length === 0 ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Parcel Daily has no courier for postcode {postcode}. Check the address.
+            </p>
+          ) : (
+            quoteError && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <span>Couldn’t load live prices. Parcel Daily will price the courier you pick.</span>
                 <button
                   type="button"
-                  onClick={() => setShowAllCouriers((v) => !v)}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => retryQuote()}
+                  className="shrink-0 font-medium underline-offset-2 hover:underline"
                 >
-                  {showAllCouriers ? 'Fewer couriers' : `All ${couriers.length} couriers`}
+                  Retry
                 </button>
-              )}
-            </div>
-
-            {!postcodeValid ? (
-              <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-                Add a valid postcode to see which couriers deliver there.
-              </p>
-            ) : quoteLoading && !quote ? (
-              <div className="grid grid-cols-3 gap-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-[118px] animate-pulse rounded-xl border bg-muted/40" />
-                ))}
               </div>
-            ) : quote && quote.couriers.length === 0 ? (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Parcel Daily has no courier for postcode {postcode}. Check the address.
-              </p>
-            ) : (
-              <>
-                {quoteError && (
-                  <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    <span>Couldn’t load live prices. Parcel Daily will price the courier you pick.</span>
-                    <button
-                      type="button"
-                      onClick={() => retryQuote()}
-                      className="shrink-0 font-medium underline-offset-2 hover:underline"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-                <div role="radiogroup" aria-label="Courier" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {cardCouriers.map((c) => {
-                    const on = c.code === courier;
-                    const off = cardDiscount(c);
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        role="radio"
-                        aria-checked={on}
-                        disabled={isLoading}
-                        onClick={() => setCourier(c.code)}
-                        className={cn(
-                          'flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-white p-3 text-left transition-shadow',
-                          on
-                            ? 'border-primary ring-[3px] ring-primary/15'
-                            : 'hover:border-foreground/25'
+            )
+          )}
+
+          <section className="flex flex-col">
+            <ListRow label="Courier">
+              {quoteLoading && !quote ? (
+                <span className="h-4 w-40 animate-pulse rounded bg-muted" />
+              ) : (
+                <Select
+                  value={courier ?? ''}
+                  onValueChange={setCourier}
+                  disabled={isLoading || !couriers.length}
+                >
+                  <SelectTrigger aria-label="Courier" className={ROW_TRIGGER}>
+                    {selectedCourier ? (
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <CourierLogo courier={selectedCourier} className="h-6 w-10" />
+                        <span className="truncate">{selectedCourier.label}</span>
+                        {selectedCourier.price !== undefined && (
+                          <span className="font-semibold tabular-nums">
+                            {formatCurrency(selectedCourier.price)}
+                          </span>
                         )}
-                      >
-                        <CourierLogo courier={c} className="h-7 w-12" />
-                        <span className="w-full truncate text-xs text-muted-foreground">{c.label}</span>
-                        <span className="text-base font-bold tabular-nums leading-tight">
-                          {c.price !== undefined ? formatCurrency(Math.max(c.price - off, 0)) : '—'}
-                          {off > 0 && c.price !== undefined && (
-                            <span className="block text-[11px] font-normal text-muted-foreground line-through">
-                              {formatCurrency(c.price)}
+                        {quoteRefreshing && <Loader2 className="h-3 w-3 animate-spin" />}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Choose</span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {couriers.map((c) => {
+                      const off = cardDiscount(c);
+                      return (
+                        <SelectItem key={c.code} value={c.code} className="py-2">
+                          <CourierLogo courier={c} className="h-6 w-10" />
+                          <span>{c.label}</span>
+                          {c.badge && <span className="text-xs text-emerald-700">{c.badge}</span>}
+                          {c.price !== undefined && (
+                            <span className="ml-auto pl-4 font-medium tabular-nums">
+                              {formatCurrency(Math.max(c.price - off, 0))}
                             </span>
                           )}
-                        </span>
-                        {c.badge && <span className="text-[11px] font-medium text-emerald-700">{c.badge}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </section>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+            </ListRow>
 
-          <section className="grid gap-4 sm:grid-cols-2">
-            <div className="min-w-0">
-              <p className="mb-1.5 text-xs text-muted-foreground">Handover</p>
-              <div role="radiogroup" aria-label="Handover" className="grid h-10 grid-cols-2 rounded-lg border bg-muted/50 p-[3px]">
-                {(['pickup', 'dropoff'] as const).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={deliveryType === value}
-                    disabled={isLoading}
-                    onClick={() => setDeliveryType(value)}
-                    className={cn(
-                      'rounded-md text-sm transition-colors',
-                      deliveryType === value
-                        ? 'bg-white font-medium text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    {value === 'pickup' ? 'Pickup' : 'Drop-off'}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ListRow label="Handover">
+              <Select
+                value={deliveryType}
+                onValueChange={(v) => setDeliveryType(v as DeliveryType)}
+                disabled={isLoading}
+              >
+                <SelectTrigger aria-label="Handover" className={ROW_TRIGGER}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="pickup">Courier pickup</SelectItem>
+                  <SelectItem value="dropoff">Drop-off</SelectItem>
+                </SelectContent>
+              </Select>
+            </ListRow>
 
-            <div className="min-w-0">
-              <p className="mb-1.5 text-xs text-muted-foreground">Voucher</p>
+            <ListRow label="Voucher">
               {vouchersOff ? (
                 <button
                   type="button"
                   onClick={() => setVoucherSignIn(true)}
                   disabled={isLoading}
-                  className="flex h-10 w-full items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 text-left text-sm text-amber-900"
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-amber-800 hover:bg-amber-50"
                 >
-                  <Ticket className="h-4 w-4 shrink-0" />
-                  <span className="flex-1 truncate">
-                    {voucherSession?.state === 'expired' ? 'Signed out' : 'Off'}
-                  </span>
-                  <span className="font-medium">Sign in</span>
+                  <Ticket className="h-4 w-4" />
+                  {voucherSession?.state === 'expired' ? 'Signed out · Sign in' : 'Sign in to use'}
                 </button>
               ) : fittingVouchers.length > 0 ? (
                 <Select value={voucherChoice ?? 'none'} onValueChange={setVoucherChoice} disabled={isLoading}>
-                  <SelectTrigger aria-label="Voucher" className="h-10 w-full bg-white data-[size=default]:h-10">
-                    <SelectValue />
+                  <SelectTrigger aria-label="Voucher" className={ROW_TRIGGER}>
+                    {chosenVoucher ? (
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate">{chosenVoucher.voucher.name ?? 'Voucher'}</span>
+                        <span className="font-semibold tabular-nums text-emerald-700">
+                          −{formatCurrency(chosenVoucher.discount)}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="end">
                     {fittingVouchers.map(({ voucher, discount }) => (
-                      <SelectItem key={voucher.id} value={voucher.id as string}>
-                        <span className="font-medium">{voucher.name ?? 'Voucher'}</span>
-                        <span className="text-emerald-700">−{formatCurrency(discount)}</span>
-                        <span className="text-muted-foreground">
-                          {voucher.left} left · until {shortDate(voucher.nextExpiry)}
+                      <SelectItem key={voucher.id} value={voucher.id as string} className="py-2">
+                        <span className="flex flex-col">
+                          <span>
+                            {voucher.name ?? 'Voucher'}{' '}
+                            <span className="text-emerald-700">−{formatCurrency(discount)}</span>
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {voucher.left} left · until {shortDate(voucher.nextExpiry)}
+                          </span>
                         </span>
                       </SelectItem>
                     ))}
@@ -494,28 +492,23 @@ export default function CreateShipmentDialog({
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="flex h-10 items-center rounded-lg border border-dashed px-3 text-sm text-muted-foreground">
-                  None for this courier
-                </p>
+                <span className="px-2 text-sm text-muted-foreground">None for this courier</span>
               )}
-            </div>
-          </section>
+            </ListRow>
 
-          <section>
-            <div className="flex items-center justify-between gap-4">
-              <label htmlFor="cod-toggle" className="cursor-pointer text-sm">
-                Cash on delivery
-              </label>
-              <Switch
-                id="cod-toggle"
-                checked={codEnabled}
-                onCheckedChange={setCodEnabled}
-                disabled={isLoading}
-              />
-            </div>
+            <ListRow label="Cash on delivery" htmlFor="cod-toggle">
+              <span className="px-2">
+                <Switch
+                  id="cod-toggle"
+                  checked={codEnabled}
+                  onCheckedChange={setCodEnabled}
+                  disabled={isLoading}
+                />
+              </span>
+            </ListRow>
             {codEnabled && (
-              <div className="mt-3">
-                <div className="relative max-w-[200px]">
+              <div className="flex flex-col items-end pb-2">
+                <div className="relative w-[180px]">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                     RM
                   </span>
