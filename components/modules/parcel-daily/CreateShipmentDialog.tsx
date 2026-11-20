@@ -7,12 +7,8 @@ import { toast } from 'sonner';
 import { UUID } from 'crypto';
 import {
   AlertCircle,
-  Banknote,
   Loader2,
-  MapPin,
-  Package2,
   Ticket,
-  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,12 +24,11 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useParcelDailySettings, useParcelDailyVouchers } from '@/hooks/useParcelDaily';
 import { VoucherSignInDialog } from '@/components/modules/integrations/parcel-daily/VoucherSignInDialog';
-import { ChoiceField, ChoiceOption } from '@/components/forms/Field';
 import { formatPhone, phoneCountryCode } from '@/lib/utils/phone';
 import { createParcelDailyShipment, getCourierQuotes, ParcelDailyVoucher } from '@/lib/api/parcel-daily';
 import { Order } from '../order/types';
 import { BOOKABLE_COURIERS, courierInfo } from './couriers';
-import { CourierOption, CourierPicker } from './CourierPicker';
+import { CourierLogo, CourierOption } from './CourierPicker';
 import { ShipmentInput } from './types';
 
 const DEFAULT_CONTENT = 'Feminine Products';
@@ -47,11 +42,6 @@ interface CreateShipmentDialogProps {
 }
 
 type DeliveryType = 'pickup' | 'dropoff';
-
-const DELIVERY_OPTIONS: ChoiceOption<DeliveryType>[] = [
-  { value: 'pickup', label: 'Courier pickup', hint: 'The courier collects the parcel from you' },
-  { value: 'dropoff', label: 'Drop-off', hint: 'You bring the parcel to a courier counter' },
-];
 
 type ShipmentErrorBody = {
   message?: string;
@@ -100,21 +90,6 @@ function voucherDiscount(
 
 const shortDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : '';
-
-function SectionTitle({
-  icon: Icon,
-  children,
-}: {
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      {children}
-    </h3>
-  );
-}
 
 export default function CreateShipmentDialog({
   order,
@@ -285,92 +260,112 @@ export default function CreateShipmentDialog({
     }
   };
 
-  const summary = [
-    selectedCourier?.label,
-    selectedCourier?.price !== undefined
-      ? formatCurrency(Math.max(selectedCourier.price - (chosenVoucher?.discount ?? 0), 0))
-      : null,
-    chosenVoucher ? 'Voucher' : null,
-    deliveryType === 'pickup' ? 'Pickup' : 'Drop-off',
-    codEnabled && cod > 0 ? `COD ${formatCurrency(cod)}` : null,
-  ]
+  const voucherOff = chosenVoucher?.discount ?? 0;
+  const total =
+    selectedCourier?.price !== undefined ? Math.max(selectedCourier.price - voucherOff, 0) : undefined;
+
+  // Best voucher saving for a courier card (0 when staff picked "No voucher").
+  const cardDiscount = (c: CourierOption) => {
+    if (voucherChoice === 'none' || voucherSession?.state !== 'signed_in') return 0;
+    return Math.max(
+      0,
+      ...vouchers.map((v) =>
+        voucherDiscount(v, {
+          courier: c.code,
+          price: c.price,
+          kg: weightKg,
+          country,
+          postcode,
+          pickupPostcode: settings?.pickupAddress.postcode,
+        })
+      )
+    );
+  };
+
+  // Three cheapest as cards; the picked courier always stays visible.
+  const [showAllCouriers, setShowAllCouriers] = useState(false);
+  useEffect(() => {
+    if (!isOpen) setShowAllCouriers(false);
+  }, [isOpen]);
+  const cardCouriers = useMemo(() => {
+    if (showAllCouriers || couriers.length <= 3) return couriers;
+    const top = couriers.slice(0, 3);
+    if (!selectedCourier || top.some((c) => c.code === selectedCourier.code)) return top;
+    return [...top.slice(0, 2), selectedCourier];
+  }, [couriers, showAllCouriers, selectedCourier]);
+
+  const initials = (customer?.name || '?')
+    .split(/\s+/)
     .filter(Boolean)
-    .join(' · ');
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isLoading && onOpenChange?.(open)}>
       <DialogContent
         aria-describedby="create-shipment-description"
-        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
         onPointerDownOutside={(e) => isLoading && e.preventDefault()}
         onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
       >
-        <div className="border-b px-6 py-5">
-          <DialogTitle className="text-lg font-semibold tracking-tight">
-            Create shipment
-          </DialogTitle>
-          <DialogDescription id="create-shipment-description" className="mt-1">
-            <span className="font-mono">{order.order_number}</span>
-            {customer?.name ? ` · to ${customer.name}` : ''}
+        <div className="px-6 pt-5 pb-4">
+          <DialogTitle className="text-lg font-semibold tracking-tight">Create shipment</DialogTitle>
+          <DialogDescription id="create-shipment-description" className="mt-0.5 font-mono text-xs">
+            {order.order_number}
           </DialogDescription>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-          <section>
-            <SectionTitle icon={MapPin}>Ship to</SectionTitle>
-            <div className="rounded-lg border bg-muted/30 p-4 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">{customer?.name || 'Unknown customer'}</p>
-                <span
-                  className={cn(
-                    'rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide',
-                    isSingapore
-                      ? 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20'
-                      : 'bg-gray-100 text-gray-600'
-                  )}
-                >
-                  {isSingapore ? 'Singapore' : 'Malaysia'}
-                </span>
-              </div>
-              <p className="mt-0.5 text-muted-foreground">
-                {formatPhone(customer?.phone_number) || 'No phone number'}
-              </p>
-              <p className="mt-3 leading-relaxed">
-                {address?.full_address || (
-                  <span className="text-muted-foreground">No address</span>
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 pb-6">
+          <section className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {initials}
+            </span>
+            <div className="min-w-0 text-sm">
+              <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+                {customer?.name || 'Unknown customer'}
+                {isSingapore && (
+                  <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                    Singapore
+                  </span>
                 )}
               </p>
-              {(address?.postcode || address?.city || address?.state) && (
-                <p className="text-muted-foreground">
-                  {[address?.postcode, address?.city, address?.state]
-                    .filter(Boolean)
-                    .join(', ')}
-                </p>
-              )}
+              <p className="text-muted-foreground">
+                {address?.full_address || 'No address'}
+              </p>
+              <p className="text-muted-foreground">
+                {[
+                  [address?.postcode, address?.city].filter(Boolean).join(' '),
+                  address?.state,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
+                {customer?.phone_number ? ` · ${formatPhone(customer.phone_number)}` : ''}
+              </p>
             </div>
-
-            {missing.length > 0 && (
-              <div className="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>
-                  Missing {missing.join(', ')}. Update the order before creating
-                  a shipment.
-                </p>
-              </div>
-            )}
           </section>
 
+          {missing.length > 0 && (
+            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Missing {missing.join(', ')}. Update the order before creating a shipment.</p>
+            </div>
+          )}
+
           <section>
-            <div className="mb-3 flex items-baseline justify-between gap-3">
+            <div className="mb-2.5 flex items-baseline justify-between gap-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
-                <Truck className="h-4 w-4 text-muted-foreground" />
                 Courier
+                {quoteRefreshing && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
               </h3>
-              {quote && couriers.length > 0 && (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  {quoteRefreshing && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Live Parcel Daily prices to {quote.destination.state || country}
-                </span>
+              {couriers.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllCouriers((v) => !v)}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {showAllCouriers ? 'Fewer couriers' : `All ${couriers.length} couriers`}
+                </button>
               )}
             </div>
 
@@ -379,10 +374,10 @@ export default function CreateShipmentDialog({
                 Add a valid postcode to see which couriers deliver there.
               </p>
             ) : quoteLoading && !quote ? (
-              <div className="flex h-[54px] items-center gap-3 rounded-md border bg-white px-2">
-                <div className="h-8 w-16 animate-pulse rounded-md bg-muted" />
-                <div className="h-3 flex-1 animate-pulse rounded bg-muted" />
-                <div className="h-3 w-14 animate-pulse rounded bg-muted" />
+              <div className="grid grid-cols-3 gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-[118px] animate-pulse rounded-xl border bg-muted/40" />
+                ))}
               </div>
             ) : quote && quote.couriers.length === 0 ? (
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -402,88 +397,114 @@ export default function CreateShipmentDialog({
                     </button>
                   </div>
                 )}
-                <CourierPicker
-                  couriers={couriers}
-                  value={courier}
-                  onChange={setCourier}
-                  disabled={isLoading}
-                  formatPrice={formatCurrency}
-                />
+                <div role="radiogroup" aria-label="Courier" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {cardCouriers.map((c) => {
+                    const on = c.code === courier;
+                    const off = cardDiscount(c);
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        disabled={isLoading}
+                        onClick={() => setCourier(c.code)}
+                        className={cn(
+                          'flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-white p-3 text-left transition-shadow',
+                          on
+                            ? 'border-primary ring-[3px] ring-primary/15'
+                            : 'hover:border-foreground/25'
+                        )}
+                      >
+                        <CourierLogo courier={c} className="h-7 w-12" />
+                        <span className="w-full truncate text-xs text-muted-foreground">{c.label}</span>
+                        <span className="text-base font-bold tabular-nums leading-tight">
+                          {c.price !== undefined ? formatCurrency(Math.max(c.price - off, 0)) : '—'}
+                          {off > 0 && c.price !== undefined && (
+                            <span className="block text-[11px] font-normal text-muted-foreground line-through">
+                              {formatCurrency(c.price)}
+                            </span>
+                          )}
+                        </span>
+                        {c.badge && <span className="text-[11px] font-medium text-emerald-700">{c.badge}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </>
             )}
+          </section>
 
-            <div className="mt-4">
-              <p className="mb-2 text-sm font-medium">Handover</p>
-              <ChoiceField
-                label="Handover"
-                value={deliveryType}
-                onChange={setDeliveryType}
-                options={DELIVERY_OPTIONS}
-                disabled={isLoading}
-              />
+          <section className="grid gap-4 sm:grid-cols-2">
+            <div className="min-w-0">
+              <p className="mb-1.5 text-xs text-muted-foreground">Handover</p>
+              <div role="radiogroup" aria-label="Handover" className="grid h-10 grid-cols-2 rounded-lg border bg-muted/50 p-[3px]">
+                {(['pickup', 'dropoff'] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={deliveryType === value}
+                    disabled={isLoading}
+                    onClick={() => setDeliveryType(value)}
+                    className={cn(
+                      'rounded-md text-sm transition-colors',
+                      deliveryType === value
+                        ? 'bg-white font-medium text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {value === 'pickup' ? 'Pickup' : 'Drop-off'}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {fittingVouchers.length > 0 && (
-              <div className="mt-4">
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-                  <Ticket className="h-4 w-4 text-muted-foreground" />
-                  Voucher
-                </p>
-                <Select
-                  value={voucherChoice ?? 'none'}
-                  onValueChange={setVoucherChoice}
+            <div className="min-w-0">
+              <p className="mb-1.5 text-xs text-muted-foreground">Voucher</p>
+              {vouchersOff ? (
+                <button
+                  type="button"
+                  onClick={() => setVoucherSignIn(true)}
                   disabled={isLoading}
+                  className="flex h-10 w-full items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 text-left text-sm text-amber-900"
                 >
-                  <SelectTrigger aria-label="Voucher" className="h-11 w-full bg-white">
+                  <Ticket className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 truncate">
+                    {voucherSession?.state === 'expired' ? 'Signed out' : 'Off'}
+                  </span>
+                  <span className="font-medium">Sign in</span>
+                </button>
+              ) : fittingVouchers.length > 0 ? (
+                <Select value={voucherChoice ?? 'none'} onValueChange={setVoucherChoice} disabled={isLoading}>
+                  <SelectTrigger aria-label="Voucher" className="h-10 w-full bg-white data-[size=default]:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {fittingVouchers.map(({ voucher, discount }) => (
                       <SelectItem key={voucher.id} value={voucher.id as string}>
                         <span className="font-medium">{voucher.name ?? 'Voucher'}</span>
+                        <span className="text-emerald-700">−{formatCurrency(discount)}</span>
                         <span className="text-muted-foreground">
-                          {formatCurrency(discount)} off · {voucher.left} left · until{' '}
-                          {shortDate(voucher.nextExpiry)}
+                          {voucher.left} left · until {shortDate(voucher.nextExpiry)}
                         </span>
                       </SelectItem>
                     ))}
                     <SelectItem value="none">No voucher</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              ) : (
+                <p className="flex h-10 items-center rounded-lg border border-dashed px-3 text-sm text-muted-foreground">
+                  None for this courier
+                </p>
+              )}
+            </div>
           </section>
 
           <section>
-            <SectionTitle icon={Package2}>Parcel</SectionTitle>
-            <dl className="divide-y rounded-lg border text-sm">
-              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
-                <dt className="text-muted-foreground">Contents</dt>
-                <dd className="truncate font-mono text-[13px]">{content}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
-                <dt className="text-muted-foreground">Declared value</dt>
-                <dd className="tabular-nums">{formatCurrency(contentValue)}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4 px-4 py-2.5">
-                <dt className="text-muted-foreground">Weight</dt>
-                <dd className="tabular-nums">{weightKg} kg</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="rounded-lg border p-4">
-            <div className="flex items-start justify-between gap-4">
-              <label htmlFor="cod-toggle" className="flex cursor-pointer gap-3">
-                <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <span>
-                  <span className="block text-sm font-semibold">
-                    Cash on delivery
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    The courier collects payment from the customer.
-                  </span>
-                </span>
+            <div className="flex items-center justify-between gap-4">
+              <label htmlFor="cod-toggle" className="cursor-pointer text-sm">
+                Cash on delivery
               </label>
               <Switch
                 id="cod-toggle"
@@ -492,21 +513,15 @@ export default function CreateShipmentDialog({
                 disabled={isLoading}
               />
             </div>
-
             {codEnabled && (
-              <div className="mt-4 pl-7">
-                <label
-                  htmlFor="cod-amount"
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                >
-                  Amount to collect
-                </label>
+              <div className="mt-3">
                 <div className="relative max-w-[200px]">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                     RM
                   </span>
                   <Input
                     id="cod-amount"
+                    aria-label="Amount to collect"
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -517,32 +532,22 @@ export default function CreateShipmentDialog({
                     disabled={isLoading}
                   />
                 </div>
-                {codInvalid && (
-                  <p className="mt-1.5 text-xs text-red-600">
-                    Enter an amount above RM 0.
-                  </p>
-                )}
+                {codInvalid && <p className="mt-1.5 text-xs text-red-600">Enter an amount above RM 0.</p>}
               </div>
             )}
           </section>
 
-          {vouchersOff && (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-              <span className="flex items-center gap-2">
-                <Ticket className="h-4 w-4 shrink-0" />
-                {voucherSession?.state === 'expired' ? 'Signed out of Parcel Daily. Vouchers are off.' : 'Vouchers are off.'}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 bg-white"
-                onClick={() => setVoucherSignIn(true)}
-                disabled={isLoading}
-              >
-                Sign in
-              </Button>
-            </div>
-          )}
+          <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span>
+              Weight <span className="tabular-nums text-foreground">{weightKg} kg</span>
+            </span>
+            <span>
+              Value <span className="tabular-nums text-foreground">{formatCurrency(contentValue)}</span>
+            </span>
+            <span className="min-w-0 truncate">
+              Contents <span className="text-foreground">{content}</span>
+            </span>
+          </p>
 
           {error && (
             <div
@@ -555,27 +560,31 @@ export default function CreateShipmentDialog({
           )}
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t bg-muted/20 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="truncate text-sm text-muted-foreground">{summary}</p>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              disabled={isLoading}
-              onClick={() => onOpenChange?.(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateShipment} disabled={!canSubmit} className="min-w-36">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating…
-                </>
-              ) : (
-                'Create shipment'
+        <div className="flex flex-wrap items-center gap-3 border-t bg-muted/20 px-6 py-4">
+          <div className="mr-auto flex flex-col">
+            <span className="text-xs text-muted-foreground">Total</span>
+            <span className="text-xl font-bold tabular-nums">
+              {total !== undefined ? formatCurrency(total) : '—'}
+              {voucherOff > 0 && selectedCourier?.price !== undefined && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
+                  {formatCurrency(selectedCourier.price)}
+                </span>
               )}
-            </Button>
+            </span>
           </div>
+          <Button variant="outline" disabled={isLoading} onClick={() => onOpenChange?.(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateShipment} disabled={!canSubmit} className="min-w-28">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating…
+              </>
+            ) : (
+              'Create'
+            )}
+          </Button>
         </div>
         <VoucherSignInDialog open={voucherSignIn} onOpenChange={setVoucherSignIn} />
       </DialogContent>
