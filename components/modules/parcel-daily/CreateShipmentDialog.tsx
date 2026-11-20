@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -229,14 +230,6 @@ export default function CreateShipmentDialog({
   }, [fittingVouchers, voucherChoice]);
 
   const chosenVoucher = fittingVouchers.find((f) => f.voucher.id === voucherChoice);
-  const voucherOptions: ChoiceOption<string>[] = [
-    ...fittingVouchers.map(({ voucher, discount }) => ({
-      value: voucher.id as string,
-      label: `${voucher.name ?? 'Voucher'} · ${formatCurrency(discount)} off`,
-      hint: `${voucher.left} left · until ${shortDate(voucher.nextExpiry)}`,
-    })),
-    { value: 'none', label: 'No voucher' },
-  ];
 
   const missing = useMemo(() => {
     const items: string[] = [];
@@ -436,13 +429,27 @@ export default function CreateShipmentDialog({
                   <Ticket className="h-4 w-4 text-muted-foreground" />
                   Voucher
                 </p>
-                <ChoiceField
-                  label="Voucher"
+                <Select
                   value={voucherChoice ?? 'none'}
-                  onChange={setVoucherChoice}
-                  options={voucherOptions}
+                  onValueChange={setVoucherChoice}
                   disabled={isLoading}
-                />
+                >
+                  <SelectTrigger aria-label="Voucher" className="h-11 w-full bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fittingVouchers.map(({ voucher, discount }) => (
+                      <SelectItem key={voucher.id} value={voucher.id as string}>
+                        <span className="font-medium">{voucher.name ?? 'Voucher'}</span>
+                        <span className="text-muted-foreground">
+                          {formatCurrency(discount)} off · {voucher.left} left · until{' '}
+                          {shortDate(voucher.nextExpiry)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="none">No voucher</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </section>
