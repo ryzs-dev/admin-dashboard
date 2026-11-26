@@ -14,7 +14,7 @@ import { AutopilotMode, AutopilotRun, AutopilotSettings, AutopilotStep } from '@
 import { STEP_LABELS, formatClock, formatWhen, runOutcome } from './labels';
 
 const DESCRIPTIONS: Record<AutopilotStep, string> = {
-  ship: 'Books Parcel Daily shipments for new WhatsApp orders, using your Parcel Daily courier and pickup settings.',
+  ship: 'Books Parcel Daily shipments for new chat orders, using your Parcel Daily courier and pickup settings.',
   tracking: 'Sends each customer their tracking number on WhatsApp once the shipment has one.',
 };
 

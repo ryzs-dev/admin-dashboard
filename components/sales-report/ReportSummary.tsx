@@ -186,7 +186,7 @@ export function ReportSummary({
   return (
     <Panel className="grid grid-cols-2 gap-px overflow-hidden bg-border lg:grid-cols-4 [&>*]:bg-card">
       <Cell label="Total sales" value={formatCurrency(t?.sales ?? 0)} lead isLoading={isLoading}>
-        {t ? `${t.orders.toLocaleString()} orders · WhatsApp ${formatCurrency(t.wa_sales)} · Shopee/LZD ${formatCurrency(t.mp_sales)}` : ' '}
+        {t ? `${t.orders.toLocaleString()} orders · Chat ${formatCurrency(t.wa_sales)} · Shopee/LZD ${formatCurrency(t.mp_sales)}` : ' '}
       </Cell>
       <TargetCell report={report} isLoading={isLoading} onSaved={onSaved} />
       <Cell label="Total ad spent" value={formatCurrency(t?.ad_spend ?? 0)} isLoading={isLoading}>
@@ -201,7 +201,7 @@ export function ReportSummary({
         All sales ÷ ad spend
       </Cell>
       <Cell label="Repeat order" value={pct(t?.repeat_pct)} isLoading={isLoading}>
-        {t ? `${t.wa_repeat} of ${t.wa_orders} WhatsApp orders` : ' '}
+        {t ? `${t.wa_repeat} of ${t.wa_orders} chat orders` : ' '}
       </Cell>
       <Cell label="Shopee/LZD repeat" value={pct(t?.mp_repeat_pct)} isLoading={isLoading}>
         {t ? `${t.mp_repeat} of ${t.marketplace_orders} marketplace orders` : ' '}
@@ -210,7 +210,7 @@ export function ReportSummary({
         All sales ÷ all orders
       </Cell>
       <Cell label="Closing rate" value={pct(t?.conversion_rate)} isLoading={isLoading}>
-        {t?.messages ? `${t.wa_new} new orders from ${t.messages.toLocaleString()} messages` : 'New WhatsApp orders ÷ messages'}
+        {t?.messages ? `${t.wa_new} new orders from ${t.messages.toLocaleString()} messages` : 'New chat orders ÷ messages'}
       </Cell>
     </Panel>
   );

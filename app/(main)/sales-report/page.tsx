@@ -76,7 +76,7 @@ export default function SalesReportPage() {
             />
             <ReportTable report={loading ? undefined : report} today={today} isLoading={loading} />
             <p className="px-1 text-xs text-muted-foreground">
-              Days are Malaysia time, by when the order was created. WhatsApp / FB counts chat orders (not distributor);
+              Days are Malaysia time, by when the order was created. WhatsApp / FB counts chat orders on WhatsApp, Messenger and Instagram (not distributor);
               repeat means the customer ordered before. Shopee and Lazada have no customer record, so repeat there means
               the same delivery address ordered before on a marketplace (or the same name if there is no address), counted from when the marketplace sync started.
               {report?.ad_account?.name && ` Ad numbers from ${report.ad_account.name}.`}

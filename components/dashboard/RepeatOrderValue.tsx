@@ -40,7 +40,7 @@ export function RepeatOrderValueCard({
 
   return (
     <Panel>
-      <PanelHeader title="WhatsApp buyers" meta="returning vs first-time" />
+      <PanelHeader title="Chat buyers" meta="returning vs first-time" />
       <div className="px-5 pb-4 pt-3">
         {isLoading ? (
           <Skeleton className="h-1.5 w-full" />

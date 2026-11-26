@@ -62,11 +62,11 @@ export function PeriodTable({
                 <th className={cn(TH, 'text-right')}>Ad spend</th>
                 <th className={cn(TH, 'text-right')}>Chats started</th>
                 <th className={cn(TH, 'text-right')}>Cost per chat</th>
-                <th className={cn(TH, 'text-right')} title="WhatsApp orders, not distributor, Shopee or Lazada">
-                  WhatsApp orders
+                <th className={cn(TH, 'text-right')} title="Orders sold in chat (WhatsApp, Messenger, Instagram), not distributor, Shopee or Lazada">
+                  Chat orders
                 </th>
-                <th className={cn(TH, 'text-right')}>WhatsApp sales</th>
-                <th className={cn(TH, 'text-right')} title="WhatsApp sales ÷ ad spend for the day, including customers who didn't come from an ad">
+                <th className={cn(TH, 'text-right')}>Chat sales</th>
+                <th className={cn(TH, 'text-right')} title="Chat sales ÷ ad spend for the day, including customers who didn't come from an ad">
                   Blended ROAS
                 </th>
                 <th className={cn(TH, 'text-right')}>All sales</th>

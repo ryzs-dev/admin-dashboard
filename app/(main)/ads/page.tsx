@@ -182,7 +182,7 @@ export default function AdsPage() {
     const ran = report?.campaigns.filter((c) => c.spend > 0).length ?? 0;
     const spent = `${adMoney(t.spend, currency)} spent in ${kind === 'month' ? label : 'this period'} across ${ran} campaign${ran === 1 ? '' : 's'}`;
     if (!comparable(currency)) return `${spent}.`;
-    return `${spent}, with ${formatCurrency(t.chat_revenue)} in WhatsApp sales (${times(ratio(t.chat_revenue, t.spend))}).`;
+    return `${spent}, with ${formatCurrency(t.chat_revenue)} in chat sales (${times(ratio(t.chat_revenue, t.spend))}).`;
   })();
 
   return (

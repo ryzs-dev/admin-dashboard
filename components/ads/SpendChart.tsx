@@ -28,7 +28,7 @@ function Key({ color, label, bar }: { color: string; label: string; bar?: boolea
   );
 }
 
-// Spend as bars, WhatsApp sales as a line, on their own scales so both read.
+// Spend as bars, chat sales as a line, on their own scales so both read.
 export function SpendChart({
   buckets,
   byMonth,
@@ -49,7 +49,7 @@ export function SpendChart({
       <PanelHeader title="Spend and sales" meta={byMonth ? 'by month' : 'by day'}>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Key color={CHART_COLORS.primarySoft} label="Ad spend" bar />
-          <Key color={CHART_COLORS.primary} label="WhatsApp sales" />
+          <Key color={CHART_COLORS.primary} label="Chat sales" />
         </div>
       </PanelHeader>
       <div className="h-[280px] px-2 pb-3 pt-2">
@@ -80,7 +80,7 @@ export function SpendChart({
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.label ?? ''}
                 formatter={(v, name) => [
                   name === 'spend' ? adMoney(Number(v), currency) : formatCurrency(Number(v)),
-                  name === 'spend' ? 'Ad spend' : 'WhatsApp sales',
+                  name === 'spend' ? 'Ad spend' : 'Chat sales',
                 ]}
               />
               <Bar

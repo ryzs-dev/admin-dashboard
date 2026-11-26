@@ -55,8 +55,8 @@ export function AdsSummary({ report, isLoading }: { report?: MetaAdsReport; isLo
         {t && t.clicks > 0 && ` · ${t.clicks.toLocaleString()} clicks`}
       </Cell>
       <Cell label="Blended ROAS" value={times(roas)} isLoading={isLoading}>
-        <span title="All WhatsApp sales in the period (not distributor, Shopee or Lazada) ÷ ad spend. Includes customers who didn't come from an ad.">
-          WhatsApp sales {formatCurrency(t?.chat_revenue ?? 0)}
+        <span title="All chat sales in the period (WhatsApp, Messenger, Instagram; not distributor, Shopee or Lazada) ÷ ad spend. Includes customers who didn't come from an ad.">
+          Chat sales {formatCurrency(t?.chat_revenue ?? 0)}
         </span>
         {allRoas != null && <> · all channels {times(allRoas)}</>}
         {!same && <> · not compared, account is in {cur}</>}

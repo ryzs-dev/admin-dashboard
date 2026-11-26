@@ -69,7 +69,7 @@ export type MetaAdsReportDay = {
   conversations: number;
   orders: number;
   revenue: number;
-  // WhatsApp orders that aren't distributor orders: the sales ads can bring in.
+  // Chat orders (WhatsApp, Messenger, Instagram) that aren't distributor orders: the sales ads can bring in.
   chat_orders: number;
   chat_revenue: number;
   new_customers: number;

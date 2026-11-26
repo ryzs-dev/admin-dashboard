@@ -39,13 +39,13 @@ const GROUPS: { label: string; cols: Col[] }[] = [
       {
         key: 'cpc',
         label: 'Cost / conv.',
-        title: 'Ad spend ÷ new WhatsApp orders',
+        title: 'Ad spend ÷ new chat orders',
         value: (r) => money(r.cost_per_conversion),
       },
       {
         key: 'conv',
         label: 'Conv. rate',
-        title: 'New WhatsApp orders ÷ messages',
+        title: 'New chat orders ÷ messages',
         value: (r) => (r.conversion_rate == null ? null : pct(r.conversion_rate)),
       },
     ],
