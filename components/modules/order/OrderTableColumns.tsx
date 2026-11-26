@@ -21,7 +21,7 @@ import {
   PauseCircle,
   PlayCircle,
 } from 'lucide-react';
-import { isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
+import { CHAT_CHANNEL_LABELS, isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -253,6 +253,8 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
         ? MARKETPLACE_LABELS[row.original.source!]
         : null;
       const name = customer?.name || row.original.buyer_name;
+      const chatChannel = row.original.source ? CHAT_CHANNEL_LABELS[row.original.source] : null;
+      const phone = formatPhone(customer?.phone_number);
 
       return (
         <div className="flex min-w-0 items-center gap-3">
@@ -273,7 +275,9 @@ export const createColumns = (actions: ColumnActions): ColumnDef<Order>[] => [
                     : 'text-muted-foreground'
               )}
             >
-              {marketplace ? `${marketplace} buyer` : formatPhone(customer?.phone_number) || '—'}
+              {marketplace
+                ? `${marketplace} buyer`
+                : [phone, chatChannel].filter(Boolean).join(' · ') || '—'}
             </p>
           </div>
         </div>

@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
+import { CHAT_CHANNEL_LABELS, isMarketplaceOrder, MARKETPLACE_LABELS, Order } from './types';
 import CreateShipmentDialog from '../parcel-daily/CreateShipmentDialog';
 import TrackingCardTemplate from '../tracking/TrackingCardTemplate';
 import { useRouter } from 'next/navigation';
@@ -122,6 +122,7 @@ const OrderTemplate = ({ order }: { order: Order }) => {
     placedOn && `Placed ${placedOn}`,
     order.created_at && `Created ${formatFriendlyDateTime(order.created_at)}`,
     labelize(order.payment_method),
+    order.source && CHAT_CHANNEL_LABELS[order.source] && `Sold on ${CHAT_CHANNEL_LABELS[order.source]}`,
     order.agent_name && `Taken by ${order.agent_name}`,
   ]
     .filter(Boolean)

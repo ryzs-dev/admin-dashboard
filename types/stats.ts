@@ -6,7 +6,7 @@ export interface DashboardStatsDTO {
   mtd_revenue: number;
 }
 
-export type SalesChannel = 'whatsapp' | 'shopee' | 'lazada';
+export type SalesChannel = 'whatsapp' | 'messenger' | 'instagram' | 'shopee' | 'lazada';
 
 export type ChannelTotalsDTO = Record<
   SalesChannel,
@@ -15,6 +15,8 @@ export type ChannelTotalsDTO = Record<
 
 export const EMPTY_CHANNEL_TOTALS: ChannelTotalsDTO = {
   whatsapp: { orders: 0, revenue: 0 },
+  messenger: { orders: 0, revenue: 0 },
+  instagram: { orders: 0, revenue: 0 },
   shopee: { orders: 0, revenue: 0 },
   lazada: { orders: 0, revenue: 0 },
 };

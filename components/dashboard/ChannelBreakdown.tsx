@@ -5,8 +5,11 @@ import { formatCurrency } from '@/lib/utils/currency';
 import { ChannelTotalsDTO, SalesChannel } from '@/types/stats';
 import { Panel, PanelHeader } from './Panel';
 
-const CHANNELS: { key: SalesChannel; label: string; logo: string }[] = [
+// Messenger and Instagram only take a row once they have an order in the period.
+const CHANNELS: { key: SalesChannel; label: string; logo: string; whenUsed?: boolean }[] = [
   { key: 'whatsapp', label: 'WhatsApp', logo: '/images/integrations/whatsapp.png' },
+  { key: 'messenger', label: 'Messenger', logo: '/images/integrations/messenger.png', whenUsed: true },
+  { key: 'instagram', label: 'Instagram', logo: '/images/integrations/instagram.png', whenUsed: true },
   { key: 'shopee', label: 'Shopee', logo: '/images/integrations/shopee.png' },
   { key: 'lazada', label: 'Lazada', logo: '/images/integrations/lazada.png' },
 ];
@@ -33,7 +36,9 @@ export function ChannelBreakdown({
     <Panel>
       <PanelHeader title="By channel" />
       <ul className="space-y-3 px-5 pb-4 pt-3">
-        {CHANNELS.map(({ key, label, logo }) => {
+        {CHANNELS.filter(
+          ({ key, whenUsed }) => !whenUsed || Number(channels[key]?.orders ?? 0) > 0
+        ).map(({ key, label, logo }) => {
           const { orders = 0, revenue = 0 } = channels[key] ?? {};
           const share = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
 

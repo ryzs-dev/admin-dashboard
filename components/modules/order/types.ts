@@ -25,7 +25,13 @@ export interface Order {
   order_receipts?: OrderReceiptSummary[];
 }
 
-export type OrderSource = 'whatsapp' | 'shopee' | 'lazada';
+export type OrderSource = 'whatsapp' | 'messenger' | 'instagram' | 'shopee' | 'lazada';
+
+// Chat channels other than WhatsApp, which is the default and goes unlabelled.
+export const CHAT_CHANNEL_LABELS: Partial<Record<OrderSource, string>> = {
+  messenger: 'Messenger',
+  instagram: 'Instagram',
+};
 
 export const MARKETPLACE_LABELS: Partial<Record<OrderSource, string>> = {
   shopee: 'Shopee',

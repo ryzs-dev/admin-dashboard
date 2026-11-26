@@ -502,6 +502,8 @@ export function OrderTable({
               <SelectContent>
                 <SelectItem value="all">All channels</SelectItem>
                 <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="messenger">Messenger</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
                 <SelectItem value="shopee">Shopee</SelectItem>
                 <SelectItem value="lazada">Lazada</SelectItem>
               </SelectContent>
